@@ -13,7 +13,12 @@
     "db:status": "supabase migration list",
     "db:types": "supabase gen types typescript --project-id $PROJECT_ID > lib/supabase/types.ts",
     "db:diff": "supabase db diff --use-migra",
-    "db:link": "supabase link"
+    "db:link": "supabase link",
+    "db:restore": "node scripts/db-restore.js",
+    "db:checkpoint": "git rev-parse HEAD > .db-checkpoint && echo 'DB checkpoint saved!'",
+    "db:restore-checkpoint": "node scripts/db-restore.js",
+    "db:backup": "node scripts/db-backup.js backup",
+    "db:restore-data": "node scripts/db-backup.js restore"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
