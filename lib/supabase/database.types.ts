@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       checkins: {
@@ -48,6 +73,13 @@ export type Database = {
             columns: ["pass_id"]
             isOneToOne: false
             referencedRelation: "passes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checkins_scanned_by_fk"
+            columns: ["scanned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -223,6 +255,13 @@ export type Database = {
             referencedRelation: "communities"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "events_created_by_fk"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       orders: {
@@ -234,10 +273,10 @@ export type Database = {
           event_id: string
           id: string
           metadata: Json
-          provider: string | null
+          provider: Database["public"]["Enums"]["payment_provider"]
           provider_ref: string | null
           quantity: number
-          status: string
+          status: Database["public"]["Enums"]["order_status"]
           updated_at: string
         }
         Insert: {
@@ -248,10 +287,10 @@ export type Database = {
           event_id: string
           id?: string
           metadata?: Json
-          provider?: string | null
+          provider?: Database["public"]["Enums"]["payment_provider"]
           provider_ref?: string | null
           quantity: number
-          status?: string
+          status?: Database["public"]["Enums"]["order_status"]
           updated_at?: string
         }
         Update: {
@@ -262,13 +301,20 @@ export type Database = {
           event_id?: string
           id?: string
           metadata?: Json
-          provider?: string | null
+          provider?: Database["public"]["Enums"]["payment_provider"]
           provider_ref?: string | null
           quantity?: number
-          status?: string
+          status?: Database["public"]["Enums"]["order_status"]
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_buyer_fk"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_event_id_fkey"
             columns: ["event_id"]
@@ -284,7 +330,7 @@ export type Database = {
           id: string
           last_refreshed_at: string
           secure_code: string
-          status: string
+          status: Database["public"]["Enums"]["pass_status"]
           ticket_id: string
         }
         Insert: {
@@ -292,7 +338,7 @@ export type Database = {
           id?: string
           last_refreshed_at?: string
           secure_code: string
-          status?: string
+          status?: Database["public"]["Enums"]["pass_status"]
           ticket_id: string
         }
         Update: {
@@ -300,14 +346,14 @@ export type Database = {
           id?: string
           last_refreshed_at?: string
           secure_code?: string
-          status?: string
+          status?: Database["public"]["Enums"]["pass_status"]
           ticket_id?: string
         }
         Relationships: [
           {
             foreignKeyName: "passes_ticket_id_fkey"
             columns: ["ticket_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "tickets"
             referencedColumns: ["id"]
           },
@@ -378,7 +424,6 @@ export type Database = {
           id: string
           order_id: string | null
           purchased_at: string
-          qr_code: string | null
           status: Database["public"]["Enums"]["ticket_status"]
           stripe_charge_id: string | null
           stripe_payment_intent_id: string | null
@@ -392,7 +437,6 @@ export type Database = {
           id?: string
           order_id?: string | null
           purchased_at?: string
-          qr_code?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           stripe_charge_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -406,7 +450,6 @@ export type Database = {
           id?: string
           order_id?: string | null
           purchased_at?: string
-          qr_code?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           stripe_charge_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -476,6 +519,10 @@ export type Database = {
       }
     }
     Functions: {
+      _normalize_text: {
+        Args: { txt: string }
+        Returns: string
+      }
       _postgis_deprecate: {
         Args: { newname: string; oldname: string; version: string }
         Returns: undefined
@@ -948,6 +995,26 @@ export type Database = {
         Args: { "": unknown }
         Returns: unknown
       }
+      gtrgm_compress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_decompress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_in: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_options: {
+        Args: { "": unknown }
+        Returns: undefined
+      }
+      gtrgm_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
       json: {
         Args: { "": unknown }
         Returns: Json
@@ -1169,6 +1236,18 @@ export type Database = {
               p_user_id: string
             }
         Returns: string
+      }
+      set_limit: {
+        Args: { "": number }
+        Returns: number
+      }
+      show_limit: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      show_trgm: {
+        Args: { "": string }
+        Returns: string[]
       }
       spheroid_in: {
         Args: { "": unknown }
@@ -2243,6 +2322,14 @@ export type Database = {
         Args: { "": unknown }
         Returns: string
       }
+      unaccent: {
+        Args: { "": string }
+        Returns: string
+      }
+      unaccent_init: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
       unlockrows: {
         Args: { "": string }
         Returns: number
@@ -2261,6 +2348,15 @@ export type Database = {
     Enums: {
       event_status: "draft" | "published" | "cancelled" | "completed"
       member_role: "member" | "moderator" | "admin"
+      order_status:
+        | "pending"
+        | "processing"
+        | "paid"
+        | "failed"
+        | "refunded"
+        | "cancelled"
+      pass_status: "valid" | "used" | "revoked" | "expired"
+      payment_provider: "stripe" | "iyzico" | "paypal" | "manual"
       ticket_status:
         | "pending"
         | "confirmed"
@@ -2400,10 +2496,23 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       event_status: ["draft", "published", "cancelled", "completed"],
       member_role: ["member", "moderator", "admin"],
+      order_status: [
+        "pending",
+        "processing",
+        "paid",
+        "failed",
+        "refunded",
+        "cancelled",
+      ],
+      pass_status: ["valid", "used", "revoked", "expired"],
+      payment_provider: ["stripe", "iyzico", "paypal", "manual"],
       ticket_status: [
         "pending",
         "confirmed",
