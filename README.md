@@ -12,10 +12,11 @@ A modern, scalable community management platform built with Next.js 15.5 and Sup
 
 ### Core Stack
 - **Frontend Framework:** Next.js 15.5 with App Router + Turbopack ✅
-- **UI Components:** Tailwind CSS (shadcn/ui components)
+- **UI Components:** shadcn/ui (42+ components installed) + Tailwind CSS 4 ✅
+- **Icons:** Lucide React (1000+ icons) ✅
 - **Backend:** Supabase (PostgreSQL + Auth + Realtime + Storage)
 - **Hosting:** Vercel (free tier - 100GB bandwidth/month)
-- **Type Safety:** TypeScript 5.6+
+- **Type Safety:** TypeScript 5.6+ ✅
 - **Payments:** Stripe (pay per transaction only)
 
 ### Cost: $0/month for MVP
@@ -109,26 +110,31 @@ npm run type-check   # TypeScript type checking
 
 ## 📚 Key Documentation
 
+- [UI Components Guide](./docs/architecture/ui-components.md) - shadcn/ui component documentation ✅
+- [Tech Stack](./docs/architecture/tech-stack.md) - Complete technology overview ✅
+- [Coding Standards](./docs/architecture/coding-standards.md) - Development guidelines ✅
+- [Source Tree](./docs/architecture/source-tree.md) - Project structure ✅
 - [Simplified MVP Plan](./docs/simplified-mvp-plan.md) - 14-day implementation guide
 - [Database Schema](./docs/architecture/supabase-database-schema.md) - Supabase schema
-- [Tech Stack](./docs/architecture/modern-free-tech-stack.md) - Technology decisions
-- [Project Structure](./docs/architecture/nextjs-source-tree.md) - File organization
 
 ## 💡 Key Decisions
 
 - **Next.js 15.5 + Turbopack:** Latest performance optimizations
+- **shadcn/ui Components:** Modern, accessible, fully customizable UI
 - **Supabase over AWS:** Free tier, built-in auth, realtime
 - **Vercel over AWS:** Zero-config deploys, generous free tier
 - **PWA before Native:** Faster to market, one codebase
-- **Tailwind CSS:** Modern styling, great DX
+- **Tailwind CSS 4:** Latest version, modern styling, great DX
 
 ## 🎯 Next Steps
 
 1. ✅ Project initialized with Next.js 15.5 + Turbopack
-2. ⏳ Set up Supabase project and add credentials
-3. ⏳ Create database schema
-4. ⏳ Implement authentication
-5. ⏳ Build core features
+2. ✅ shadcn/ui integrated with 42+ components
+3. ✅ Modern landing page with component showcase
+4. ⏳ Set up Supabase project and add credentials
+5. ⏳ Create database schema
+6. ⏳ Implement authentication
+7. ⏳ Build core features
 
 ---
 
