@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/shared/theme-toggle';
+import { UserMenu } from '@/components/shared/user-menu';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -16,6 +17,7 @@ import {
 } from '@/components/ui/navigation-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
 
 const routes = [
   {
@@ -55,6 +57,7 @@ const routes = [
 
 export function Navbar() {
   const pathname = usePathname();
+  const { user } = useAuth();
 
   return (
     <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur">
@@ -120,8 +123,18 @@ export function Navbar() {
 
           {/* Desktop Auth Buttons */}
           <div className="hidden items-center space-x-2 md:flex">
-            <Button variant="ghost">Sign In</Button>
-            <Button>Sign Up</Button>
+            {user ? (
+              <UserMenu />
+            ) : (
+              <>
+                <Button variant="ghost" asChild>
+                  <Link href="/auth">Sign In</Link>
+                </Button>
+                <Button asChild>
+                  <Link href="/auth">Sign Up</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu */}
@@ -169,10 +182,18 @@ export function Navbar() {
                   </div>
                 ))}
                 <div className="space-y-2 pt-4">
-                  <Button variant="outline" className="w-full">
-                    Sign In
-                  </Button>
-                  <Button className="w-full">Sign Up</Button>
+                  {user ? (
+                    <UserMenu />
+                  ) : (
+                    <>
+                      <Button variant="outline" className="w-full" asChild>
+                        <Link href="/auth">Sign In</Link>
+                      </Button>
+                      <Button className="w-full" asChild>
+                        <Link href="/auth">Sign Up</Link>
+                      </Button>
+                    </>
+                  )}
                 </div>
               </nav>
             </SheetContent>

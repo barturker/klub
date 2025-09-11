@@ -107,6 +107,7 @@ CREATE INDEX idx_community_members_user ON community_members(user_id);
 -- =============================================
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  email TEXT,
   username TEXT UNIQUE,
   full_name TEXT,
   avatar_url TEXT,
@@ -237,9 +238,10 @@ CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, full_name, avatar_url)
+  INSERT INTO public.profiles (id, email, full_name, avatar_url)
   VALUES (
     NEW.id,
+    NEW.email,
     NEW.raw_user_meta_data->>'full_name',
     NEW.raw_user_meta_data->>'avatar_url'
   );
