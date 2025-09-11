@@ -1,0 +1,249 @@
+story:
+  id: "STORY-004"
+  title: "Basic Community Creation"
+  epic: "1 - Foundation & Core Infrastructure"
+  priority: "P0-Critical"
+  points: 3
+  sprint: "2"
+  status: "ready"
+  assigned_to: ""
+  created_date: "2025-01-11"
+  start_date: ""
+  completion_date: ""
+
+user_story:
+  as_a: "community organizer"
+  i_want: "to create a basic community with name and description"
+  so_that: "I can start building my community on the platform"
+
+acceptance_criteria:
+  - given: "I am an authenticated user"
+    when: "I navigate to the create community page"
+    then: "I see a form with fields for community name, description, and category"
+  - given: "I fill in valid community details"
+    when: "I submit the form"
+    then: "A new community is created with a unique URL slug"
+  - given: "I try to create a community with a duplicate name"
+    when: "I submit the form"
+    then: "The system generates a unique slug by appending numbers"
+  - given: "I am the community creator"
+    when: "I view my community"
+    then: "I see admin controls and can edit community settings"
+
+technical_specification:
+  database_changes:
+    - table: "communities"
+      changes: |
+        CREATE TABLE communities (
+          id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+          name text NOT NULL,
+          slug text UNIQUE NOT NULL,
+          description text,
+          category text,
+          organizer_id uuid REFERENCES auth.users NOT NULL,
+          settings jsonb DEFAULT '{}',
+          member_count integer DEFAULT 0,
+          is_active boolean DEFAULT true,
+          created_at timestamptz DEFAULT now(),
+          updated_at timestamptz DEFAULT now()
+        );
+        CREATE INDEX idx_communities_slug ON communities(slug);
+        CREATE INDEX idx_communities_organizer ON communities(organizer_id);
+  api_endpoints:
+    - method: "POST"
+      path: "/api/communities"
+      purpose: "Create new community"
+      request_body: 
+        name: "string"
+        description: "string"
+        category: "string"
+      response:
+        id: "uuid"
+        slug: "string"
+        created_at: "timestamp"
+    - method: "GET"
+      path: "/api/communities/[slug]"
+      purpose: "Get community details"
+      request_body: {}
+      response:
+        id: "uuid"
+        name: "string"
+        description: "string"
+        slug: "string"
+        organizer_id: "uuid"
+        member_count: "number"
+    - method: "GET"
+      path: "/api/communities/check-slug"
+      purpose: "Check if slug is available"
+      request_body:
+        slug: "string"
+      response:
+        available: "boolean"
+        suggestion: "string"
+  components:
+    - name: "CommunityCreatePage"
+      type: "page"
+      path: "/app/(dashboard)/communities/new/page.tsx"
+      purpose: "Page for creating new community"
+    - name: "CommunityCreateForm"
+      type: "component"
+      path: "/components/community/CommunityCreateForm.tsx"
+      purpose: "Form component with validation"
+    - name: "SlugGenerator"
+      type: "utility"
+      path: "/lib/utils/slug-generator.ts"
+      purpose: "Generate unique URL-safe slugs"
+  libraries_required:
+    - name: "slugify"
+      version: "^1.6.6"
+      purpose: "URL-safe slug generation"
+    - name: "zod"
+      version: "^3.22.4"
+      purpose: "Schema validation"
+
+implementation_plan:
+  estimated_hours: 5
+  phases:
+    - phase: "Database Setup"
+      tasks:
+        - [ ] Create communities table migration
+        - [ ] Set up RLS policies for communities
+        - [ ] Add database triggers for updated_at
+    - phase: "API Implementation"
+      tasks:
+        - [ ] Implement POST /api/communities endpoint
+        - [ ] Implement GET /api/communities/[slug] endpoint
+        - [ ] Add slug availability checker
+        - [ ] Implement rate limiting middleware
+    - phase: "UI Components"
+      tasks:
+        - [ ] Create community creation page
+        - [ ] Build CommunityCreateForm component
+        - [ ] Add form validation with Zod
+        - [ ] Implement loading and error states
+    - phase: "Testing"
+      tasks:
+        - [ ] Write unit tests for slug generation
+        - [ ] Test API endpoints
+        - [ ] Test form validation
+        - [ ] E2E test for complete flow
+
+dependencies:
+  blocking: ["STORY-002", "STORY-003"] # Auth and Database must be complete
+  blocked_by: ["STORY-005", "STORY-007"] # Branding and Invitations depend on this
+  external: ["Supabase Auth", "PostgreSQL"]
+
+test_scenarios:
+  unit_tests:
+    - component: "SlugGenerator"
+      test: "Generate unique slug from name"
+      expected: "Returns URL-safe slug"
+    - component: "CommunityCreateForm"
+      test: "Validate required fields"
+      expected: "Shows error for empty name"
+  integration_tests:
+    - scenario: "Create community successfully"
+      steps:
+        - "Login as user"
+        - "Navigate to /communities/new"
+        - "Fill in valid community details"
+        - "Submit form"
+      expected: "Redirect to new community page with success message"
+    - scenario: "Handle duplicate community names"
+      steps:
+        - "Create community with name 'Test Club'"
+        - "Try to create another with same name"
+      expected: "Second community gets slug 'test-club-2'"
+  edge_cases:
+    - scenario: "Special characters in name"
+      steps:
+        - "Enter name with emojis and symbols"
+      expected: "Slug contains only alphanumeric and hyphens"
+    - scenario: "Rate limiting"
+      steps:
+        - "Attempt to create 11 communities rapidly"
+      expected: "11th attempt blocked with rate limit error"
+
+performance_requirements:
+  - metric: "Community creation time"
+    target: "<1s"
+  - metric: "Slug generation"
+    target: "<50ms"
+  - metric: "Page load time"
+    target: "<2s"
+
+security_considerations:
+  - aspect: "Authentication"
+    requirement: "User must be authenticated to create community"
+  - aspect: "Authorization"
+    requirement: "Only community organizer can edit settings"
+  - aspect: "Data validation"
+    requirement: "Sanitize all input, prevent XSS in descriptions"
+  - aspect: "Rate limiting"
+    requirement: "Max 10 communities per user per day"
+
+definition_of_done:
+  development:
+    - [ ] Code complete and follows standards
+    - [ ] TypeScript types defined
+    - [ ] Error handling implemented
+    - [ ] Loading states implemented
+    - [ ] Mobile responsive
+  testing:
+    - [ ] Unit tests written and passing (>80% coverage)
+    - [ ] Integration tests passing
+    - [ ] Manual testing completed
+    - [ ] Cross-browser testing done
+  documentation:
+    - [ ] Code comments added
+    - [ ] README updated if needed
+    - [ ] API documentation updated
+  review:
+    - [ ] Code reviewed and approved
+    - [ ] Design reviewed (if UI changes)
+    - [ ] Security review passed
+  deployment:
+    - [ ] Deployed to staging
+    - [ ] QA tested and approved
+    - [ ] Product Owner accepted
+    - [ ] No P0 or P1 bugs
+
+rollback_plan:
+  - step: "Revert database migration if issues"
+  - step: "Restore previous API version"
+  - step: "Clear CDN cache"
+
+monitoring:
+  metrics_to_track:
+    - "Community creation success rate"
+    - "Average time to create community"
+    - "Slug collision frequency"
+  alerts_to_setup:
+    - "Failed community creation > 10/hour"
+    - "Database query time > 1s"
+  logs_to_implement:
+    - "Community creation attempts"
+    - "Slug generation conflicts"
+    - "Rate limit violations"
+
+dev_notes:
+  implementation_tips:
+    - "Use database transaction for atomic community creation"
+    - "Cache slug availability checks for 5 minutes"
+    - "Consider using optimistic UI updates"
+  potential_issues:
+    - "Slug collisions under high load - use retry logic"
+    - "Special characters in community names need careful handling"
+  references:
+    - "Supabase RLS documentation"
+    - "Next.js Server Actions guide"
+    - "Slugify library documentation"
+
+dev_agent_record:
+  agent_model_used: ""
+  debug_log_references: []
+  completion_notes: []
+  file_list: []
+  change_summary: []
+  test_results: []
+  deployment_notes: ""

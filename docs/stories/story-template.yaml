@@ -6,6 +6,10 @@ story:
   points: 0 # 1, 2, 3, 5, 8, 13
   sprint: ""
   status: "draft" # draft, ready, in-progress, blocked, ready-for-review, done
+  assigned_to: "" # Developer name/ID
+  created_date: ""
+  start_date: ""
+  completion_date: ""
 
 user_story:
   as_a: ""
@@ -20,44 +24,132 @@ acceptance_criteria:
     when: ""
     then: ""
 
-technical_notes:
-  - ""
-  - ""
+technical_specification:
+  database_changes:
+    - table: ""
+      changes: ""
+  api_endpoints:
+    - method: ""
+      path: ""
+      purpose: ""
+      request_body: {}
+      response: {}
+  components:
+    - name: ""
+      type: "" # page, component, hook, utility
+      path: ""
+      purpose: ""
+  libraries_required:
+    - name: ""
+      version: ""
+      purpose: ""
+
+implementation_plan:
+  estimated_hours: 0
+  phases:
+    - phase: "Setup"
+      tasks:
+        - [ ] Task description
+        - [ ] Another task
+    - phase: "Implementation"
+      tasks:
+        - [ ] Core functionality
+        - [ ] UI components
+    - phase: "Testing"
+      tasks:
+        - [ ] Unit tests
+        - [ ] Integration tests
 
 dependencies:
-  - ""
-
-tasks:
-  - [ ] Task 1
-    - [ ] Subtask 1.1
-    - [ ] Subtask 1.2
-  - [ ] Task 2
-    - [ ] Subtask 2.1
-  - [ ] Task 3
+  blocking: [] # Stories that must be completed first
+  blocked_by: [] # Stories waiting for this one
+  external: [] # External dependencies (APIs, services)
 
 test_scenarios:
-  - scenario: "Happy path"
-    steps:
-      - ""
-    expected: ""
-  - scenario: "Error case"
-    steps:
-      - ""
-    expected: ""
+  unit_tests:
+    - component: ""
+      test: ""
+      expected: ""
+  integration_tests:
+    - scenario: "Happy path"
+      steps:
+        - ""
+      expected: ""
+  edge_cases:
+    - scenario: ""
+      steps:
+        - ""
+      expected: ""
+
+performance_requirements:
+  - metric: "Page load time"
+    target: "<2s"
+  - metric: "API response time"
+    target: "<200ms"
+
+security_considerations:
+  - aspect: "Authentication"
+    requirement: ""
+  - aspect: "Authorization"
+    requirement: ""
+  - aspect: "Data validation"
+    requirement: ""
 
 definition_of_done:
-  - [ ] Code complete and follows standards
-  - [ ] Unit tests written and passing
-  - [ ] Integration tests passing
-  - [ ] Code reviewed and approved
-  - [ ] Documentation updated
-  - [ ] Deployed to staging
-  - [ ] QA tested and approved
-  - [ ] Product Owner accepted
+  development:
+    - [ ] Code complete and follows standards
+    - [ ] TypeScript types defined
+    - [ ] Error handling implemented
+    - [ ] Loading states implemented
+    - [ ] Mobile responsive
+  testing:
+    - [ ] Unit tests written and passing (>80% coverage)
+    - [ ] Integration tests passing
+    - [ ] Manual testing completed
+    - [ ] Cross-browser testing done
+  documentation:
+    - [ ] Code comments added
+    - [ ] README updated if needed
+    - [ ] API documentation updated
+  review:
+    - [ ] Code reviewed and approved
+    - [ ] Design reviewed (if UI changes)
+    - [ ] Security review passed
+  deployment:
+    - [ ] Deployed to staging
+    - [ ] QA tested and approved
+    - [ ] Product Owner accepted
+    - [ ] No P0 or P1 bugs
+
+rollback_plan:
+  - step: ""
+  - step: ""
+
+monitoring:
+  metrics_to_track:
+    - ""
+  alerts_to_setup:
+    - ""
+  logs_to_implement:
+    - ""
+
+dev_notes:
+  implementation_tips:
+    - ""
+  potential_issues:
+    - ""
+  references:
+    - ""
 
 dev_agent_record:
   agent_model_used: ""
   debug_log_references: []
   completion_notes: []
   file_list: []
-  change_log: []
+  change_summary:
+    - file: ""
+      changes: ""
+  test_results:
+    - test: ""
+      status: ""
+  deployment_notes: ""

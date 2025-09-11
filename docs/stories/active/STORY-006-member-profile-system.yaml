@@ -1,0 +1,303 @@
+story:
+  id: "STORY-006"
+  title: "Member Profile System"
+  epic: "2 - Community & Member Management"
+  priority: "P1-High"
+  points: 3
+  sprint: "2"
+  status: "ready"
+  assigned_to: ""
+  created_date: "2025-01-11"
+  start_date: ""
+  completion_date: ""
+
+user_story:
+  as_a: "community member"
+  i_want: "to create and manage my profile"
+  so_that: "other community members can know who I am and connect with me"
+
+acceptance_criteria:
+  - given: "I am a new user"
+    when: "I sign up for the platform"
+    then: "A basic profile is automatically created with my email"
+  - given: "I want to complete my profile"
+    when: "I access profile settings"
+    then: "I can add name, bio, location, interests, and social links"
+  - given: "I want to upload a profile picture"
+    when: "I click on avatar upload"
+    then: "I can upload, crop, and save my profile image"
+  - given: "I set my profile to private"
+    when: "Other members view my profile"
+    then: "They only see basic information (name and avatar)"
+  - given: "I update my profile"
+    when: "I save changes"
+    then: "Updates are reflected immediately across all communities"
+
+technical_specification:
+  database_changes:
+    - table: "profiles"
+      changes: |
+        ALTER TABLE profiles
+        ADD COLUMN display_name text,
+        ADD COLUMN bio text,
+        ADD COLUMN avatar_url text,
+        ADD COLUMN location text,
+        ADD COLUMN interests text[],
+        ADD COLUMN social_links jsonb DEFAULT '{}',
+        ADD COLUMN privacy_level text DEFAULT 'public' CHECK (privacy_level IN ('public', 'members_only', 'private')),
+        ADD COLUMN profile_complete boolean DEFAULT false,
+        ADD COLUMN last_active timestamptz DEFAULT now(),
+        ADD COLUMN member_since timestamptz DEFAULT now(),
+        ADD COLUMN metadata jsonb DEFAULT '{}';
+        
+        CREATE INDEX idx_profiles_display_name ON profiles(display_name);
+        CREATE INDEX idx_profiles_interests ON profiles USING GIN(interests);
+    - table: "profile_views"
+      changes: |
+        CREATE TABLE profile_views (
+          id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+          profile_id uuid REFERENCES profiles NOT NULL,
+          viewer_id uuid REFERENCES profiles,
+          viewed_at timestamptz DEFAULT now()
+        );
+  api_endpoints:
+    - method: "GET"
+      path: "/api/profile"
+      purpose: "Get current user profile"
+      request_body: {}
+      response:
+        profile: "object"
+        completion_percentage: "number"
+    - method: "GET"
+      path: "/api/profile/[id]"
+      purpose: "Get specific user profile"
+      request_body: {}
+      response:
+        profile: "object"
+        is_following: "boolean"
+        shared_communities: "array"
+    - method: "PATCH"
+      path: "/api/profile"
+      purpose: "Update user profile"
+      request_body:
+        display_name: "string?"
+        bio: "string?"
+        location: "string?"
+        interests: "array?"
+        social_links: "object?"
+        privacy_level: "string?"
+      response:
+        success: "boolean"
+        profile: "object"
+    - method: "POST"
+      path: "/api/profile/avatar"
+      purpose: "Upload avatar image"
+      request_body:
+        file: "File"
+        crop_data: "object"
+      response:
+        avatar_url: "string"
+        thumbnail_url: "string"
+    - method: "POST"
+      path: "/api/profile/complete"
+      purpose: "Mark profile as complete"
+      request_body: {}
+      response:
+        completion_percentage: "number"
+        missing_fields: "array"
+  components:
+    - name: "ProfilePage"
+      type: "page"
+      path: "/app/(dashboard)/profile/page.tsx"
+      purpose: "User profile management page"
+    - name: "ProfileForm"
+      type: "component"
+      path: "/components/profile/ProfileForm.tsx"
+      purpose: "Profile editing form"
+    - name: "AvatarUpload"
+      type: "component"
+      path: "/components/profile/AvatarUpload.tsx"
+      purpose: "Avatar upload with crop functionality"
+    - name: "ProfileCard"
+      type: "component"
+      path: "/components/profile/ProfileCard.tsx"
+      purpose: "Display profile summary"
+    - name: "ProfileCompletionBar"
+      type: "component"
+      path: "/components/profile/ProfileCompletionBar.tsx"
+      purpose: "Visual completion indicator"
+    - name: "InterestsSelector"
+      type: "component"
+      path: "/components/profile/InterestsSelector.tsx"
+      purpose: "Tag-based interests picker"
+  libraries_required:
+    - name: "react-avatar-editor"
+      version: "^13.0.0"
+      purpose: "Avatar cropping and editing"
+    - name: "react-tag-input"
+      version: "^6.8.1"
+      purpose: "Interest tags input"
+    - name: "date-fns"
+      version: "^3.0.0"
+      purpose: "Date formatting for member since"
+
+implementation_plan:
+  estimated_hours: 5
+  phases:
+    - phase: "Database Setup"
+      tasks:
+        - [ ] Extend profiles table schema
+        - [ ] Create profile_views tracking table
+        - [ ] Update RLS policies for profile access
+        - [ ] Add trigger for profile completion calculation
+    - phase: "Profile Management API"
+      tasks:
+        - [ ] Implement profile GET endpoints
+        - [ ] Create profile update endpoint
+        - [ ] Build avatar upload handler
+        - [ ] Add profile completion calculator
+    - phase: "UI Components"
+      tasks:
+        - [ ] Create profile editing form
+        - [ ] Build avatar upload component
+        - [ ] Implement interests selector
+        - [ ] Add social links manager
+        - [ ] Create privacy settings
+    - phase: "Profile Display"
+      tasks:
+        - [ ] Build public profile view
+        - [ ] Create profile card component
+        - [ ] Add completion progress bar
+        - [ ] Implement activity indicators
+    - phase: "Testing"
+      tasks:
+        - [ ] Test avatar upload and cropping
+        - [ ] Verify privacy settings enforcement
+        - [ ] Test profile completion logic
+        - [ ] E2E test profile flow
+
+dependencies:
+  blocking: ["STORY-002", "STORY-003"] # Auth and Database required
+  blocked_by: [] 
+  external: ["Supabase Auth", "Supabase Storage"]
+
+test_scenarios:
+  unit_tests:
+    - component: "ProfileCompletionBar"
+      test: "Calculate completion percentage"
+      expected: "Accurate percentage based on filled fields"
+    - component: "AvatarUpload"
+      test: "Image crop coordinates"
+      expected: "Correctly crops and saves image"
+  integration_tests:
+    - scenario: "Complete profile setup"
+      steps:
+        - "Login as new user"
+        - "Navigate to profile"
+        - "Fill all profile fields"
+        - "Upload avatar"
+        - "Save profile"
+      expected: "Profile shows 100% complete"
+    - scenario: "Privacy settings enforcement"
+      steps:
+        - "Set profile to private"
+        - "Another user views profile"
+      expected: "Only name and avatar visible"
+  edge_cases:
+    - scenario: "Large bio text"
+      steps:
+        - "Enter 5000 character bio"
+      expected: "Truncated at 1000 chars with error"
+    - scenario: "Invalid image format"
+      steps:
+        - "Upload GIF for avatar"
+      expected: "Error message, only JPG/PNG allowed"
+
+performance_requirements:
+  - metric: "Profile load time"
+    target: "<500ms"
+  - metric: "Avatar upload time"
+    target: "<2s for 5MB image"
+  - metric: "Profile update response"
+    target: "<300ms"
+
+security_considerations:
+  - aspect: "Privacy"
+    requirement: "Respect privacy settings in all queries"
+  - aspect: "Data validation"
+    requirement: "Sanitize bio and text fields for XSS"
+  - aspect: "File upload"
+    requirement: "Validate image types and sizes"
+  - aspect: "Rate limiting"
+    requirement: "Max 10 profile updates per hour"
+
+definition_of_done:
+  development:
+    - [ ] Code complete and follows standards
+    - [ ] TypeScript types defined
+    - [ ] Error handling implemented
+    - [ ] Loading states implemented
+    - [ ] Mobile responsive
+  testing:
+    - [ ] Unit tests written and passing (>80% coverage)
+    - [ ] Integration tests passing
+    - [ ] Manual testing completed
+    - [ ] Cross-browser testing done
+  documentation:
+    - [ ] Code comments added
+    - [ ] README updated if needed
+    - [ ] API documentation updated
+  review:
+    - [ ] Code reviewed and approved
+    - [ ] Design reviewed (if UI changes)
+    - [ ] Security review passed
+  deployment:
+    - [ ] Deployed to staging
+    - [ ] QA tested and approved
+    - [ ] Product Owner accepted
+    - [ ] No P0 or P1 bugs
+
+rollback_plan:
+  - step: "Revert database schema changes"
+  - step: "Restore previous profile components"
+  - step: "Clear avatar CDN cache"
+
+monitoring:
+  metrics_to_track:
+    - "Profile completion rate"
+    - "Avatar upload success rate"
+    - "Profile view count"
+    - "Average completion percentage"
+  alerts_to_setup:
+    - "Avatar upload failures > 10/hour"
+    - "Profile API errors > 5% of requests"
+    - "Database query time > 1s"
+  logs_to_implement:
+    - "Profile updates with changed fields"
+    - "Avatar upload attempts"
+    - "Privacy setting changes"
+    - "Profile view tracking"
+
+dev_notes:
+  implementation_tips:
+    - "Use React Hook Form for profile form management"
+    - "Implement progressive image loading for avatars"
+    - "Cache profile data in React Query"
+    - "Use debouncing for interest tag search"
+  potential_issues:
+    - "Avatar processing can be CPU intensive - use worker"
+    - "Interest suggestions need good dataset"
+    - "Social link validation needs URL parsing"
+  references:
+    - "React Avatar Editor documentation"
+    - "Supabase RLS for user data"
+    - "Next.js Image component guide"
+
+dev_agent_record:
+  agent_model_used: ""
+  debug_log_references: []
+  completion_notes: []
+  file_list: []
+  change_summary: []
+  test_results: []
+  deployment_notes: ""

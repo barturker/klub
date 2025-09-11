@@ -1,0 +1,345 @@
+story:
+  id: "STORY-007"
+  title: "Member Invitation System"
+  epic: "2 - Community & Member Management"
+  priority: "P1-High"
+  points: 3
+  sprint: "2"
+  status: "ready"
+  assigned_to: ""
+  created_date: "2025-01-11"
+  start_date: ""
+  completion_date: ""
+
+user_story:
+  as_a: "community organizer"
+  i_want: "to invite people to join my community"
+  so_that: "I can grow my member base and build an engaged community"
+
+acceptance_criteria:
+  - given: "I am a community organizer"
+    when: "I access the invitation page"
+    then: "I can generate unique invitation links with optional expiration"
+  - given: "I have a list of emails"
+    when: "I use bulk invite feature"
+    then: "Invitation emails are sent to all valid addresses"
+  - given: "I share an invitation link"
+    when: "Someone clicks it"
+    then: "They are directed to join the community with pre-filled details"
+  - given: "An invitation expires"
+    when: "Someone tries to use it"
+    then: "They see an 'invitation expired' message"
+  - given: "I want to track invitations"
+    when: "I view invitation analytics"
+    then: "I see sent, accepted, and pending invitation statistics"
+
+technical_specification:
+  database_changes:
+    - table: "invitations"
+      changes: |
+        CREATE TABLE invitations (
+          id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+          community_id uuid REFERENCES communities NOT NULL,
+          token text UNIQUE NOT NULL,
+          email text,
+          max_uses integer DEFAULT 1,
+          uses_count integer DEFAULT 0,
+          expires_at timestamptz,
+          created_by uuid REFERENCES auth.users NOT NULL,
+          metadata jsonb DEFAULT '{}',
+          created_at timestamptz DEFAULT now()
+        );
+        CREATE INDEX idx_invitations_token ON invitations(token);
+        CREATE INDEX idx_invitations_community ON invitations(community_id);
+    - table: "invitation_uses"
+      changes: |
+        CREATE TABLE invitation_uses (
+          id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+          invitation_id uuid REFERENCES invitations NOT NULL,
+          user_id uuid REFERENCES auth.users,
+          email text,
+          accepted_at timestamptz DEFAULT now(),
+          ip_address inet,
+          user_agent text
+        );
+    - table: "invitation_analytics"
+      changes: |
+        CREATE TABLE invitation_analytics (
+          id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+          invitation_id uuid REFERENCES invitations NOT NULL,
+          event_type text NOT NULL, -- sent, opened, clicked, accepted
+          event_data jsonb DEFAULT '{}',
+          created_at timestamptz DEFAULT now()
+        );
+  api_endpoints:
+    - method: "POST"
+      path: "/api/communities/[id]/invitations"
+      purpose: "Create new invitation"
+      request_body:
+        type: "string" # link, email, bulk
+        emails: "array?"
+        expires_in_days: "number?"
+        max_uses: "number?"
+        message: "string?"
+      response:
+        invitation_id: "uuid"
+        token: "string"
+        invite_url: "string"
+        expires_at: "timestamp"
+    - method: "GET"
+      path: "/api/invitations/[token]"
+      purpose: "Validate invitation token"
+      request_body: {}
+      response:
+        valid: "boolean"
+        community: "object"
+        expires_at: "timestamp"
+        remaining_uses: "number"
+    - method: "POST"
+      path: "/api/invitations/[token]/accept"
+      purpose: "Accept invitation"
+      request_body:
+        user_id: "uuid?"
+      response:
+        success: "boolean"
+        community_id: "uuid"
+        redirect_url: "string"
+    - method: "GET"
+      path: "/api/communities/[id]/invitations"
+      purpose: "List all invitations"
+      request_body: {}
+      response:
+        invitations: "array"
+        stats: "object"
+    - method: "DELETE"
+      path: "/api/invitations/[id]"
+      purpose: "Revoke invitation"
+      request_body: {}
+      response:
+        success: "boolean"
+    - method: "POST"
+      path: "/api/invitations/bulk"
+      purpose: "Send bulk email invitations"
+      request_body:
+        community_id: "uuid"
+        emails: "array"
+        message: "string?"
+      response:
+        sent: "number"
+        failed: "array"
+        invitation_ids: "array"
+  components:
+    - name: "InvitationsPage"
+      type: "page"
+      path: "/app/(dashboard)/communities/[slug]/invitations/page.tsx"
+      purpose: "Manage community invitations"
+    - name: "InvitationGenerator"
+      type: "component"
+      path: "/components/invitations/InvitationGenerator.tsx"
+      purpose: "Create invitation links"
+    - name: "BulkInviteModal"
+      type: "component"
+      path: "/components/invitations/BulkInviteModal.tsx"
+      purpose: "Bulk email invitation interface"
+    - name: "InvitationList"
+      type: "component"
+      path: "/components/invitations/InvitationList.tsx"
+      purpose: "Display and manage invitations"
+    - name: "InvitationAcceptPage"
+      type: "page"
+      path: "/app/invite/[token]/page.tsx"
+      purpose: "Accept invitation flow"
+    - name: "InvitationAnalytics"
+      type: "component"
+      path: "/components/invitations/InvitationAnalytics.tsx"
+      purpose: "Show invitation statistics"
+    - name: "QRCodeGenerator"
+      type: "component"
+      path: "/components/invitations/QRCodeGenerator.tsx"
+      purpose: "Generate QR codes for events"
+  libraries_required:
+    - name: "nanoid"
+      version: "^5.0.4"
+      purpose: "Generate unique invitation tokens"
+    - name: "qrcode"
+      version: "^1.5.3"
+      purpose: "Generate QR codes"
+    - name: "@react-email/components"
+      version: "^0.0.12"
+      purpose: "Email templates"
+    - name: "resend"
+      version: "^2.0.0"
+      purpose: "Email delivery service"
+    - name: "papaparse"
+      version: "^5.4.1"
+      purpose: "CSV parsing for bulk import"
+
+implementation_plan:
+  estimated_hours: 5
+  phases:
+    - phase: "Database Setup"
+      tasks:
+        - [ ] Create invitations tables
+        - [ ] Set up RLS policies
+        - [ ] Add cleanup job for expired invitations
+    - phase: "Invitation Generation"
+      tasks:
+        - [ ] Build token generation service
+        - [ ] Create invitation link builder
+        - [ ] Implement QR code generator
+        - [ ] Add expiration logic
+    - phase: "Email Integration"
+      tasks:
+        - [ ] Set up Resend API
+        - [ ] Create email templates
+        - [ ] Build bulk email sender
+        - [ ] Add email tracking
+    - phase: "UI Components"
+      tasks:
+        - [ ] Create invitation generator UI
+        - [ ] Build bulk invite modal
+        - [ ] Implement invitation list
+        - [ ] Add analytics dashboard
+    - phase: "Acceptance Flow"
+      tasks:
+        - [ ] Create invitation landing page
+        - [ ] Build acceptance workflow
+        - [ ] Handle existing vs new users
+        - [ ] Add success/error pages
+    - phase: "Testing"
+      tasks:
+        - [ ] Test token uniqueness
+        - [ ] Verify expiration logic
+        - [ ] Test email delivery
+        - [ ] E2E invitation flow
+
+dependencies:
+  blocking: ["STORY-004"] # Community must exist
+  blocked_by: []
+  external: ["Resend API", "Email service"]
+
+test_scenarios:
+  unit_tests:
+    - component: "TokenGenerator"
+      test: "Generate unique tokens"
+      expected: "No collisions in 10000 generations"
+    - component: "ExpirationChecker"
+      test: "Check invitation validity"
+      expected: "Correctly identifies expired invitations"
+  integration_tests:
+    - scenario: "Complete invitation flow"
+      steps:
+        - "Generate invitation link"
+        - "Share with new user"
+        - "User clicks link"
+        - "User signs up"
+        - "User joins community"
+      expected: "User becomes community member"
+    - scenario: "Bulk email invitations"
+      steps:
+        - "Upload CSV with 50 emails"
+        - "Send invitations"
+      expected: "All valid emails receive invitations"
+  edge_cases:
+    - scenario: "Expired invitation"
+      steps:
+        - "Create invitation with 1 hour expiry"
+        - "Try to use after 2 hours"
+      expected: "Show expiration message"
+    - scenario: "Max uses reached"
+      steps:
+        - "Create invitation with max_uses=5"
+        - "Use 5 times"
+        - "Try 6th use"
+      expected: "Show 'invitation no longer valid' message"
+
+performance_requirements:
+  - metric: "Invitation generation"
+    target: "<100ms"
+  - metric: "Bulk email sending"
+    target: "<30s for 100 emails"
+  - metric: "Token validation"
+    target: "<50ms"
+
+security_considerations:
+  - aspect: "Token security"
+    requirement: "Use cryptographically secure random tokens"
+  - aspect: "Rate limiting"
+    requirement: "Max 100 invitations per community per day"
+  - aspect: "Email validation"
+    requirement: "Verify email format and domain"
+  - aspect: "Spam prevention"
+    requirement: "Track and limit invitation abuse"
+
+definition_of_done:
+  development:
+    - [ ] Code complete and follows standards
+    - [ ] TypeScript types defined
+    - [ ] Error handling implemented
+    - [ ] Loading states implemented
+    - [ ] Mobile responsive
+  testing:
+    - [ ] Unit tests written and passing (>80% coverage)
+    - [ ] Integration tests passing
+    - [ ] Manual testing completed
+    - [ ] Cross-browser testing done
+  documentation:
+    - [ ] Code comments added
+    - [ ] README updated if needed
+    - [ ] API documentation updated
+  review:
+    - [ ] Code reviewed and approved
+    - [ ] Design reviewed (if UI changes)
+    - [ ] Security review passed
+  deployment:
+    - [ ] Deployed to staging
+    - [ ] QA tested and approved
+    - [ ] Product Owner accepted
+    - [ ] No P0 or P1 bugs
+
+rollback_plan:
+  - step: "Disable invitation endpoints"
+  - step: "Revert database tables"
+  - step: "Clear invitation email queue"
+  - step: "Notify affected users"
+
+monitoring:
+  metrics_to_track:
+    - "Invitation acceptance rate"
+    - "Time from invitation to join"
+    - "Email delivery success rate"
+    - "Token validation attempts"
+  alerts_to_setup:
+    - "Email delivery failures > 10%"
+    - "Invitation API errors > 5/min"
+    - "Database query time > 500ms"
+  logs_to_implement:
+    - "All invitation creations"
+    - "Email send attempts and results"
+    - "Token validation attempts"
+    - "Invitation acceptance events"
+
+dev_notes:
+  implementation_tips:
+    - "Use database transactions for invitation acceptance"
+    - "Implement retry logic for email sending"
+    - "Cache community data in invitation pages"
+    - "Use URL shortener for cleaner invitation links"
+  potential_issues:
+    - "Email deliverability - monitor spam scores"
+    - "Token collision possibility - use longer tokens"
+    - "Bulk invite can overwhelm email service - implement queuing"
+  references:
+    - "Resend API documentation"
+    - "React Email templates guide"
+    - "QR code best practices"
+    - "Email deliverability guide"
+
+dev_agent_record:
+  agent_model_used: ""
+  debug_log_references: []
+  completion_notes: []
+  file_list: []
+  change_summary: []
+  test_results: []
+  deployment_notes: ""

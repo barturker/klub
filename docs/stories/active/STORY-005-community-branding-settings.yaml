@@ -1,0 +1,281 @@
+story:
+  id: "STORY-005"
+  title: "Community Branding & Settings"
+  epic: "2 - Community & Member Management"
+  priority: "P1-High"
+  points: 4
+  sprint: "2"
+  status: "ready"
+  assigned_to: ""
+  created_date: "2025-01-11"
+  start_date: ""
+  completion_date: ""
+
+user_story:
+  as_a: "community organizer"
+  i_want: "to customize my community's appearance and settings"
+  so_that: "it reflects my brand and attracts the right members"
+
+acceptance_criteria:
+  - given: "I am the community organizer"
+    when: "I access community settings"
+    then: "I can edit name, description, category, and privacy settings"
+  - given: "I want to brand my community"
+    when: "I upload a logo image"
+    then: "It is resized, optimized, and displayed across the platform"
+  - given: "I select a color theme"
+    when: "I save the settings"
+    then: "The community pages reflect the chosen colors"
+  - given: "I change privacy to 'private'"
+    when: "Non-members try to access"
+    then: "They see a request to join page instead"
+  - given: "I update community settings"
+    when: "Members visit the community"
+    then: "They see the updated branding immediately"
+
+technical_specification:
+  database_changes:
+    - table: "communities"
+      changes: |
+        ALTER TABLE communities
+        ADD COLUMN logo_url text,
+        ADD COLUMN cover_image_url text,
+        ADD COLUMN theme_color text DEFAULT '#3B82F6',
+        ADD COLUMN privacy_level text DEFAULT 'public' CHECK (privacy_level IN ('public', 'private', 'invite_only')),
+        ADD COLUMN custom_domain text UNIQUE,
+        ADD COLUMN features jsonb DEFAULT '{"events": true, "discussions": true, "resources": true}';
+    - table: "community_settings_history"
+      changes: |
+        CREATE TABLE community_settings_history (
+          id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+          community_id uuid REFERENCES communities NOT NULL,
+          changed_by uuid REFERENCES auth.users NOT NULL,
+          changes jsonb NOT NULL,
+          changed_at timestamptz DEFAULT now()
+        );
+  api_endpoints:
+    - method: "PATCH"
+      path: "/api/communities/[id]/settings"
+      purpose: "Update community settings"
+      request_body:
+        name: "string?"
+        description: "string?"
+        category: "string?"
+        privacy_level: "string?"
+        theme_color: "string?"
+        features: "object?"
+      response:
+        success: "boolean"
+        updated_fields: "array"
+    - method: "POST"
+      path: "/api/communities/[id]/logo"
+      purpose: "Upload community logo"
+      request_body:
+        file: "File"
+      response:
+        logo_url: "string"
+        thumbnail_url: "string"
+    - method: "POST"
+      path: "/api/communities/[id]/cover"
+      purpose: "Upload cover image"
+      request_body:
+        file: "File"
+      response:
+        cover_url: "string"
+    - method: "GET"
+      path: "/api/communities/[id]/settings"
+      purpose: "Get all community settings"
+      request_body: {}
+      response:
+        settings: "object"
+        permissions: "object"
+  components:
+    - name: "CommunitySettingsPage"
+      type: "page"
+      path: "/app/(dashboard)/communities/[slug]/settings/page.tsx"
+      purpose: "Settings management page"
+    - name: "CommunitySettingsForm"
+      type: "component"
+      path: "/components/community/CommunitySettingsForm.tsx"
+      purpose: "Multi-tab settings form"
+    - name: "LogoUpload"
+      type: "component"
+      path: "/components/community/LogoUpload.tsx"
+      purpose: "Logo upload with preview and crop"
+    - name: "ThemeSelector"
+      type: "component"
+      path: "/components/community/ThemeSelector.tsx"
+      purpose: "Color theme picker"
+    - name: "PrivacySettings"
+      type: "component"
+      path: "/components/community/PrivacySettings.tsx"
+      purpose: "Privacy level configuration"
+  libraries_required:
+    - name: "react-image-crop"
+      version: "^11.0.1"
+      purpose: "Image cropping for logos"
+    - name: "sharp"
+      version: "^0.33.1"
+      purpose: "Server-side image optimization"
+    - name: "react-color"
+      version: "^2.19.3"
+      purpose: "Color picker component"
+
+implementation_plan:
+  estimated_hours: 6
+  phases:
+    - phase: "Database Updates"
+      tasks:
+        - [ ] Add new columns to communities table
+        - [ ] Create settings history table
+        - [ ] Update RLS policies for settings access
+    - phase: "File Upload Setup"
+      tasks:
+        - [ ] Configure Supabase Storage buckets
+        - [ ] Set up image optimization pipeline
+        - [ ] Implement file size/type validation
+        - [ ] Add virus scanning (if required)
+    - phase: "Settings UI"
+      tasks:
+        - [ ] Create tabbed settings interface
+        - [ ] Build general settings form
+        - [ ] Implement logo upload component
+        - [ ] Add theme color selector
+        - [ ] Create privacy settings panel
+    - phase: "API Implementation"
+      tasks:
+        - [ ] Settings update endpoint
+        - [ ] Logo upload handler
+        - [ ] Cover image upload handler
+        - [ ] Settings history tracking
+    - phase: "Testing & Polish"
+      tasks:
+        - [ ] Test image upload edge cases
+        - [ ] Verify theme application
+        - [ ] Test privacy enforcement
+        - [ ] Add success/error notifications
+
+dependencies:
+  blocking: ["STORY-004"] # Community must exist first
+  blocked_by: [] 
+  external: ["Supabase Storage", "CDN"]
+
+test_scenarios:
+  unit_tests:
+    - component: "LogoUpload"
+      test: "Validate file size limits"
+      expected: "Reject files over 5MB"
+    - component: "ThemeSelector"
+      test: "Apply theme colors"
+      expected: "CSS variables updated correctly"
+  integration_tests:
+    - scenario: "Complete branding update"
+      steps:
+        - "Upload new logo"
+        - "Select blue theme"
+        - "Update description"
+        - "Save all changes"
+      expected: "All changes reflected immediately"
+    - scenario: "Privacy level change"
+      steps:
+        - "Change from public to private"
+        - "Logout and try to access"
+      expected: "Non-members see join request page"
+  edge_cases:
+    - scenario: "Corrupted image upload"
+      steps:
+        - "Upload invalid image file"
+      expected: "Error message, no changes saved"
+    - scenario: "Simultaneous settings updates"
+      steps:
+        - "Two admins update settings at once"
+      expected: "Last write wins, history tracks both"
+
+performance_requirements:
+  - metric: "Image upload time"
+    target: "<3s for 5MB file"
+  - metric: "Settings save time"
+    target: "<500ms"
+  - metric: "Image optimization"
+    target: "<2s processing time"
+
+security_considerations:
+  - aspect: "File upload"
+    requirement: "Validate file type, scan for malware, limit size"
+  - aspect: "Authorization"
+    requirement: "Only organizers/admins can modify settings"
+  - aspect: "Image storage"
+    requirement: "Use signed URLs, expire after 1 hour"
+  - aspect: "Privacy enforcement"
+    requirement: "RLS policies respect privacy settings"
+
+definition_of_done:
+  development:
+    - [ ] Code complete and follows standards
+    - [ ] TypeScript types defined
+    - [ ] Error handling implemented
+    - [ ] Loading states implemented
+    - [ ] Mobile responsive
+  testing:
+    - [ ] Unit tests written and passing (>80% coverage)
+    - [ ] Integration tests passing
+    - [ ] Manual testing completed
+    - [ ] Cross-browser testing done
+  documentation:
+    - [ ] Code comments added
+    - [ ] README updated if needed
+    - [ ] API documentation updated
+  review:
+    - [ ] Code reviewed and approved
+    - [ ] Design reviewed (if UI changes)
+    - [ ] Security review passed
+  deployment:
+    - [ ] Deployed to staging
+    - [ ] QA tested and approved
+    - [ ] Product Owner accepted
+    - [ ] No P0 or P1 bugs
+
+rollback_plan:
+  - step: "Restore previous database schema"
+  - step: "Revert API endpoints"
+  - step: "Clear CDN cache for images"
+  - step: "Restore previous UI components"
+
+monitoring:
+  metrics_to_track:
+    - "Logo upload success rate"
+    - "Average image processing time"
+    - "Settings update frequency"
+    - "Storage usage growth"
+  alerts_to_setup:
+    - "Image processing failures > 5/hour"
+    - "Storage quota > 80%"
+    - "Settings API errors > 10/hour"
+  logs_to_implement:
+    - "All settings changes with before/after"
+    - "File upload attempts and results"
+    - "Privacy level changes"
+
+dev_notes:
+  implementation_tips:
+    - "Use optimistic UI updates for better UX"
+    - "Implement image lazy loading"
+    - "Cache community settings in Redis"
+    - "Use CSS custom properties for theming"
+  potential_issues:
+    - "Large image uploads may timeout - use chunked upload"
+    - "Theme colors need WCAG compliance check"
+    - "Storage costs can escalate - implement quotas"
+  references:
+    - "Supabase Storage documentation"
+    - "Next.js Image optimization guide"
+    - "React Hook Form file upload examples"
+
+dev_agent_record:
+  agent_model_used: ""
+  debug_log_references: []
+  completion_notes: []
+  file_list: []
+  change_summary: []
+  test_results: []
+  deployment_notes: ""
