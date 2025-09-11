@@ -14,6 +14,35 @@ export default async function DashboardPage() {
     redirect('/auth');
   }
 
+  // Fetch user's communities
+  const { data: communities, count: communitiesCount } = await supabase
+    .from('communities')
+    .select('*', { count: 'exact', head: false })
+    .eq('organizer_id', user.id);
+
+  // Fetch user's membership in communities
+  const { data: memberships, count: membershipsCount } = await supabase
+    .from('community_members')
+    .select('*', { count: 'exact', head: false })
+    .eq('user_id', user.id);
+
+  // Fetch user's upcoming events (through their communities)
+  const { data: events, count: eventsCount } = await supabase
+    .from('events')
+    .select('*', { count: 'exact', head: false })
+    .in('community_id', (communities || []).map(c => c.id))
+    .gte('start_at', new Date().toISOString())
+    .eq('status', 'published');
+
+  // Fetch user's tickets
+  const { data: tickets, count: ticketsCount } = await supabase
+    .from('tickets')
+    .select('*', { count: 'exact', head: false })
+    .eq('user_id', user.id)
+    .eq('status', 'confirmed');
+
+  const totalCommunities = (communitiesCount || 0) + (membershipsCount || 0);
+
   return (
     <div className="container mx-auto p-6">
       <div className="mb-8">
@@ -32,9 +61,11 @@ export default async function DashboardPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{totalCommunities}</div>
             <p className="text-xs text-muted-foreground">
-              Create your first community
+              {totalCommunities === 0 
+                ? "Create your first community"
+                : `${communitiesCount || 0} owned, ${membershipsCount || 0} joined`}
             </p>
             <Button className="mt-4 w-full" asChild>
               <Link href="/communities/new">Create Community</Link>
@@ -50,9 +81,9 @@ export default async function DashboardPage() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{eventsCount || 0}</div>
             <p className="text-xs text-muted-foreground">
-              No upcoming events
+              {eventsCount === 0 ? "No upcoming events" : "Upcoming events"}
             </p>
             <Button className="mt-4 w-full" variant="outline" asChild>
               <Link href="/events">Browse Events</Link>
@@ -68,9 +99,9 @@ export default async function DashboardPage() {
             <Ticket className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{ticketsCount || 0}</div>
             <p className="text-xs text-muted-foreground">
-              No active tickets
+              {ticketsCount === 0 ? "No active tickets" : "Active tickets"}
             </p>
             <Button className="mt-4 w-full" variant="outline" asChild>
               <Link href="/tickets">My Tickets</Link>
