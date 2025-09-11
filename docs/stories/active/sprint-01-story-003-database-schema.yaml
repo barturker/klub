@@ -1,0 +1,122 @@
+story:
+  id: "STORY-003"
+  title: "Database Schema Setup"
+  epic: "Epic 1: Foundation & Core Infrastructure"
+  priority: "P0-Critical"
+  points: 3
+  sprint: "Sprint 1"
+  status: "ready"
+
+user_story:
+  as_a: "developer"
+  i_want: "a properly structured database schema"
+  so_that: "I can store and retrieve all application data efficiently"
+
+acceptance_criteria:
+  - given: "I access Supabase SQL editor"
+    when: "I run the schema creation script"
+    then: "All tables are created without errors"
+  - given: "Tables are created"
+    when: "I check the structure"
+    then: "All required columns and relationships exist"
+  - given: "RLS is required"
+    when: "I check table policies"
+    then: "Row Level Security is enabled with proper policies"
+  - given: "I need to test the schema"
+    when: "I insert test data"
+    then: "Data is stored and retrieved correctly"
+  - given: "Users sign up"
+    when: "A new auth user is created"
+    then: "A profile is automatically generated"
+
+technical_notes:
+  - "Use UUID for all primary keys"
+  - "Enable RLS on all tables"
+  - "Use TIMESTAMPTZ for all timestamps"
+  - "Create indexes for foreign keys and slugs"
+  - "Use triggers for updated_at timestamps"
+  - "Follow Supabase best practices"
+
+dependencies:
+  - "Story 002 completed (authentication system)"
+  - "Supabase project accessible"
+
+tasks:
+  - [ ] Create core tables
+    - [ ] Create communities table with all fields
+    - [ ] Create events table with relationships
+    - [ ] Create tickets table for purchases
+    - [ ] Add proper data types and constraints
+  - [ ] Set up relationships
+    - [ ] Add foreign key constraints
+    - [ ] Create junction tables if needed
+    - [ ] Verify cascade delete rules
+    - [ ] Test relationship integrity
+  - [ ] Enable Row Level Security
+    - [ ] Enable RLS on all tables
+    - [ ] Create public read policies where appropriate
+    - [ ] Create user-specific write policies
+    - [ ] Test policy effectiveness
+  - [ ] Create indexes
+    - [ ] Add index on community slugs
+    - [ ] Add index on event dates
+    - [ ] Add index on foreign keys
+    - [ ] Verify query performance
+  - [ ] Set up triggers
+    - [ ] Create updated_at trigger function
+    - [ ] Apply trigger to all tables
+    - [ ] Test trigger functionality
+    - [ ] Verify automatic timestamps work
+  - [ ] Generate TypeScript types
+    - [ ] Use Supabase CLI to generate types
+    - [ ] Create types file in lib/supabase
+    - [ ] Import types in relevant files
+    - [ ] Verify type safety
+
+test_scenarios:
+  - scenario: "Schema creation"
+    steps:
+      - "Drop all tables if exist"
+      - "Run schema SQL script"
+      - "Check Supabase dashboard"
+    expected: "All tables created with correct structure"
+  - scenario: "RLS policies"
+    steps:
+      - "Try to read communities as anonymous"
+      - "Try to read as authenticated user"
+      - "Try to write as non-owner"
+    expected: "Policies enforce correct access control"
+  - scenario: "Data insertion"
+    steps:
+      - "Insert a community"
+      - "Insert an event for that community"
+      - "Insert a ticket purchase"
+    expected: "All data saved with proper relationships"
+  - scenario: "Cascade deletion"
+    steps:
+      - "Create community with events"
+      - "Delete the community"
+    expected: "Related events are also deleted"
+  - scenario: "Type generation"
+    steps:
+      - "Run supabase gen types"
+      - "Import in TypeScript file"
+    expected: "Full type safety with IntelliSense"
+
+definition_of_done:
+  - [ ] Code complete and follows standards
+  - [ ] All tables created successfully
+  - [ ] RLS policies implemented and tested
+  - [ ] Indexes improve query performance
+  - [ ] Triggers work automatically
+  - [ ] TypeScript types generated
+  - [ ] Test data can be inserted
+  - [ ] Documentation updated with schema
+  - [ ] No SQL errors in execution
+
+dev_agent_record:
+  agent_model_used: ""
+  debug_log_references: []
+  completion_notes: []
+  file_list: []
+  change_log: []

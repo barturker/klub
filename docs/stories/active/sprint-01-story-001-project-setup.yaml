@@ -1,0 +1,109 @@
+story:
+  id: "STORY-001"
+  title: "Project Setup & Initial Configuration"
+  epic: "Epic 1: Foundation & Core Infrastructure"
+  priority: "P0-Critical"
+  points: 3
+  sprint: "Sprint 1"
+  status: "ready"
+
+user_story:
+  as_a: "developer"
+  i_want: "a properly configured Next.js project with all necessary dependencies"
+  so_that: "I can begin implementing features with a solid foundation"
+
+acceptance_criteria:
+  - given: "I have Node.js 18+ installed"
+    when: "I run the setup commands"
+    then: "A new Next.js 14 app is created with TypeScript and Tailwind"
+  - given: "The project is initialized"
+    when: "I install dependencies"
+    then: "All required packages are installed without conflicts"
+  - given: "Environment variables are needed"
+    when: "I create .env.local"
+    then: "Supabase and Stripe keys are properly configured"
+  - given: "The project is ready"
+    when: "I run npm run dev"
+    then: "The development server starts on localhost:3000"
+  - given: "Code is pushed to GitHub"
+    when: "Vercel is connected"
+    then: "Automatic deployment is triggered"
+
+technical_notes:
+  - "Use Next.js 14 with App Router (not Pages Router)"
+  - "Enable TypeScript strict mode"
+  - "Configure path aliases in tsconfig.json"
+  - "Set up ESLint and Prettier with recommended rules"
+  - "Create initial folder structure as per architecture docs"
+
+dependencies:
+  - "Node.js 18+ installed"
+  - "GitHub account created"
+  - "Vercel account created"
+  - "Supabase project created (free tier)"
+
+tasks:
+  - [ ] Initialize Next.js project
+    - [ ] Run npx create-next-app@latest with correct flags
+    - [ ] Verify TypeScript and Tailwind are configured
+    - [ ] Test development server starts
+  - [ ] Install core dependencies
+    - [ ] Install Supabase client libraries
+    - [ ] Install Stripe libraries
+    - [ ] Install form handling libraries (react-hook-form, zod)
+    - [ ] Install UI notification library (sonner)
+  - [ ] Configure project structure
+    - [ ] Create lib/ directory for utilities
+    - [ ] Create components/ directory structure
+    - [ ] Create app/ directory structure per architecture
+    - [ ] Set up path aliases (@/ imports)
+  - [ ] Set up environment variables
+    - [ ] Create .env.local file
+    - [ ] Add Supabase URL and anon key
+    - [ ] Add .env.example for team reference
+    - [ ] Verify gitignore includes .env.local
+  - [ ] Configure development tools
+    - [ ] Set up ESLint configuration
+    - [ ] Set up Prettier configuration
+    - [ ] Add format and lint scripts to package.json
+    - [ ] Configure VS Code settings (optional)
+  - [ ] Deploy to Vercel
+    - [ ] Push code to GitHub repository
+    - [ ] Connect GitHub repo to Vercel
+    - [ ] Configure environment variables in Vercel
+    - [ ] Verify preview deployment works
+
+test_scenarios:
+  - scenario: "Fresh installation"
+    steps:
+      - "Clone repository"
+      - "Run npm install"
+      - "Copy .env.example to .env.local"
+      - "Run npm run dev"
+    expected: "Server starts without errors on localhost:3000"
+  - scenario: "Build verification"
+    steps:
+      - "Run npm run build"
+      - "Check for build errors"
+    expected: "Build completes successfully with no errors"
+  - scenario: "Linting check"
+    steps:
+      - "Run npm run lint"
+    expected: "No linting errors (warnings acceptable)"
+
+definition_of_done:
+  - [ ] Code complete and follows standards
+  - [ ] Development server runs without errors
+  - [ ] Build process completes successfully
+  - [ ] Linting passes
+  - [ ] Environment variables documented
+  - [ ] Deployed to Vercel (preview URL available)
+  - [ ] README updated with setup instructions
+  - [ ] Team can clone and run locally
+
+dev_agent_record:
+  agent_model_used: ""
+  debug_log_references: []
+  completion_notes: []
+  file_list: []
+  change_log: []

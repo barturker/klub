@@ -1,0 +1,63 @@
+story:
+  id: "STORY-XXX"
+  title: ""
+  epic: ""
+  priority: "" # P0-Critical, P1-High, P2-Medium, P3-Low
+  points: 0 # 1, 2, 3, 5, 8, 13
+  sprint: ""
+  status: "draft" # draft, ready, in-progress, blocked, ready-for-review, done
+
+user_story:
+  as_a: ""
+  i_want: ""
+  so_that: ""
+
+acceptance_criteria:
+  - given: ""
+    when: ""
+    then: ""
+  - given: ""
+    when: ""
+    then: ""
+
+technical_notes:
+  - ""
+  - ""
+
+dependencies:
+  - ""
+
+tasks:
+  - [ ] Task 1
+    - [ ] Subtask 1.1
+    - [ ] Subtask 1.2
+  - [ ] Task 2
+    - [ ] Subtask 2.1
+  - [ ] Task 3
+
+test_scenarios:
+  - scenario: "Happy path"
+    steps:
+      - ""
+    expected: ""
+  - scenario: "Error case"
+    steps:
+      - ""
+    expected: ""
+
+definition_of_done:
+  - [ ] Code complete and follows standards
+  - [ ] Unit tests written and passing
+  - [ ] Integration tests passing
+  - [ ] Code reviewed and approved
+  - [ ] Documentation updated
+  - [ ] Deployed to staging
+  - [ ] QA tested and approved
+  - [ ] Product Owner accepted
+
+dev_agent_record:
+  agent_model_used: ""
+  debug_log_references: []
+  completion_notes: []
+  file_list: []
+  change_log: []

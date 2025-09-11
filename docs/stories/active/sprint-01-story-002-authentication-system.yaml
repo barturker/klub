@@ -1,0 +1,126 @@
+story:
+  id: "STORY-002"
+  title: "Authentication System Implementation"
+  epic: "Epic 1: Foundation & Core Infrastructure"
+  priority: "P0-Critical"
+  points: 5
+  sprint: "Sprint 1"
+  status: "ready"
+
+user_story:
+  as_a: "user"
+  i_want: "to create an account and securely log in"
+  so_that: "I can access the platform's features and manage my communities"
+
+acceptance_criteria:
+  - given: "I am a new user"
+    when: "I visit the auth page"
+    then: "I see options for email/password and Google login"
+  - given: "I provide valid credentials"
+    when: "I sign up"
+    then: "An account is created and I'm redirected to dashboard"
+  - given: "I have an account"
+    when: "I log in"
+    then: "I'm authenticated and session is maintained"
+  - given: "I'm logged in"
+    when: "I visit a protected route"
+    then: "I can access it without re-authenticating"
+  - given: "I'm not logged in"
+    when: "I visit a protected route"
+    then: "I'm redirected to the login page"
+  - given: "I forgot my password"
+    when: "I request a reset"
+    then: "I receive a magic link via email"
+
+technical_notes:
+  - "Use Supabase Auth for all authentication"
+  - "Implement both client and server-side auth checks"
+  - "Use Supabase Auth UI components for faster implementation"
+  - "Set up middleware for protected routes"
+  - "Configure OAuth with Google provider"
+  - "Store user sessions in cookies (handled by Supabase)"
+
+dependencies:
+  - "Story 001 completed (project setup)"
+  - "Supabase project configured"
+  - "Google OAuth app created (optional for MVP)"
+
+tasks:
+  - [ ] Set up Supabase client
+    - [ ] Create lib/supabase/client.ts for browser client
+    - [ ] Create lib/supabase/server.ts for server client
+    - [ ] Create lib/supabase/middleware.ts for auth middleware
+    - [ ] Add TypeScript types for Supabase
+  - [ ] Create authentication pages
+    - [ ] Create app/auth/page.tsx with Auth UI component
+    - [ ] Configure Auth UI appearance with Tailwind theme
+    - [ ] Set up redirect URLs for post-auth flow
+    - [ ] Add loading states during auth operations
+  - [ ] Implement auth flow
+    - [ ] Configure email/password authentication
+    - [ ] Set up Google OAuth provider (optional)
+    - [ ] Implement magic link authentication
+    - [ ] Handle auth callbacks properly
+  - [ ] Create protected routes
+    - [ ] Set up middleware.ts for route protection
+    - [ ] Create app/(dashboard) route group
+    - [ ] Implement layout with auth check
+    - [ ] Add user menu component with logout
+  - [ ] Set up user profiles
+    - [ ] Create profiles table in Supabase
+    - [ ] Set up trigger for automatic profile creation
+    - [ ] Add RLS policies for profiles
+    - [ ] Test profile creation on signup
+  - [ ] Handle auth states
+    - [ ] Create auth context/hook for client components
+    - [ ] Implement loading states during auth check
+    - [ ] Handle auth errors gracefully
+    - [ ] Add toast notifications for auth events
+
+test_scenarios:
+  - scenario: "New user signup"
+    steps:
+      - "Navigate to /auth"
+      - "Enter email and password"
+      - "Click Sign Up"
+      - "Verify email (if required)"
+    expected: "User created, profile generated, redirected to dashboard"
+  - scenario: "Existing user login"
+    steps:
+      - "Navigate to /auth"
+      - "Enter credentials"
+      - "Click Sign In"
+    expected: "User authenticated, redirected to intended page"
+  - scenario: "Protected route access"
+    steps:
+      - "Log out if logged in"
+      - "Try to access /dashboard"
+    expected: "Redirected to /auth with return URL preserved"
+  - scenario: "Session persistence"
+    steps:
+      - "Log in successfully"
+      - "Close browser tab"
+      - "Reopen application"
+    expected: "Still logged in, session maintained"
+  - scenario: "Logout flow"
+    steps:
+      - "Click logout from user menu"
+    expected: "Session cleared, redirected to home page"
+
+definition_of_done:
+  - [ ] Code complete and follows standards
+  - [ ] Users can sign up with email/password
+  - [ ] Users can log in and maintain session
+  - [ ] Protected routes require authentication
+  - [ ] Profile automatically created on signup
+  - [ ] Auth errors handled gracefully
+  - [ ] Loading states implemented
+  - [ ] Logout functionality works
+  - [ ] All test scenarios pass
+
+dev_agent_record:
+  agent_model_used: ""
+  debug_log_references: []
+  completion_notes: []
+  file_list: []
+  change_log: []
