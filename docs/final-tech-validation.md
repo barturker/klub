@@ -3,7 +3,7 @@
 ## 🎯 Core Technology Decisions - FINAL & LOCKED
 
 ### ✅ Frontend Stack
-- [x] **Framework:** Next.js 14 with App Router
+- [x] **Framework:** Next.js 15.5 with App Router + Turbopack
 - [x] **Styling:** Tailwind CSS
 - [x] **Language:** TypeScript
 - [x] **State:** Zustand (lightweight)
@@ -52,7 +52,7 @@
 ## 🚀 Modern Best Practices Check
 
 ### ✅ 2025 Standards
-- [x] **Server Components** - Using Next.js 14 App Router
+- [x] **Server Components** - Using Next.js 15.5 App Router
 - [x] **Edge Functions** - Vercel Edge Runtime
 - [x] **TypeScript** - Full type safety
 - [x] **Serverless** - No servers to manage
@@ -153,7 +153,7 @@ npm install stripe @stripe/stripe-js
 ## ✅ FINAL CONFIRMATION
 
 ### This Stack Is:
-- **Modern** ✅ - Latest Next.js 14, React 18, TypeScript
+- **Modern** ✅ - Latest Next.js 15.5, React 19, TypeScript 5.6
 - **Free** ✅ - $0/month for MVP
 - **Simple** ✅ - One framework, minimal dependencies  
 - **Scalable** ✅ - Handles 50K users on free tier
@@ -173,7 +173,7 @@ npx create-next-app@latest klub --typescript --tailwind --app
 ## 🚨 STOP PLANNING, START BUILDING!
 
 You have everything you need:
-- ✅ Modern tech stack (Next.js + Supabase)
+- ✅ Modern tech stack (Next.js 15.5 + Supabase)
 - ✅ Zero monthly costs
 - ✅ 14-day implementation plan
 - ✅ Clear feature scope
@@ -188,7 +188,7 @@ You have everything you need:
 ## 📝 Quick Reference Card
 
 ```yaml
-Frontend: Next.js 14 + Tailwind
+Frontend: Next.js 15.5 + Tailwind
 Backend: Supabase (PostgreSQL + Auth + Storage)
 Hosting: Vercel
 Payments: Stripe

@@ -1,17 +1,17 @@
 # ⚠️ CRITICAL - READ THIS FIRST
 
-## 🚨 IMPORTANT: Tech Stack Has Changed!
+## ✅ CLEAN SLATE IMPLEMENTATION
 
 **Date: January 11, 2025**
 
-We have completely migrated from the old expensive stack to a modern free-tier stack. Some documentation files are outdated and being updated.
+Documentation has been cleaned. We're using a modern free-tier stack with Next.js 15.5.
 
 ---
 
 ## ✅ CURRENT STACK (USE THIS)
 
 ### Core Technologies
-- **Frontend/Backend:** Next.js 14 with App Router
+- **Frontend/Backend:** Next.js 15.5 with App Router + Turbopack
 - **Database:** Supabase (PostgreSQL + Auth + Storage + Realtime)
 - **Hosting:** Vercel (serverless)
 - **Payments:** Stripe
@@ -37,27 +37,27 @@ These technologies appear in old docs but are NO LONGER USED:
 
 ## 📁 WHICH DOCUMENTS TO USE
 
-### ✅ USE THESE (UPDATED):
+### ✅ CLEAN DOCUMENTATION (USE THESE):
 1. **[simplified-mvp-plan.md](./simplified-mvp-plan.md)** - 14-day implementation plan
 2. **[modern-free-tech-stack.md](./architecture/modern-free-tech-stack.md)** - Current tech stack
 3. **[supabase-database-schema.md](./architecture/supabase-database-schema.md)** - Database design
 4. **[nextjs-source-tree.md](./architecture/nextjs-source-tree.md)** - Project structure
 5. **[final-tech-validation.md](./final-tech-validation.md)** - Final checklist
 
-### ✅ ALL OUTDATED FILES DELETED!
-All conflicting and outdated files have been removed. The remaining documentation is consistent and uses the modern stack.
+### ✅ CONFLICTING FILES REMOVED!
+All outdated and conflicting files have been deleted. Documentation is now consistent.
 
 ---
 
 ## 🚀 QUICK START (CORRECT WAY)
 
 ```bash
-# 1. Create Next.js app (NOT NestJS, NOT Nx monorepo)
-npx create-next-app@latest klub --typescript --tailwind --app
+# 1. Create Next.js 15.5 app with Turbopack
+npx create-next-app@latest klub --typescript --tailwind --app --turbo
 
 # 2. Install dependencies
 cd klub
-npm install @supabase/supabase-js @supabase/ssr stripe
+npm install @supabase/supabase-js @supabase/ssr stripe @stripe/stripe-js
 
 # 3. Setup Supabase (NOT AWS)
 # Go to supabase.com and create free project
