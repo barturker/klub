@@ -1,209 +1,182 @@
-# klub - Community Platform
+# Klub - Modern Community Management Platform
 
-Build and monetize your community with events, tickets, and memberships.
+A modern, scalable community management platform built with Next.js 15 and Supabase, designed for clubs, organizations, and communities to manage members, events, and engagement.
 
-## 🚀 Quick Start
+## 🎯 Project Status
+
+**Current Phase:** Clean Architecture Setup  
+**Stack Decision:** Next.js 15 + Supabase (FREE tier optimized)  
+**Implementation:** Starting fresh with correct tech stack
+
+## 🚀 Tech Stack (Free-Tier First)
+
+### Core Stack
+- **Frontend Framework:** Next.js 15 with App Router
+- **UI Components:** shadcn/ui + Tailwind CSS  
+- **Backend:** Supabase (PostgreSQL + Auth + Realtime + Storage)
+- **Hosting:** Vercel (free tier - 100GB bandwidth/month)
+- **Type Safety:** TypeScript 5.3+
+
+### Phase 2 Additions (When Needed)
+- **Mobile:** React Native + Expo
+- **Payments:** Stripe Connect
+- **Analytics:** PostHog (1M events/month free)
+- **Email:** Resend (100 emails/day free)
+
+## 📋 MVP Features (Sprint 1-3)
+
+### ✅ Foundation (Sprint 1)
+- [ ] Next.js 15 project setup with TypeScript
+- [ ] Supabase integration (auth, database, storage)
+- [ ] Basic authentication (email/password)
+- [ ] User profiles
+- [ ] Responsive design with Tailwind CSS
+
+### 📝 Core Features (Sprint 2)
+- [ ] Community creation
+- [ ] Member management
+- [ ] Event creation and RSVP
+- [ ] Basic forums/discussions
+
+### 🚀 Enhancement (Sprint 3)
+- [ ] PWA support
+- [ ] Social login (Google, GitHub)
+- [ ] Email notifications
+- [ ] Basic analytics dashboard
+
+## 🛠️ Getting Started
 
 ### Prerequisites
-- Node.js 18+
+```bash
+# Required
+- Node.js 18+ and npm
 - Git
+- Supabase account (free at supabase.com)
+
+# Optional (for deployment)
+- Vercel account (free at vercel.com)
 - GitHub account
-- Supabase account (free)
-- Vercel account (free)
-- Stripe account (free)
+```
 
-### Setup (10 minutes)
+### Quick Setup
 
+1. **Clone Repository**
 ```bash
-# 1. Clone and install
-git clone https://github.com/yourusername/klub.git
+git clone https://github.com/barturker/klub.git
 cd klub
-npm install
-
-# 2. Copy environment variables
-cp .env.example .env.local
-
-# 3. Setup Supabase
-# - Go to https://supabase.com
-# - Create new project (free)
-# - Copy URL and anon key to .env.local
-# - Run database migrations (see supabase/migrations)
-
-# 4. Setup Stripe
-# - Go to https://stripe.com
-# - Get test API keys
-# - Add to .env.local
-
-# 5. Run development server
-npm run dev
-
-# 6. Open http://localhost:3000
 ```
 
-### Deploy (5 minutes)
+2. **Create Supabase Project**
+- Go to [supabase.com](https://supabase.com)
+- Create new project (free)
+- Save your project URL and anon key
 
+3. **Environment Setup**
 ```bash
-# 1. Push to GitHub
-git add .
-git commit -m "Initial commit"
-git push origin main
-
-# 2. Deploy to Vercel
-# - Go to https://vercel.com
-# - Import GitHub repository
-# - Add environment variables
-# - Deploy!
-
-# Your app is now live at https://your-app.vercel.app
+cp .env.example .env.local
+# Edit .env.local with your Supabase credentials
 ```
 
-## 🛠 Tech Stack
+4. **Install Dependencies**
+```bash
+npm install
+```
 
-### Core Technologies
-- **Framework:** Next.js 14 (App Router)
-- **Database:** Supabase (PostgreSQL + Auth + Storage + Realtime)
-- **Hosting:** Vercel (Serverless)
-- **Payments:** Stripe Connect
-- **Styling:** Tailwind CSS
-- **Language:** TypeScript
-
-### Additional Services (All Free Tier)
-- **Email:** Resend (3K emails/month free)
-- **Analytics:** PostHog (1M events/month free)
-- **Error Tracking:** Sentry (5K errors/month free)
-- **Search:** PostgreSQL full-text search (built-in)
-
-### Cost: $0/month for MVP ✨
+5. **Run Development Server**
+```bash
+npm run dev
+# Open http://localhost:3000
+```
 
 ## 📁 Project Structure
 
 ```
 klub/
-├── app/                 # Next.js App Router
-│   ├── (auth)/         # Authentication pages
-│   ├── (dashboard)/    # Protected dashboard
-│   ├── api/            # API routes
-│   ├── c/[slug]/       # Community pages
-│   └── e/[id]/         # Event pages
-├── components/         # React components
-├── lib/               # Utilities and configs
-│   ├── supabase/      # Supabase client
-│   └── stripe/        # Stripe integration
-├── types/             # TypeScript types
-└── public/            # Static assets
+├── .bmad-core/          # BMAD workflow management
+├── .claude/             # Claude AI commands
+├── docs/                # Comprehensive documentation
+│   ├── architecture/    # Technical decisions
+│   ├── prd/            # Product requirements
+│   ├── qa/             # Test plans
+│   └── stories/        # User stories
+├── app/                # Next.js 15 app (to be created)
+│   ├── (auth)/        # Auth routes
+│   ├── (dashboard)/   # Protected routes
+│   ├── api/           # API routes
+│   └── layout.tsx     # Root layout
+├── components/         # React components (to be created)
+├── lib/               # Utilities (to be created)
+└── supabase/          # Database migrations (to be created)
 ```
 
-## 🎯 Features
+## 🔄 Development Workflow
 
-### MVP Features (Week 1-2)
-- ✅ User authentication (email/social)
-- ✅ Create communities
-- ✅ Create events
-- ✅ Sell tickets (Stripe)
-- ✅ Member dashboard
-- ✅ Mobile responsive (PWA)
-
-### Coming Soon
-- [ ] Discussion forums
-- [ ] Membership tiers
-- [ ] Email campaigns
-- [ ] Analytics dashboard
-- [ ] Mobile app
-
-## 📚 Documentation
-
-### Essential Docs
-- [2-Week MVP Plan](./docs/simplified-mvp-plan.md) - Step-by-step implementation
-- [Tech Stack Details](./docs/architecture/modern-free-tech-stack.md) - Why these choices
-- [Database Schema](./docs/architecture/supabase-database-schema.md) - Complete schema
-
-### ⚠️ Important Note
-Some documentation files reference old technologies (AWS, NestJS, GraphQL). See [CRITICAL-README.md](./docs/CRITICAL-README.md) for current stack.
-
-## 🧑‍💻 Development
-
-### Commands
-
+### Start Development
 ```bash
-# Development
-npm run dev          # Start dev server
-npm run build        # Build for production
-npm run start        # Start production server
-
-# Database
-npm run db:migrate   # Run migrations
-npm run db:seed      # Seed sample data
-npm run db:types     # Generate TypeScript types
-
-# Quality
-npm run lint         # Lint code
-npm run format       # Format with Prettier
-npm run type-check   # Check TypeScript
+npm run dev           # Start Next.js dev server
+npm run db:local      # Run Supabase locally (optional)
 ```
 
-### Environment Variables
+### Code Quality
+```bash
+npm run lint          # Lint code
+npm run format        # Format with Prettier
+npm run type-check    # TypeScript checking
+```
 
-```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your-project-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-
-# Stripe
-STRIPE_SECRET_KEY=sk_test_xxx
-STRIPE_WEBHOOK_SECRET=whsec_xxx
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxx
-
-# App
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-
-# Optional
-RESEND_API_KEY=re_xxx
-POSTHOG_API_KEY=phc_xxx
-SENTRY_DSN=https://xxx
+### Testing
+```bash
+npm test             # Run tests
+npm run test:watch   # Watch mode
+npm run test:e2e     # E2E tests
 ```
 
 ## 🚢 Deployment
 
-### Production Checklist
-- [ ] Environment variables set in Vercel
-- [ ] Supabase production project created
-- [ ] Stripe webhook configured
-- [ ] Custom domain connected
-- [ ] Analytics enabled
-- [ ] Error tracking enabled
+### Vercel (Recommended - Free)
+1. Push code to GitHub
+2. Import project in Vercel
+3. Add environment variables from `.env.local`
+4. Deploy (automatic on push to main)
 
-### Monitoring
-- Vercel Analytics (built-in)
-- Supabase Dashboard (built-in)
-- PostHog for user analytics
-- Sentry for error tracking
+### Self-Hosted
+```bash
+npm run build
+npm start
+```
+
+## 📚 Documentation
+
+- [Architecture Overview](./docs/architecture/)
+- [Modern Free Tech Stack](./docs/architecture/modern-free-tech-stack.md)
+- [Database Schema](./docs/architecture/supabase-database-schema.md)
+- [Product Requirements](./docs/prd/)
+- [User Stories](./docs/stories/)
 
 ## 🤝 Contributing
 
+This is an active development project. Contributions welcome!
+
 1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing`)
+2. Create feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
 5. Open Pull Request
 
 ## 📄 License
 
-MIT License - see [LICENSE](./LICENSE) for details
+MIT License - see LICENSE file for details
 
-## 🆘 Support
+## 💡 Key Decisions
 
-- Documentation: [/docs](./docs)
-- Issues: [GitHub Issues](https://github.com/yourusername/klub/issues)
-- Discord: [Join our community](#)
-
-## 🚀 Start Building!
-
-```bash
-npx create-next-app@latest klub --typescript --tailwind --app
-```
-
-**Remember:** Keep it simple. Ship fast. Use free tiers. 🎯
+- **Next.js over NestJS:** Simpler, unified frontend/backend
+- **Supabase over AWS:** Free tier, built-in auth, realtime
+- **Vercel over AWS:** Zero-config deploys, generous free tier
+- **PWA before Native:** Faster to market, one codebase
+- **shadcn/ui:** Modern components, full control, no vendor lock-in
 
 ---
 
-Built with ❤️ using Next.js, Supabase, and Vercel
+**Status:** 🏗️ Under active development  
+**Stack:** ✅ Decided and documented  
+**Next Step:** Initialize Next.js 15 project with Supabase
