@@ -9,6 +9,7 @@ I want **to customize my community's appearance and settings**,
 so that **it reflects my brand and attracts the right members**.
 
 **Acceptance Criteria:**
+
 1. Community settings page with editable name, description, category
 2. Logo upload with image resizing and CDN storage
 3. Color theme selection from predefined options
@@ -25,6 +26,7 @@ I want **to invite people to join my community**,
 so that **I can grow my member base**.
 
 **Acceptance Criteria:**
+
 1. Generate unique invitation links with optional expiration
 2. Bulk invite via email list (CSV upload or paste)
 3. Track invitation status (sent, accepted, expired)
@@ -41,6 +43,7 @@ I want **to create and manage my profile**,
 so that **other community members can know who I am**.
 
 **Acceptance Criteria:**
+
 1. Profile fields: name, bio, avatar, location, interests
 2. Avatar upload with cropping tool
 3. Privacy controls for profile visibility
@@ -57,6 +60,7 @@ I want **to assign roles to members with different permissions**,
 so that **I can delegate community management tasks**.
 
 **Acceptance Criteria:**
+
 1. Three default roles: Admin, Moderator, Member
 2. Permission matrix for each role clearly defined
 3. Role assignment/removal interface
@@ -73,6 +77,7 @@ I want **to browse and search for other community members**,
 so that **I can connect with people who share my interests**.
 
 **Acceptance Criteria:**
+
 1. Grid and list view toggle for member directory
 2. Search by name, bio keywords, interests
 3. Filter by role, join date, activity level

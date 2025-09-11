@@ -6,11 +6,13 @@
 **Type:** Smoke Test
 
 ### Preconditions
+
 - Node.js 18+ installed
 - Git installed
 - Clean working directory
 
 ### Test Steps
+
 1. Run `npx create-next-app@latest klub --typescript --tailwind --app --src-dir`
 2. Navigate to project: `cd klub`
 3. Run `npm install`
@@ -18,6 +20,7 @@
 5. Run `npm run dev`
 
 ### Expected Results
+
 - ✅ Project created without errors
 - ✅ All dependencies installed successfully
 - ✅ Dev server starts on http://localhost:3000
@@ -25,6 +28,7 @@
 - ✅ TypeScript compilation successful
 
 ### Actual Results
+
 _To be filled during execution_
 
 ### Status: `Not Executed`
@@ -37,9 +41,11 @@ _To be filled during execution_
 **Type:** Functional Test
 
 ### Preconditions
+
 - Project initialized
 
 ### Test Steps
+
 1. Install Supabase: `npm install @supabase/supabase-js @supabase/ssr`
 2. Install Stripe: `npm install @stripe/stripe-js stripe`
 3. Install form libs: `npm install react-hook-form zod @hookform/resolvers`
@@ -47,12 +53,14 @@ _To be filled during execution_
 5. Run `npm run build`
 
 ### Expected Results
+
 - ✅ No dependency conflicts
 - ✅ Package.json updated correctly
 - ✅ Build completes without errors
 - ✅ No peer dependency warnings
 
 ### Actual Results
+
 _To be filled during execution_
 
 ### Status: `Not Executed`
@@ -65,10 +73,12 @@ _To be filled during execution_
 **Type:** Configuration Test
 
 ### Preconditions
+
 - Dependencies installed
 - Supabase project created
 
 ### Test Steps
+
 1. Copy `.env.example` to `.env.local`
 2. Add `NEXT_PUBLIC_SUPABASE_URL=<your-url>`
 3. Add `NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-key>`
@@ -76,12 +86,14 @@ _To be filled during execution_
 5. Test environment variables load correctly
 
 ### Expected Results
+
 - ✅ Environment variables accessible in app
 - ✅ `.env.local` not tracked by git
 - ✅ No secrets exposed in browser console
 - ✅ Build uses correct environment values
 
 ### Actual Results
+
 _To be filled during execution_
 
 ### Status: `Not Executed`
@@ -94,11 +106,13 @@ _To be filled during execution_
 **Type:** Integration Test
 
 ### Preconditions
+
 - GitHub repository created
 - Vercel account active
 - Code pushed to main branch
 
 ### Test Steps
+
 1. Connect GitHub repo to Vercel
 2. Configure environment variables in Vercel dashboard
 3. Trigger deployment
@@ -106,6 +120,7 @@ _To be filled during execution_
 5. Check deployment logs
 
 ### Expected Results
+
 - ✅ Deployment successful
 - ✅ Preview URL accessible
 - ✅ Environment variables working
@@ -113,6 +128,7 @@ _To be filled during execution_
 - ✅ Automatic deployments enabled
 
 ### Actual Results
+
 _To be filled during execution_
 
 ### Status: `Not Executed`
@@ -125,9 +141,11 @@ _To be filled during execution_
 **Type:** Quality Test
 
 ### Preconditions
+
 - Project fully configured
 
 ### Test Steps
+
 1. Run `npm run lint`
 2. Run `npm run build`
 3. Check TypeScript strict mode enabled
@@ -135,6 +153,7 @@ _To be filled during execution_
 5. Test Prettier formatting
 
 ### Expected Results
+
 - ✅ No linting errors
 - ✅ TypeScript strict mode active
 - ✅ Path aliases resolve correctly
@@ -142,6 +161,7 @@ _To be filled during execution_
 - ✅ Build optimization working
 
 ### Actual Results
+
 _To be filled during execution_
 
 ### Status: `Not Executed`

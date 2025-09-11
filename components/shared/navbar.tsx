@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/shared/theme-toggle";
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/shared/theme-toggle';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -13,43 +13,43 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu } from "lucide-react";
+} from '@/components/ui/navigation-menu';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Menu } from 'lucide-react';
 
 const routes = [
   {
-    title: "Home",
-    href: "/",
+    title: 'Home',
+    href: '/',
   },
   {
-    title: "Features",
-    href: "/features",
+    title: 'Features',
+    href: '/features',
     children: [
       {
-        title: "Analytics",
-        href: "/features/analytics",
-        description: "Real-time analytics and insights",
+        title: 'Analytics',
+        href: '/features/analytics',
+        description: 'Real-time analytics and insights',
       },
       {
-        title: "Team Management",
-        href: "/features/team",
-        description: "Collaborate with your team",
+        title: 'Team Management',
+        href: '/features/team',
+        description: 'Collaborate with your team',
       },
       {
-        title: "Integrations",
-        href: "/features/integrations",
-        description: "Connect with your favorite tools",
+        title: 'Integrations',
+        href: '/features/integrations',
+        description: 'Connect with your favorite tools',
       },
     ],
   },
   {
-    title: "Pricing",
-    href: "/pricing",
+    title: 'Pricing',
+    href: '/pricing',
   },
   {
-    title: "Documentation",
-    href: "/docs",
+    title: 'Documentation',
+    href: '/docs',
   },
 ];
 
@@ -57,7 +57,7 @@ export function Navbar() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur">
       <div className="container mx-auto flex h-16 items-center px-4">
         <div className="mr-8">
           <Link href="/" className="flex items-center space-x-2">
@@ -81,14 +81,14 @@ export function Navbar() {
                               <Link
                                 href={child.href}
                                 className={cn(
-                                  "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-                                  pathname === child.href && "bg-accent"
+                                  'hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground block space-y-1 rounded-md p-3 leading-none no-underline transition-colors outline-none select-none',
+                                  pathname === child.href && 'bg-accent'
                                 )}
                               >
-                                <div className="text-sm font-medium leading-none">
+                                <div className="text-sm leading-none font-medium">
                                   {child.title}
                                 </div>
-                                <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                                <p className="text-muted-foreground line-clamp-2 text-sm leading-snug">
                                   {child.description}
                                 </p>
                               </Link>
@@ -103,7 +103,7 @@ export function Navbar() {
                     <NavigationMenuLink
                       className={cn(
                         navigationMenuTriggerStyle(),
-                        pathname === route.href && "bg-accent"
+                        pathname === route.href && 'bg-accent'
                       )}
                     >
                       {route.title}
@@ -117,9 +117,9 @@ export function Navbar() {
 
         <div className="ml-auto flex items-center space-x-4">
           <ThemeToggle />
-          
+
           {/* Desktop Auth Buttons */}
-          <div className="hidden md:flex items-center space-x-2">
+          <div className="hidden items-center space-x-2 md:flex">
             <Button variant="ghost">Sign In</Button>
             <Button>Sign Up</Button>
           </div>
@@ -133,12 +133,12 @@ export function Navbar() {
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-              <nav className="flex flex-col space-y-4 mt-4">
+              <nav className="mt-4 flex flex-col space-y-4">
                 {routes.map((route) => (
                   <div key={route.href}>
                     {route.children ? (
                       <div className="space-y-2">
-                        <p className="font-medium text-sm text-muted-foreground">
+                        <p className="text-muted-foreground text-sm font-medium">
                           {route.title}
                         </p>
                         {route.children.map((child) => (
@@ -146,8 +146,9 @@ export function Navbar() {
                             key={child.href}
                             href={child.href}
                             className={cn(
-                              "block px-2 py-1 text-sm hover:text-primary",
-                              pathname === child.href && "text-primary font-medium"
+                              'hover:text-primary block px-2 py-1 text-sm',
+                              pathname === child.href &&
+                                'text-primary font-medium'
                             )}
                           >
                             {child.title}
@@ -158,8 +159,8 @@ export function Navbar() {
                       <Link
                         href={route.href}
                         className={cn(
-                          "block py-2 text-lg font-medium hover:text-primary",
-                          pathname === route.href && "text-primary"
+                          'hover:text-primary block py-2 text-lg font-medium',
+                          pathname === route.href && 'text-primary'
                         )}
                       >
                         {route.title}
@@ -167,7 +168,7 @@ export function Navbar() {
                     )}
                   </div>
                 ))}
-                <div className="pt-4 space-y-2">
+                <div className="space-y-2 pt-4">
                   <Button variant="outline" className="w-full">
                     Sign In
                   </Button>

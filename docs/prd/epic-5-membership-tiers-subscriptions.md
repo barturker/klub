@@ -9,6 +9,7 @@ I want **to create different membership tiers**,
 so that **I can offer various value levels to members**.
 
 **Acceptance Criteria:**
+
 1. Create up to 5 membership tiers
 2. Tier settings: name, price, billing cycle, description
 3. Benefits checklist per tier
@@ -25,6 +26,7 @@ I want **to subscribe to a membership tier**,
 so that **I can access premium community benefits**.
 
 **Acceptance Criteria:**
+
 1. Subscription checkout with saved payment methods
 2. Stripe subscription creation with automated billing
 3. Proration for mid-cycle upgrades/downgrades
@@ -41,6 +43,7 @@ I want **to access my membership benefits**,
 so that **I get value from my subscription**.
 
 **Acceptance Criteria:**
+
 1. Exclusive content marked with tier badge
 2. Member-only events with automatic access
 3. Discounted event tickets based on tier
@@ -57,6 +60,7 @@ I want **to manage my subscription easily**,
 so that **I have control over my membership**.
 
 **Acceptance Criteria:**
+
 1. Subscription dashboard with current plan
 2. Upgrade/downgrade flow with preview
 3. Pause subscription option (up to 3 months)

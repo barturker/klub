@@ -18,6 +18,6 @@ Our Project Brief validated that physical event tickets and in-person services q
 
 ## Change Log
 
-| Date | Version | Description | Author |
-|------|---------|-------------|--------|
-| 2025-01-10 | 1.0 | Initial PRD creation based on Project Brief | Mary (Analyst) |
+| Date       | Version | Description                                 | Author         |
+| ---------- | ------- | ------------------------------------------- | -------------- |
+| 2025-01-10 | 1.0     | Initial PRD creation based on Project Brief | Mary (Analyst) |

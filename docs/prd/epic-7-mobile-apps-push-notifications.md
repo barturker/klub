@@ -9,6 +9,7 @@ I want **to set up React Native apps for iOS and Android**,
 so that **we can deliver native mobile experiences**.
 
 **Acceptance Criteria:**
+
 1. React Native project initialized with Expo
 2. iOS and Android projects configured
 3. Navigation structure implemented
@@ -25,6 +26,7 @@ I want **to access all community features on mobile**,
 so that **I can engage with my community anywhere**.
 
 **Acceptance Criteria:**
+
 1. All core screens adapted for mobile
 2. Native gestures (swipe, pull-to-refresh)
 3. Offline mode with cached content
@@ -41,6 +43,7 @@ I want **to receive timely notifications on my phone**,
 so that **I stay connected with my community**.
 
 **Acceptance Criteria:**
+
 1. Firebase Cloud Messaging integrated
 2. Notification permissions request flow
 3. Notification types configured with templates
@@ -57,6 +60,7 @@ I want **apps available in Apple and Google stores**,
 so that **users can easily download and install**.
 
 **Acceptance Criteria:**
+
 1. App Store Connect configuration complete
 2. Google Play Console setup done
 3. App descriptions and screenshots prepared

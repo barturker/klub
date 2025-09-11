@@ -12,7 +12,7 @@ klub/                           # Root directory
 │   │   │   └── page.tsx       # /signup page
 │   │   └── layout.tsx         # Auth layout wrapper
 │   │
-│   ├── (dashboard)/           # Protected routes group  
+│   ├── (dashboard)/           # Protected routes group
 │   │   ├── dashboard/
 │   │   │   └── page.tsx       # /dashboard page
 │   │   ├── communities/
@@ -138,56 +138,58 @@ klub/                           # Root directory
 ### Core Application Files
 
 #### `app/layout.tsx`
+
 ```tsx
 // Root layout with providers
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
       <body>
-        <Providers>
-          {children}
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
-  )
+  );
 }
 ```
 
 #### `middleware.ts`
+
 ```ts
 // Protects routes and handles auth
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req, res })
-  await supabase.auth.getSession()
-  return res
+  const res = NextResponse.next();
+  const supabase = createMiddlewareClient({ req, res });
+  await supabase.auth.getSession();
+  return res;
 }
 
 export const config = {
-  matcher: ['/(dashboard|communities|events)/(.*)']
-}
+  matcher: ['/(dashboard|communities|events)/(.*)'],
+};
 ```
 
 #### `lib/supabase/client.ts`
+
 ```ts
 // Browser Supabase client
-import { createBrowserClient } from '@supabase/ssr'
+import { createBrowserClient } from '@supabase/ssr';
 
 export const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+);
 ```
 
 ## Development Workflow
 
 ### Essential Commands
+
 ```bash
 # Development
 npm run dev          # Start dev server on localhost:3000
@@ -213,22 +215,26 @@ npm run e2e         # Run E2E tests
 ## File Naming Conventions
 
 ### Components
+
 - **PascalCase** for component files: `EventCard.tsx`
 - **kebab-case** for non-component files: `use-auth.ts`
 - **Index files** for barrel exports: `components/index.ts`
 
 ### Routes
+
 - **Lowercase** for route segments: `app/dashboard/page.tsx`
 - **Dynamic routes** with brackets: `app/c/[slug]/page.tsx`
 - **Route groups** with parentheses: `app/(auth)/login/page.tsx`
 
 ### API Routes
+
 - **route.ts** for all API handlers
 - **HTTP methods** as exports: `export async function POST()`
 
 ## Environment Variables
 
 ### Required Variables (.env.local)
+
 ```env
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=your-project-url
@@ -251,12 +257,14 @@ POSTHOG_API_KEY=phc_xxx
 ## Deployment Structure
 
 ### Vercel Deployment
+
 ```
 Production: main branch → klub.app
 Preview: PR branches → pr-123.klub.vercel.app
 ```
 
 ### Build Output
+
 ```
 .next/              # Build output (git ignored)
 ├── static/         # Static assets
@@ -267,21 +275,25 @@ Preview: PR branches → pr-123.klub.vercel.app
 ## Why This Structure?
 
 ### Simplicity
+
 - **Single app** instead of monorepo
 - **No microservices** complexity
 - **Standard Next.js** patterns
 
 ### Performance
+
 - **App Router** for server components
 - **Built-in optimization** from Next.js
 - **Edge runtime** where possible
 
 ### Developer Experience
+
 - **Fast refresh** in development
 - **Type safety** throughout
 - **Clear organization** by feature
 
 ### Cost Effective
+
 - **Serverless** deployment
 - **No DevOps** required
 - **Automatic scaling**

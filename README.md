@@ -11,6 +11,7 @@ A modern, scalable community management platform built with Next.js 15.5 and Sup
 ## 🚀 Tech Stack (100% Free MVP)
 
 ### Core Stack
+
 - **Frontend Framework:** Next.js 15.5 with App Router + Turbopack ✅
 - **UI Components:** shadcn/ui (42+ components installed) + Tailwind CSS 4 ✅
 - **Icons:** Lucide React (1000+ icons) ✅
@@ -24,12 +25,14 @@ A modern, scalable community management platform built with Next.js 15.5 and Sup
 ## 📋 MVP Features (14-Day Sprint)
 
 ### Week 1: Core Platform
+
 - [ ] User authentication (Supabase Auth)
 - [ ] Community creation
 - [ ] Event creation
 - [ ] Event listing
 
-### Week 2: Revenue Features  
+### Week 2: Revenue Features
+
 - [ ] Stripe payment integration
 - [ ] Ticket purchasing
 - [ ] User dashboard
@@ -38,6 +41,7 @@ A modern, scalable community management platform built with Next.js 15.5 and Sup
 ## 🛠️ Getting Started
 
 ### Prerequisites
+
 - Node.js 18+ and npm ✅
 - Supabase account (free at supabase.com)
 - Stripe account (optional for payments)
@@ -45,6 +49,7 @@ A modern, scalable community management platform built with Next.js 15.5 and Sup
 ### Quick Setup
 
 1. **Clone & Install**
+
 ```bash
 git clone https://github.com/yourusername/klub.git
 cd klub
@@ -52,17 +57,20 @@ npm install
 ```
 
 2. **Configure Environment**
+
 ```bash
 cp .env.example .env.local
 # Edit .env.local with your Supabase credentials
 ```
 
 3. **Create Supabase Project**
+
 - Go to [supabase.com](https://supabase.com)
 - Create new project (free)
 - Copy your project URL and anon key to `.env.local`
 
 4. **Run Development Server**
+
 ```bash
 npm run dev --turbo
 # Open http://localhost:3000
@@ -103,6 +111,7 @@ npm run type-check   # TypeScript type checking
 ## 🚢 Deployment
 
 ### Vercel (Recommended - Free)
+
 1. Push code to GitHub
 2. Import project in [Vercel](https://vercel.com)
 3. Add environment variables from `.env.local`

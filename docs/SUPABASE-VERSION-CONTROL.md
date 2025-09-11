@@ -1,6 +1,7 @@
 # 🎯 Supabase Online Version Control
 
 ## Özet
+
 Online Supabase projenizdeki veritabanı değişikliklerini Git ile takip etmek için migration sistemi kullanıyoruz. Docker'a gerek yok, her şey online!
 
 ## 🚀 Hızlı Başlangıç
@@ -69,6 +70,7 @@ git commit -m "feat: add phone column to profiles"
 ## 🤝 Takım Çalışması
 
 ### Siz değişiklik yaptığınızda:
+
 ```bash
 # 1. Migration oluştur ve SQL yaz
 npm run db:migrate my_feature
@@ -83,6 +85,7 @@ git push
 ```
 
 ### Takım arkadaşınız pull yaptığında:
+
 ```bash
 # 1. Kodu çek
 git pull
@@ -97,6 +100,7 @@ npm run db:push
 ## 🔑 Environment Variables
 
 `.env.local` dosyanıza ekleyin:
+
 ```bash
 # Supabase Credentials (supabase.com'dan alın)
 NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
@@ -123,11 +127,13 @@ npm run db:types     # TypeScript type'ları oluştur
 ## ⚠️ Önemli Kurallar
 
 ### ✅ YAPILACAKLAR
+
 1. **Her değişiklik için migration oluştur** - Manuel SQL Dashboard'da çalıştırma
 2. **Migration'ları Git'e commit et** - Herkes aynı şemayı kullansın
 3. **Önce development/staging test et** - Sonra production
 
 ### ❌ YAPILMAYACAKLAR
+
 1. **Migration dosyalarını düzenleme** - Yenisini oluştur
 2. **Dashboard'dan manuel değişiklik yapma** - Her zaman migration kullan
 3. **Service key'i commit etme** - .env.local'de tut
@@ -141,7 +147,7 @@ npm run db:types     # TypeScript type'ları oluştur
 npm run db:migrate add_tags_to_events
 
 # 2. SQL yaz (supabase/migrations/xxx_add_tags_to_events.sql)
-ALTER TABLE events 
+ALTER TABLE events
 ADD COLUMN tags TEXT[] DEFAULT '{}';
 
 # 3. Test et (development Supabase'de)
@@ -160,6 +166,7 @@ npm run db:push
 ## 🆘 Sorun Giderme
 
 ### "Migration already applied" hatası
+
 ```bash
 # Migration listesini kontrol et
 npm run db:status
@@ -169,12 +176,14 @@ npx supabase migration repair --version 20240111120000
 ```
 
 ### Type'lar güncellenmiyor
+
 ```bash
 # Project ID ile manuel çalıştır
 npx supabase gen types typescript --project-id your-project-id > lib/supabase/types.ts
 ```
 
 ### Bağlantı sorunu
+
 ```bash
 # Yeniden link et
 npx supabase unlink

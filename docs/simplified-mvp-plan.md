@@ -3,9 +3,11 @@
 ## ⚡ ULTRA-SIMPLIFIED SCOPE
 
 ### Week 1: Core Platform (Days 1-7)
+
 Build the absolute minimum to demonstrate value.
 
 ### Week 2: Revenue Features (Days 8-14)
+
 Add payment processing to validate business model.
 
 ---
@@ -13,6 +15,7 @@ Add payment processing to validate business model.
 ## 📅 DAY-BY-DAY BREAKDOWN
 
 ### Day 1: Project Setup (3-4 hours)
+
 ```bash
 # 1. Create Next.js app
 npx create-next-app@latest klub --typescript --tailwind --app --src-dir
@@ -41,26 +44,32 @@ npm install sonner # for toasts
 
 ```typescript
 // lib/supabase/client.ts
-import { createBrowserClient } from '@supabase/ssr'
+import { createBrowserClient } from '@supabase/ssr';
 
 export const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+);
 ```
 
 ```typescript
 // lib/supabase/server.ts
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 export async function createClient() {
-  const cookieStore = await cookies()
+  const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll() { return cookieStore.getAll() }}}
-  )
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+      },
+    }
+  );
 }
 ```
 
@@ -162,17 +171,17 @@ export default function NewCommunity() {
     'use server'
     const supabase = await createClient()
     const { data: user } = await supabase.auth.getUser()
-    
+
     await supabase.from('communities').insert({
       name: formData.get('name'),
       description: formData.get('description'),
       slug: formData.get('name').toLowerCase().replace(/\s+/g, '-'),
       organizer_id: user.id
     })
-    
+
     redirect('/dashboard')
   }
-  
+
   return (
     <form action={createCommunity}>
       <input name="name" placeholder="Community Name" required />
@@ -192,12 +201,12 @@ export default async function CommunityPage({ params }) {
     .select('*, events(*)')
     .eq('slug', params.slug)
     .single()
-    
+
   return (
     <div>
       <h1>{community.name}</h1>
       <p>{community.description}</p>
-      
+
       <h2>Upcoming Events</h2>
       {community.events.map(event => (
         <EventCard key={event.id} event={event} />
@@ -215,7 +224,7 @@ export default function NewEvent() {
   async function createEvent(formData: FormData) {
     'use server'
     const supabase = await createClient()
-    
+
     await supabase.from('events').insert({
       title: formData.get('title'),
       description: formData.get('description'),
@@ -226,10 +235,10 @@ export default function NewEvent() {
       capacity: parseInt(formData.get('capacity')),
       community_id: formData.get('community_id')
     })
-    
+
     redirect('/dashboard')
   }
-  
+
   return (
     <form action={createEvent}>
       <input name="title" placeholder="Event Title" required />
@@ -249,59 +258,63 @@ export default function NewEvent() {
 
 ```typescript
 // app/api/checkout/route.ts
-import Stripe from 'stripe'
+import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(req: Request) {
-  const { eventId, eventTitle, amount } = await req.json()
-  const supabase = await createClient()
-  const { data: user } = await supabase.auth.getUser()
-  
+  const { eventId, eventTitle, amount } = await req.json();
+  const supabase = await createClient();
+  const { data: user } = await supabase.auth.getUser();
+
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
-    line_items: [{
-      price_data: {
-        currency: 'usd',
-        product_data: { name: eventTitle },
-        unit_amount: amount,
+    line_items: [
+      {
+        price_data: {
+          currency: 'usd',
+          product_data: { name: eventTitle },
+          unit_amount: amount,
+        },
+        quantity: 1,
       },
-      quantity: 1,
-    }],
+    ],
     mode: 'payment',
     success_url: `${process.env.NEXT_PUBLIC_URL}/success?event=${eventId}`,
     cancel_url: `${process.env.NEXT_PUBLIC_URL}/events/${eventId}`,
-    metadata: { eventId, userId: user.id }
-  })
-  
-  return Response.json({ url: session.url })
+    metadata: { eventId, userId: user.id },
+  });
+
+  return Response.json({ url: session.url });
 }
 ```
 
 ```typescript
 // app/api/webhook/route.ts
 export async function POST(req: Request) {
-  const body = await req.text()
-  const sig = req.headers.get('stripe-signature')!
-  
+  const body = await req.text();
+  const sig = req.headers.get('stripe-signature')!;
+
   const event = stripe.webhooks.constructEvent(
-    body, sig, process.env.STRIPE_WEBHOOK_SECRET!
-  )
-  
+    body,
+    sig,
+    process.env.STRIPE_WEBHOOK_SECRET!
+  );
+
   if (event.type === 'checkout.session.completed') {
-    const session = event.data.object
-    const supabase = await createClient()
-    
+    const session = event.data.object;
+    const supabase = await createClient();
+
     await supabase.from('tickets').insert({
       event_id: session.metadata.eventId,
       user_id: session.metadata.userId,
       stripe_payment_intent: session.payment_intent,
       amount: session.amount_total,
-      status: 'completed'
-    })
+      status: 'completed',
+    });
   }
-  
-  return Response.json({ received: true })
+
+  return Response.json({ received: true });
 }
 ```
 
@@ -316,7 +329,7 @@ export default async function EventPage({ params }) {
     .select('*')
     .eq('id', params.id)
     .single()
-    
+
   async function purchaseTicket() {
     'use server'
     const response = await fetch('/api/checkout', {
@@ -330,7 +343,7 @@ export default async function EventPage({ params }) {
     const { url } = await response.json()
     redirect(url)
   }
-  
+
   return (
     <div>
       <h1>{event.title}</h1>
@@ -338,7 +351,7 @@ export default async function EventPage({ params }) {
       <p>📍 {event.venue_name}</p>
       <p>📅 {new Date(event.start_at).toLocaleDateString()}</p>
       <p>💵 ${event.price / 100}</p>
-      
+
       <form action={purchaseTicket}>
         <button type="submit">Buy Ticket</button>
       </form>
@@ -354,21 +367,21 @@ export default async function EventPage({ params }) {
 export default async function Dashboard() {
   const supabase = await createClient()
   const { data: user } = await supabase.auth.getUser()
-  
+
   const { data: communities } = await supabase
     .from('communities')
     .select('*')
     .eq('organizer_id', user.id)
-    
+
   const { data: tickets } = await supabase
     .from('tickets')
     .select('*, events(*)')
     .eq('user_id', user.id)
-  
+
   return (
     <div>
       <h1>Dashboard</h1>
-      
+
       <section>
         <h2>My Communities</h2>
         {communities?.map(c => (
@@ -376,7 +389,7 @@ export default async function Dashboard() {
         ))}
         <Link href="/communities/new">+ Create Community</Link>
       </section>
-      
+
       <section>
         <h2>My Tickets</h2>
         {tickets?.map(t => (
@@ -412,6 +425,7 @@ export default async function Dashboard() {
 ## 🎯 MVP FEATURES CHECKLIST
 
 ### ✅ Week 1 Deliverables
+
 - [ ] User authentication
 - [ ] Create community
 - [ ] Create events
@@ -419,6 +433,7 @@ export default async function Dashboard() {
 - [ ] Basic dashboard
 
 ### ✅ Week 2 Deliverables
+
 - [ ] Stripe checkout
 - [ ] Ticket purchase
 - [ ] Payment webhooks
@@ -426,6 +441,7 @@ export default async function Dashboard() {
 - [ ] Basic email notifications
 
 ### ❌ NOT in MVP (Add Later)
+
 - Mobile app
 - Advanced analytics
 - Discussion forums
@@ -442,6 +458,7 @@ export default async function Dashboard() {
 ## 💰 COST BREAKDOWN
 
 ### Development Phase (2 weeks)
+
 - **Total Cost: $0**
   - Supabase: Free tier
   - Vercel: Free tier
@@ -449,11 +466,13 @@ export default async function Dashboard() {
   - GitHub: Free
 
 ### First 3 Months
+
 - **Total Cost: $0-10/month**
   - Only pay Stripe transaction fees (2.9% + $0.30)
   - Optional: GitHub Copilot ($10/month)
 
 ### Scaling (1000+ users)
+
 - **Total Cost: ~$50/month**
   - Supabase Pro: $25
   - Vercel Pro: $20
@@ -486,16 +505,19 @@ git push origin main
 ## 📊 SUCCESS METRICS
 
 ### Week 1 Goals
+
 - [ ] Working authentication
 - [ ] 1 test community created
 - [ ] 1 test event created
 
 ### Week 2 Goals
+
 - [ ] First test payment processed
 - [ ] 10 beta users signed up
 - [ ] 5 test tickets sold
 
 ### Month 1 Goals
+
 - [ ] 10 active communities
 - [ ] 50 events created
 - [ ] $1,000 in transactions
@@ -512,10 +534,10 @@ git push origin main
 
 @layer components {
   .btn-primary {
-    @apply bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700;
+    @apply rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700;
   }
   .card {
-    @apply bg-white rounded-lg shadow p-6;
+    @apply rounded-lg bg-white p-6 shadow;
   }
 }
 ```
@@ -525,16 +547,19 @@ git push origin main
 ## 🔥 LAUNCH STRATEGY
 
 ### Soft Launch (Day 14)
+
 1. Share with 10 friends
 2. Get feedback
 3. Fix critical bugs
 
 ### Beta Launch (Week 3)
+
 1. Post on Twitter/LinkedIn
 2. Share in relevant communities
 3. Collect 100 beta users
 
 ### Public Launch (Month 2)
+
 1. ProductHunt launch
 2. Content marketing
 3. Paid ads ($500 budget)
@@ -546,6 +571,7 @@ git push origin main
 **No more planning. Start coding NOW!**
 
 With this plan, you'll have a working MVP in 2 weeks that:
+
 - Costs $0 to run
 - Can process real payments
 - Scales to 1000+ users

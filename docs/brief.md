@@ -24,6 +24,7 @@ Community organizers today face a fragmented ecosystem that forces them to becom
 **Impact of the Problem:**
 
 The quantifiable impact is significant:
+
 - Organizers spend 10-15 hours per week on administrative tasks that could be automated
 - 30-40% potential revenue loss from friction in payment processes and abandoned registrations
 - Member churn rates 25% higher due to poor experience across disconnected tools
@@ -32,6 +33,7 @@ The quantifiable impact is significant:
 **Why Existing Solutions Fall Short:**
 
 Current platforms fail because they're built for single purposes:
+
 - **Facebook Groups:** Great for discussion, zero monetization capability, limited event management
 - **Discord/Slack:** Built for chat, not structured communities or commerce
 - **Eventbrite:** Event-focused only, no ongoing community features
@@ -41,6 +43,7 @@ Current platforms fail because they're built for single purposes:
 **Urgency and Importance:**
 
 The creator economy is exploding — expected to reach $528 billion by 2030. Community-led businesses are becoming the norm, not the exception. Yet the tools haven't evolved to support this shift. The window is now because:
+
 - Post-pandemic shift to digital communities is permanent
 - Creators are actively seeking alternatives to platform dependency
 - Monetization is no longer optional — it's essential for sustainable communities
@@ -51,6 +54,7 @@ The creator economy is exploding — expected to reach $528 billion by 2030. Com
 **Core Concept and Approach:**
 
 klub is a mobile-first platform that unifies community, commerce, and content into one seamless experience. At its core, klub provides organizers with a branded space where they can:
+
 - Create and manage their community with member profiles, discussions, and content sharing
 - Host and sell tickets to events (both virtual and in-person) with integrated payment processing
 - Offer tiered memberships and subscriptions with automatic billing
@@ -92,6 +96,7 @@ klub becomes the default platform for anyone wanting to build a community-based 
 ### Primary User Segment: Professional Community Organizers
 
 **Demographic/Firmographic Profile:**
+
 - Age: 28-45, digitally savvy, entrepreneurial mindset
 - Experience: 2+ years running communities, events, or coaching programs
 - Community size: 50-500 active members
@@ -99,6 +104,7 @@ klub becomes the default platform for anyone wanting to build a community-based 
 - Tech comfort: Comfortable with digital tools but not technical experts
 
 **Current Behaviors and Workflows:**
+
 - Spend 15-20 hours/week on community management and administration
 - Use 4-7 different tools to run their operations
 - Manually copy data between systems; maintain multiple spreadsheets
@@ -106,6 +112,7 @@ klub becomes the default platform for anyone wanting to build a community-based 
 - Struggle to delegate because tools require their personal accounts
 
 **Specific Needs and Pain Points:**
+
 - Need unified dashboard to see community health and revenue in one place
 - Want to reduce time on admin to focus on content and member value
 - Require professional features (custom branding, analytics) at accessible pricing
@@ -113,6 +120,7 @@ klub becomes the default platform for anyone wanting to build a community-based 
 - Want to own their community data and member relationships
 
 **Goals They're Trying to Achieve:**
+
 - Build sustainable income from their expertise and community
 - Scale beyond trading time for money through leveraged offerings
 - Create genuine connections while maintaining professional boundaries
@@ -122,6 +130,7 @@ klub becomes the default platform for anyone wanting to build a community-based 
 ### Secondary User Segment: Aspiring Community Builders
 
 **Demographic/Firmographic Profile:**
+
 - Age: 22-35, social media natives, passion-driven
 - Experience: Strong subject matter expertise but new to monetization
 - Community size: 10-100 engaged followers/fans
@@ -129,6 +138,7 @@ klub becomes the default platform for anyone wanting to build a community-based 
 - Tech comfort: Very comfortable with social apps, less with business tools
 
 **Current Behaviors and Workflows:**
+
 - Primarily use free social media platforms (Instagram, TikTok, Facebook)
 - Experiment with different monetization methods (donations, one-off sales)
 - Often undercharge or give away value due to platform limitations
@@ -136,6 +146,7 @@ klub becomes the default platform for anyone wanting to build a community-based 
 - Mix personal and professional content without clear boundaries
 
 **Specific Needs and Pain Points:**
+
 - Need guidance on how to structure and price offerings
 - Want simple, intuitive tools that don't require business expertise
 - Require low/no upfront costs with pay-as-you-grow model
@@ -143,6 +154,7 @@ klub becomes the default platform for anyone wanting to build a community-based 
 - Want templates and best practices built into the platform
 
 **Goals They're Trying to Achieve:**
+
 - Transform their passion/expertise into viable income stream
 - Build audience beyond friends and family
 - Establish credibility in their niche
@@ -241,12 +253,14 @@ Building on MVP success, Phase 2 (Months 4-9) will introduce capabilities that d
 Over the next 1-2 years, klub evolves from a platform to an ecosystem:
 
 **Year 1 Focus: Platform Excellence**
+
 - Achieve product-market fit with core features
 - Build reputation for reliability and ease of use
 - Establish klub as the go-to solution for community monetization
 - Create playbooks and best practices from successful communities
 
 **Year 2 Evolution: Ecosystem Development**
+
 - Launch klub Academy for community builder education
 - Introduce inter-community collaboration features
 - Build partner network of complementary service providers
@@ -261,18 +275,21 @@ The vision is to become the "operating system" for the community economy — whe
 Strategic growth vectors beyond core platform:
 
 **Vertical Expansion:**
+
 - **Enterprise Communities:** B2B communities, customer communities, employee resource groups
 - **Educational Institutions:** Student organizations, alumni networks, continuing education
 - **Nonprofit Sector:** Fundraising tools, donor management, volunteer coordination
 - **Local Commerce:** Neighborhood groups, local business networks, municipal programs
 
 **Geographic Expansion:**
+
 - Localization for key international markets
 - Region-specific payment methods and compliance
 - Cultural adaptations for community norms
 - Local partnership development
 
 **Product Expansion:**
+
 - **klub Studio:** Content creation tools for community leaders
 - **klub Capital:** Financing options for growing communities
 - **klub Services:** Marketplace for community management professionals
@@ -342,18 +359,21 @@ Each expansion maintains focus on the core mission: empowering people to build s
 ### Critical App Store Compliance Strategy
 
 **What we CAN do (without Apple's 30% fee):**
+
 - Sell tickets to physical events (concerts, workshops, meetups)
 - Process payments for in-person services (coaching sessions, fitness classes)
 - Handle membership fees that include physical benefits (gym access, co-working spaces)
 - Use Stripe/PayPal for all physical goods and services
 
 **What requires careful consideration:**
+
 - Digital-only courses might trigger IAP requirements
 - Virtual event access could be considered "digital content"
 - Online-only memberships may need IAP or web-based purchase flow
 - Must not link to external payment flows for digital content within the app
 
 **Mitigation Strategy:**
+
 - Focus MVP on physical events and in-person communities
 - Implement web-based purchase flow for digital-only content
 - Clearly distinguish between physical and digital offerings in UX

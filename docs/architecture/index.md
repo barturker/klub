@@ -40,9 +40,9 @@ This document outlines the complete fullstack architecture for klub, including b
 
 ## Change Log
 
-| Date | Version | Description | Author |
-|------|---------|-------------|--------|
-| 2025-09-10 | 1.0 | Initial architecture document based on PRD requirements | Claude (AI Assistant) |
-| 2025-09-10 | 1.1 | Added simplified PostgreSQL-first approach for reduced complexity | Winston (Architect) |
-| 2025-09-10 | 1.2 | Sharded architecture document into separate focused files | Claude (AI Assistant) |
-| 2025-09-11 | 2.0 | Complete overhaul to modern free-tier stack (Supabase + Next.js) | PM + Claude |
+| Date       | Version | Description                                                       | Author                |
+| ---------- | ------- | ----------------------------------------------------------------- | --------------------- |
+| 2025-09-10 | 1.0     | Initial architecture document based on PRD requirements           | Claude (AI Assistant) |
+| 2025-09-10 | 1.1     | Added simplified PostgreSQL-first approach for reduced complexity | Winston (Architect)   |
+| 2025-09-10 | 1.2     | Sharded architecture document into separate focused files         | Claude (AI Assistant) |
+| 2025-09-11 | 2.0     | Complete overhaul to modern free-tier stack (Supabase + Next.js)  | PM + Claude           |

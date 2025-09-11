@@ -3,6 +3,7 @@
 ## 🎯 Core Technology Decisions - FINAL & LOCKED
 
 ### ✅ Frontend Stack
+
 - [x] **Framework:** Next.js 15.5 with App Router + Turbopack
 - [x] **Styling:** Tailwind CSS
 - [x] **Language:** TypeScript
@@ -11,6 +12,7 @@
 - [x] **UI Components:** Shadcn/ui (copy-paste, no dependencies)
 
 ### ✅ Backend Stack
+
 - [x] **Database:** Supabase (PostgreSQL)
 - [x] **Auth:** Supabase Auth
 - [x] **API:** Next.js API Routes
@@ -19,6 +21,7 @@
 - [x] **Background Jobs:** Vercel Cron Jobs (simple) / Trigger.dev (complex)
 
 ### ✅ Infrastructure
+
 - [x] **Hosting:** Vercel
 - [x] **CDN:** Vercel Edge Network (included)
 - [x] **Deployment:** Git push = auto deploy
@@ -26,6 +29,7 @@
 - [x] **Domains:** Vercel (free subdomain)
 
 ### ✅ Third-Party Services
+
 - [x] **Payments:** Stripe (pay per transaction only)
 - [x] **Email:** Resend (3K free/month)
 - [x] **Analytics:** PostHog (1M events free)
@@ -36,22 +40,23 @@
 
 ## 💰 Cost Validation - ALL FREE TIER
 
-| Service | Free Tier Limit | Our Usage (MVP) | Cost |
-|---------|-----------------|-----------------|------|
-| **Supabase** | 500MB DB, 50K MAUs | <100MB, <1K users | **$0** |
-| **Vercel** | 100GB bandwidth | <10GB | **$0** |
-| **PostHog** | 1M events/month | <100K events | **$0** |
-| **Resend** | 3K emails/month | <500 emails | **$0** |
-| **Sentry** | 5K errors/month | <100 errors | **$0** |
-| **Stripe** | No monthly fee | Pay 2.9% only | **$0** |
-| **GitHub** | Unlimited repos | 1 repo | **$0** |
-| **Total** | - | - | **$0/month** |
+| Service      | Free Tier Limit    | Our Usage (MVP)   | Cost         |
+| ------------ | ------------------ | ----------------- | ------------ |
+| **Supabase** | 500MB DB, 50K MAUs | <100MB, <1K users | **$0**       |
+| **Vercel**   | 100GB bandwidth    | <10GB             | **$0**       |
+| **PostHog**  | 1M events/month    | <100K events      | **$0**       |
+| **Resend**   | 3K emails/month    | <500 emails       | **$0**       |
+| **Sentry**   | 5K errors/month    | <100 errors       | **$0**       |
+| **Stripe**   | No monthly fee     | Pay 2.9% only     | **$0**       |
+| **GitHub**   | Unlimited repos    | 1 repo            | **$0**       |
+| **Total**    | -                  | -                 | **$0/month** |
 
 ---
 
 ## 🚀 Modern Best Practices Check
 
 ### ✅ 2025 Standards
+
 - [x] **Server Components** - Using Next.js 15.5 App Router
 - [x] **Edge Functions** - Vercel Edge Runtime
 - [x] **TypeScript** - Full type safety
@@ -62,6 +67,7 @@
 - [x] **PWA First** - No app store needed initially
 
 ### ✅ What We're NOT Using (Old/Expensive)
+
 - ❌ **AWS** - Too complex, expensive from day 1
 - ❌ **Kubernetes** - Overkill for MVP
 - ❌ **Docker** - Not needed with Vercel
@@ -76,6 +82,7 @@
 ## 📋 Implementation Readiness
 
 ### ✅ Day 1 Setup (Can Start TODAY)
+
 ```bash
 # Everything needed to start
 npx create-next-app@latest klub --typescript --tailwind --app
@@ -87,6 +94,7 @@ npm install stripe @stripe/stripe-js
 ```
 
 ### ✅ Required Accounts (All Free)
+
 1. **GitHub** - For code (already have)
 2. **Supabase** - Create project (2 min)
 3. **Vercel** - Connect GitHub (1 min)
@@ -98,17 +106,20 @@ npm install stripe @stripe/stripe-js
 ## 🎯 MVP Feature Scope - ULTRA FOCUSED
 
 ### ✅ Week 1 (MUST HAVE)
+
 - User signup/login
 - Create community
 - Create event
 - List events
 
 ### ✅ Week 2 (REVENUE)
+
 - Buy tickets (Stripe)
 - View my tickets
 - Basic dashboard
 
 ### ❌ NOT IN MVP (Later)
+
 - Mobile app
 - Email campaigns
 - Analytics dashboard
@@ -124,6 +135,7 @@ npm install stripe @stripe/stripe-js
 ## 🔍 Common Pitfalls AVOIDED
 
 ### ✅ We're NOT Making These Mistakes
+
 1. **Over-engineering** ❌ → Simple Next.js app ✅
 2. **Premature optimization** ❌ → Use free tiers ✅
 3. **Complex architecture** ❌ → Monolith first ✅
@@ -138,13 +150,13 @@ npm install stripe @stripe/stripe-js
 
 ### When to Upgrade (Not Before!)
 
-| Metric | Free Tier Limit | Upgrade When | New Cost |
-|--------|-----------------|--------------|----------|
-| **Users** | 50,000 MAUs | 40,000 MAUs | Supabase Pro $25 |
-| **Database** | 500MB | 400MB | Supabase Pro $25 |
-| **Bandwidth** | 100GB | 80GB | Vercel Pro $20 |
-| **Emails** | 3,000/mo | 2,500/mo | Resend $20 |
-| **Errors** | 5,000/mo | 4,000/mo | Sentry $26 |
+| Metric        | Free Tier Limit | Upgrade When | New Cost         |
+| ------------- | --------------- | ------------ | ---------------- |
+| **Users**     | 50,000 MAUs     | 40,000 MAUs  | Supabase Pro $25 |
+| **Database**  | 500MB           | 400MB        | Supabase Pro $25 |
+| **Bandwidth** | 100GB           | 80GB         | Vercel Pro $20   |
+| **Emails**    | 3,000/mo        | 2,500/mo     | Resend $20       |
+| **Errors**    | 5,000/mo        | 4,000/mo     | Sentry $26       |
 
 **Total at Scale: ~$100/month for 50K users!**
 
@@ -153,14 +165,16 @@ npm install stripe @stripe/stripe-js
 ## ✅ FINAL CONFIRMATION
 
 ### This Stack Is:
+
 - **Modern** ✅ - Latest Next.js 15.5, React 19, TypeScript 5.6
 - **Free** ✅ - $0/month for MVP
-- **Simple** ✅ - One framework, minimal dependencies  
+- **Simple** ✅ - One framework, minimal dependencies
 - **Scalable** ✅ - Handles 50K users on free tier
 - **Fast** ✅ - 2 week MVP possible
 - **Proven** ✅ - Used by thousands of startups
 
 ### Ready to Build?
+
 ```bash
 # Your next command:
 npx create-next-app@latest klub --typescript --tailwind --app
@@ -173,6 +187,7 @@ npx create-next-app@latest klub --typescript --tailwind --app
 ## 🚨 STOP PLANNING, START BUILDING!
 
 You have everything you need:
+
 - ✅ Modern tech stack (Next.js 15.5 + Supabase)
 - ✅ Zero monthly costs
 - ✅ 14-day implementation plan
@@ -201,6 +216,6 @@ Time to MVP: 14 days
 First Revenue: Day 10
 ```
 
-Save this. Print this. THIS IS YOUR STACK. 
+Save this. Print this. THIS IS YOUR STACK.
 
 **NOW GO BUILD! 💪**

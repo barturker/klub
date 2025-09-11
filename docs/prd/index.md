@@ -1,6 +1,7 @@
 # klub Product Requirements Document (PRD)
 
 ## 🚀 Quick Start
+
 - **[Simplified 2-Week MVP Plan](../simplified-mvp-plan.md)** - START HERE!
 - **[Modern Free Tech Stack](../architecture/modern-free-tech-stack.md)** - Zero cost setup
 - **[MVP Scope](./mvp-scope.md)** - What to build first

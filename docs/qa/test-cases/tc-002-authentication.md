@@ -6,11 +6,13 @@
 **Type:** Functional Test
 
 ### Preconditions
+
 - Auth page implemented
 - Supabase configured
 - Email service ready
 
 ### Test Steps
+
 1. Navigate to `/auth`
 2. Click "Sign Up" tab
 3. Enter email: `test@example.com`
@@ -20,6 +22,7 @@
 7. Verify redirect to dashboard
 
 ### Expected Results
+
 - ✅ User account created in Supabase
 - ✅ Profile automatically generated
 - ✅ Session cookie set
@@ -27,6 +30,7 @@
 - ✅ User ID available in session
 
 ### Actual Results
+
 _To be filled during execution_
 
 ### Status: `Not Executed`
@@ -39,10 +43,12 @@ _To be filled during execution_
 **Type:** Functional Test
 
 ### Preconditions
+
 - User account exists
 - Auth page accessible
 
 ### Test Steps
+
 1. Navigate to `/auth`
 2. Enter email: `test@example.com`
 3. Enter password: `Test123!@#`
@@ -50,6 +56,7 @@ _To be filled during execution_
 5. Verify redirect
 
 ### Expected Results
+
 - ✅ Authentication successful
 - ✅ Session established
 - ✅ Redirected to dashboard or return URL
@@ -57,6 +64,7 @@ _To be filled during execution_
 - ✅ No error messages
 
 ### Actual Results
+
 _To be filled during execution_
 
 ### Status: `Not Executed`
@@ -69,10 +77,12 @@ _To be filled during execution_
 **Type:** Security Test
 
 ### Preconditions
+
 - Protected routes configured
 - Middleware active
 
 ### Test Steps
+
 1. Log out if logged in
 2. Try to access `/dashboard` directly
 3. Verify redirect to `/auth`
@@ -80,12 +90,14 @@ _To be filled during execution_
 5. Verify automatic redirect back to `/dashboard`
 
 ### Expected Results
+
 - ✅ Unauthenticated users redirected to auth
 - ✅ Return URL preserved in redirect
 - ✅ After login, returned to original destination
 - ✅ No access to protected content when logged out
 
 ### Actual Results
+
 _To be filled during execution_
 
 ### Status: `Not Executed`
@@ -98,10 +110,12 @@ _To be filled during execution_
 **Type:** Functional Test
 
 ### Preconditions
+
 - User logged in
 - Session active
 
 ### Test Steps
+
 1. Log in successfully
 2. Note session cookie
 3. Close browser tab (not logout)
@@ -109,12 +123,14 @@ _To be filled during execution_
 5. Check authentication state
 
 ### Expected Results
+
 - ✅ Session maintained after tab close
 - ✅ No re-authentication required
 - ✅ User data still accessible
 - ✅ Session expires after configured time
 
 ### Actual Results
+
 _To be filled during execution_
 
 ### Status: `Not Executed`
@@ -127,10 +143,12 @@ _To be filled during execution_
 **Type:** Functional Test
 
 ### Preconditions
+
 - User logged in
 - User menu accessible
 
 ### Test Steps
+
 1. Click user avatar/menu
 2. Click "Logout" option
 3. Confirm logout (if confirmation exists)
@@ -138,6 +156,7 @@ _To be filled during execution_
 5. Try to access protected route
 
 ### Expected Results
+
 - ✅ Session cleared
 - ✅ Cookies removed
 - ✅ Redirected to home page
@@ -145,6 +164,7 @@ _To be filled during execution_
 - ✅ User menu shows logged-out state
 
 ### Actual Results
+
 _To be filled during execution_
 
 ### Status: `Not Executed`
@@ -157,10 +177,12 @@ _To be filled during execution_
 **Type:** Functional Test
 
 ### Preconditions
+
 - User account exists
 - Email service configured
 
 ### Test Steps
+
 1. Navigate to `/auth`
 2. Click "Forgot Password"
 3. Enter registered email
@@ -169,6 +191,7 @@ _To be filled during execution_
 6. Click link and set new password
 
 ### Expected Results
+
 - ✅ Reset email sent
 - ✅ Magic link valid
 - ✅ Password updated successfully
@@ -176,6 +199,7 @@ _To be filled during execution_
 - ✅ Old password no longer works
 
 ### Actual Results
+
 _To be filled during execution_
 
 ### Status: `Not Executed`
@@ -188,10 +212,12 @@ _To be filled during execution_
 **Type:** Integration Test
 
 ### Preconditions
+
 - Google OAuth configured
 - OAuth consent screen setup
 
 ### Test Steps
+
 1. Navigate to `/auth`
 2. Click "Continue with Google"
 3. Select Google account
@@ -199,6 +225,7 @@ _To be filled during execution_
 5. Verify redirect and profile creation
 
 ### Expected Results
+
 - ✅ Google auth popup appears
 - ✅ Authorization successful
 - ✅ Profile created with Google data
@@ -206,6 +233,7 @@ _To be filled during execution_
 - ✅ Redirected to dashboard
 
 ### Actual Results
+
 _To be filled during execution_
 
 ### Status: `Not Executed`
@@ -218,9 +246,11 @@ _To be filled during execution_
 **Type:** Error Test
 
 ### Preconditions
+
 - Auth system active
 
 ### Test Steps
+
 1. Try login with wrong password
 2. Try signup with existing email
 3. Try login with non-existent email
@@ -228,6 +258,7 @@ _To be filled during execution_
 5. Try weak password
 
 ### Expected Results
+
 - ✅ Clear error messages displayed
 - ✅ No sensitive info in errors
 - ✅ Form remains filled (except password)
@@ -235,6 +266,7 @@ _To be filled during execution_
 - ✅ Can retry after error
 
 ### Actual Results
+
 _To be filled during execution_
 
 ### Status: `Not Executed`

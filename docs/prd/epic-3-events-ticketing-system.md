@@ -9,6 +9,7 @@ I want **to create events with all necessary details**,
 so that **members can discover and attend my events**.
 
 **Acceptance Criteria:**
+
 1. Multi-step event creation form with save draft capability
 2. Event fields: title, description, date/time, location, capacity
 3. Event type selection (physical/virtual/hybrid)
@@ -25,6 +26,7 @@ I want **to set different ticket prices and types**,
 so that **I can maximize revenue and offer options**.
 
 **Acceptance Criteria:**
+
 1. Multiple ticket tiers (Early Bird, General, VIP)
 2. Tier limits and availability windows
 3. Free and paid ticket options
@@ -41,6 +43,7 @@ I want **to securely purchase event tickets**,
 so that **I can attend events without payment concerns**.
 
 **Acceptance Criteria:**
+
 1. Stripe Connect onboarding for organizers
 2. Payment form with card, Apple Pay, Google Pay
 3. 3D Secure authentication when required
@@ -57,6 +60,7 @@ I want **to manage ticket orders and process refunds**,
 so that **I can handle customer service issues**.
 
 **Acceptance Criteria:**
+
 1. Order dashboard with filter and search
 2. Order details: purchaser, tickets, payment status
 3. Refund processing with partial refund option
@@ -73,6 +77,7 @@ I want **to discover upcoming events and manage my schedule**,
 so that **I don't miss events I'm interested in**.
 
 **Acceptance Criteria:**
+
 1. Event calendar view (month/week/list)
 2. Filter by date, category, price range
 3. Event cards with key info and ticket availability
@@ -89,6 +94,7 @@ I want **to check in attendees quickly at events**,
 so that **entry management is smooth and professional**.
 
 **Acceptance Criteria:**
+
 1. QR code generated for each ticket purchase
 2. Scanner interface in mobile app
 3. Offline check-in capability with sync

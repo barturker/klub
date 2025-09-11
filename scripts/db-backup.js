@@ -12,7 +12,7 @@ const path = require('path');
 // Backup al
 function backupData() {
   console.log('📦 Data backup alınıyor...');
-  
+
   const backupSQL = `
 -- BACKUP SCRIPT
 -- Generated at: ${new Date().toISOString()}
@@ -46,13 +46,13 @@ SELECT * FROM community_members;
   // Backup dosyası oluştur
   const backupFile = path.join(__dirname, '..', 'supabase', 'backup.sql');
   fs.writeFileSync(backupFile, backupSQL);
-  
+
   console.log('✅ Backup SQL oluşturuldu: supabase/backup.sql');
   console.log('\n📋 YAPMANIZ GEREKENLER:');
   console.log('1. Supabase Dashboard > SQL Editor');
   console.log('2. backup.sql içeriğini çalıştır');
   console.log('3. Backup tabloları oluşacak');
-  
+
   return backupFile;
 }
 
@@ -101,7 +101,7 @@ DROP TABLE IF EXISTS backup_community_members CASCADE;
 
   const restoreFile = path.join(__dirname, '..', 'supabase', 'restore.sql');
   fs.writeFileSync(restoreFile, restoreSQL);
-  
+
   console.log('✅ Restore SQL oluşturuldu: supabase/restore.sql');
   console.log('\n📋 RESTORE İÇİN:');
   console.log('1. Reset sonrası');

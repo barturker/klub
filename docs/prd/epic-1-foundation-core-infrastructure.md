@@ -9,6 +9,7 @@ I want **a properly configured monorepo with all necessary tooling**,
 so that **the team can efficiently develop and share code across multiple applications**.
 
 **Acceptance Criteria:**
+
 1. Next.js 14 app created with App Router, TypeScript, and Tailwind CSS
 2. Directory structure created: /app (routes), /components, /lib (utilities), /types
 3. TypeScript configured with strict mode and path aliases
@@ -25,6 +26,7 @@ I want **automated deployments with Vercel**,
 so that **every git push automatically deploys with preview URLs**.
 
 **Acceptance Criteria:**
+
 1. Vercel connected to GitHub repository for automatic deployments
 2. Preview deployments created for every pull request
 3. Production deployment triggered on merge to main branch
@@ -41,6 +43,7 @@ I want **Supabase database with built-in features**,
 so that **we get auth, realtime, and storage without additional setup**.
 
 **Acceptance Criteria:**
+
 1. Supabase project created with free tier (500MB database)
 2. Database schema created using Supabase SQL editor
 3. Row Level Security (RLS) policies configured for all tables
@@ -57,6 +60,7 @@ I want **to create an account and securely log in**,
 so that **I can access the platform's features**.
 
 **Acceptance Criteria:**
+
 1. Supabase Auth configured with email/password authentication
 2. Social login implemented (Google, GitHub, Discord - all free)
 3. Magic link authentication option available
@@ -73,6 +77,7 @@ I want **Next.js API routes with type safety**,
 so that **we have a simple, fast API without additional backend**.
 
 **Acceptance Criteria:**
+
 1. API routes structure created in /app/api folder
 2. tRPC configured for type-safe API calls (optional but recommended)
 3. Supabase server client configured for API routes
@@ -89,6 +94,7 @@ I want **to create a basic community with name and description**,
 so that **I can start building my community on the platform**.
 
 **Acceptance Criteria:**
+
 1. Community table created in Supabase with fields: id, name, description, slug, organizer_id
 2. API route POST /api/communities for creating community
 3. Unique slug generation using slugify library
@@ -105,6 +111,7 @@ I want **monitoring and analytics from day one**,
 so that **we can track performance and errors with zero cost**.
 
 **Acceptance Criteria:**
+
 1. Health check API route at /api/health returning status
 2. PostHog analytics configured (1M events free/month)
 3. Sentry error tracking integrated (5K errors free/month)

@@ -9,6 +9,7 @@ I want **to track my community's financial performance**,
 so that **I can optimize monetization strategies**.
 
 **Acceptance Criteria:**
+
 1. Revenue dashboard with MRR, total revenue, growth rate
 2. Revenue breakdown by source (events, memberships)
 3. Transaction list with export capability
@@ -25,6 +26,7 @@ I want **to understand my member demographics and behavior**,
 so that **I can better serve my community**.
 
 **Acceptance Criteria:**
+
 1. Member growth chart with acquisition sources
 2. Member retention and churn metrics
 3. Geographic distribution map
@@ -41,6 +43,7 @@ I want **to measure community engagement**,
 so that **I can improve content and activities**.
 
 **Acceptance Criteria:**
+
 1. Post engagement rates (views, likes, comments)
 2. Event attendance analytics
 3. Peak activity times heatmap

@@ -1,9 +1,11 @@
 # Supabase Database Schema
 
 ## Overview
+
 Complete database schema for klub using Supabase PostgreSQL with Row Level Security (RLS) policies.
 
 ## Core Principles
+
 - **Row Level Security (RLS)** on all tables
 - **UUID primary keys** for all tables
 - **Soft deletes** using `deleted_at` timestamps
@@ -71,13 +73,13 @@ CREATE TABLE profiles (
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
 -- Users can view all profiles
-CREATE POLICY "Profiles are viewable by everyone" 
-ON profiles FOR SELECT 
+CREATE POLICY "Profiles are viewable by everyone"
+ON profiles FOR SELECT
 USING (true);
 
 -- Users can update own profile
-CREATE POLICY "Users can update own profile" 
-ON profiles FOR UPDATE 
+CREATE POLICY "Users can update own profile"
+ON profiles FOR UPDATE
 USING (auth.uid() = id);
 
 -- Automatic profile creation trigger
@@ -113,20 +115,20 @@ CREATE TABLE communities (
     category TEXT NOT NULL,
     privacy community_privacy DEFAULT 'public',
     organizer_id UUID REFERENCES profiles(id) NOT NULL,
-    
+
     -- Settings and features
     settings JSONB DEFAULT '{}',
     features JSONB DEFAULT '{"events": true, "discussions": true, "memberships": true}',
-    
+
     -- Stats (denormalized for performance)
     member_count INTEGER DEFAULT 0,
     event_count INTEGER DEFAULT 0,
-    
+
     -- Timestamps
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     deleted_at TIMESTAMPTZ,
-    
+
     -- Indexes
     CONSTRAINT slug_format CHECK (slug ~ '^[a-z0-9-]+$')
 );
@@ -139,20 +141,20 @@ CREATE INDEX idx_communities_category ON communities(category);
 ALTER TABLE communities ENABLE ROW LEVEL SECURITY;
 
 -- Public communities viewable by all
-CREATE POLICY "Public communities are viewable" 
-ON communities FOR SELECT 
+CREATE POLICY "Public communities are viewable"
+ON communities FOR SELECT
 USING (privacy = 'public' OR auth.uid() IN (
     SELECT user_id FROM community_members WHERE community_id = communities.id
 ));
 
 -- Only organizers can create
-CREATE POLICY "Users can create communities" 
-ON communities FOR INSERT 
+CREATE POLICY "Users can create communities"
+ON communities FOR INSERT
 WITH CHECK (auth.uid() = organizer_id);
 
 -- Only organizers can update
-CREATE POLICY "Organizers can update their communities" 
-ON communities FOR UPDATE 
+CREATE POLICY "Organizers can update their communities"
+ON communities FOR UPDATE
 USING (auth.uid() = organizer_id);
 ```
 
@@ -167,7 +169,7 @@ CREATE TABLE community_members (
     role user_role DEFAULT 'member',
     joined_at TIMESTAMPTZ DEFAULT NOW(),
     metadata JSONB DEFAULT '{}',
-    
+
     UNIQUE(community_id, user_id)
 );
 
@@ -178,21 +180,21 @@ CREATE INDEX idx_members_user ON community_members(user_id);
 ALTER TABLE community_members ENABLE ROW LEVEL SECURITY;
 
 -- Members can view other members
-CREATE POLICY "Members can view community members" 
-ON community_members FOR SELECT 
+CREATE POLICY "Members can view community members"
+ON community_members FOR SELECT
 USING (
     auth.uid() IN (
-        SELECT user_id FROM community_members cm 
+        SELECT user_id FROM community_members cm
         WHERE cm.community_id = community_members.community_id
     )
 );
 
 -- Organizers can manage members
-CREATE POLICY "Organizers can manage members" 
-ON community_members FOR ALL 
+CREATE POLICY "Organizers can manage members"
+ON community_members FOR ALL
 USING (
     auth.uid() IN (
-        SELECT organizer_id FROM communities 
+        SELECT organizer_id FROM communities
         WHERE id = community_members.community_id
     )
 );
@@ -206,41 +208,41 @@ CREATE TABLE events (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     community_id UUID REFERENCES communities(id) ON DELETE CASCADE,
     organizer_id UUID REFERENCES profiles(id),
-    
+
     -- Basic info
     title TEXT NOT NULL,
     description TEXT,
     type event_type NOT NULL,
     status event_status DEFAULT 'draft',
-    
+
     -- Timing
     start_at TIMESTAMPTZ NOT NULL,
     end_at TIMESTAMPTZ NOT NULL,
     timezone TEXT NOT NULL DEFAULT 'UTC',
-    
+
     -- Location (for physical/hybrid)
     venue_name TEXT,
     venue_address TEXT,
     venue_city TEXT,
     venue_country TEXT,
     venue_coordinates POINT,
-    
+
     -- Virtual info
     virtual_url TEXT,
     virtual_platform TEXT,
-    
+
     -- Capacity and pricing
     capacity INTEGER,
     attendee_count INTEGER DEFAULT 0,
     min_price INTEGER DEFAULT 0, -- in cents
     max_price INTEGER DEFAULT 0,
-    
+
     -- Media and metadata
     cover_url TEXT,
     images TEXT[] DEFAULT '{}',
     tags TEXT[] DEFAULT '{}',
     metadata JSONB DEFAULT '{}',
-    
+
     -- Timestamps
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -257,13 +259,13 @@ CREATE INDEX idx_events_search ON events USING GIN(to_tsvector('english', title 
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 
 -- Published events are public
-CREATE POLICY "Published events are viewable" 
-ON events FOR SELECT 
+CREATE POLICY "Published events are viewable"
+ON events FOR SELECT
 USING (status = 'published' OR organizer_id = auth.uid());
 
 -- Organizers can manage events
-CREATE POLICY "Organizers can manage events" 
-ON events FOR ALL 
+CREATE POLICY "Organizers can manage events"
+ON events FOR ALL
 USING (organizer_id = auth.uid() OR auth.uid() IN (
     SELECT organizer_id FROM communities WHERE id = events.community_id
 ));
@@ -281,15 +283,15 @@ CREATE TABLE ticket_tiers (
     price INTEGER NOT NULL, -- in cents
     capacity INTEGER,
     sold_count INTEGER DEFAULT 0,
-    
+
     -- Sale window
     sales_start_at TIMESTAMPTZ,
     sales_end_at TIMESTAMPTZ,
-    
+
     -- Benefits and metadata
     benefits TEXT[] DEFAULT '{}',
     metadata JSONB DEFAULT '{}',
-    
+
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -299,18 +301,18 @@ CREATE TABLE orders (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID REFERENCES profiles(id),
     event_id UUID REFERENCES events(id),
-    
+
     -- Payment info
     amount INTEGER NOT NULL, -- in cents
     currency TEXT DEFAULT 'USD',
     status order_status DEFAULT 'pending',
     stripe_payment_intent_id TEXT,
     stripe_charge_id TEXT,
-    
+
     -- Order details
     items JSONB NOT NULL, -- Array of {ticket_tier_id, quantity, price}
     metadata JSONB DEFAULT '{}',
-    
+
     -- Timestamps
     created_at TIMESTAMPTZ DEFAULT NOW(),
     completed_at TIMESTAMPTZ,
@@ -324,16 +326,16 @@ CREATE TABLE tickets (
     event_id UUID REFERENCES events(id),
     ticket_tier_id UUID REFERENCES ticket_tiers(id),
     user_id UUID REFERENCES profiles(id),
-    
+
     -- Ticket info
     code TEXT UNIQUE NOT NULL, -- QR code value
     status TEXT DEFAULT 'valid', -- valid, used, cancelled
-    
+
     -- Check-in
     checked_in BOOLEAN DEFAULT FALSE,
     checked_in_at TIMESTAMPTZ,
     checked_in_by UUID REFERENCES profiles(id),
-    
+
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -350,21 +352,21 @@ CREATE TABLE posts (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     community_id UUID REFERENCES communities(id) ON DELETE CASCADE,
     author_id UUID REFERENCES profiles(id),
-    
+
     -- Content
     title TEXT,
     content TEXT NOT NULL,
     images TEXT[] DEFAULT '{}',
-    
+
     -- Engagement stats (denormalized)
     like_count INTEGER DEFAULT 0,
     comment_count INTEGER DEFAULT 0,
     view_count INTEGER DEFAULT 0,
-    
+
     -- Status
     is_pinned BOOLEAN DEFAULT FALSE,
     is_locked BOOLEAN DEFAULT FALSE,
-    
+
     -- Timestamps
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -377,10 +379,10 @@ CREATE TABLE comments (
     post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
     author_id UUID REFERENCES profiles(id),
     parent_id UUID REFERENCES comments(id), -- For nested comments
-    
+
     content TEXT NOT NULL,
     like_count INTEGER DEFAULT 0,
-    
+
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     deleted_at TIMESTAMPTZ
@@ -393,7 +395,7 @@ CREATE TABLE likes (
     entity_type TEXT NOT NULL, -- 'post', 'comment'
     entity_id UUID NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    
+
     UNIQUE(user_id, entity_type, entity_id)
 );
 ```
@@ -421,14 +423,14 @@ BEGIN
     base_slug := regexp_replace(lower(name), '[^a-z0-9]+', '-', 'g');
     base_slug := trim(both '-' from base_slug);
     final_slug := base_slug;
-    
+
     WHILE EXISTS (
         SELECT 1 FROM communities WHERE slug = final_slug
     ) LOOP
         counter := counter + 1;
         final_slug := base_slug || '-' || counter;
     END LOOP;
-    
+
     RETURN final_slug;
 END;
 $$ LANGUAGE plpgsql;
@@ -466,14 +468,14 @@ CREATE TRIGGER update_communities_updated_at BEFORE UPDATE ON communities
 
 ```sql
 -- Full-text search
-CREATE INDEX idx_communities_search ON communities 
+CREATE INDEX idx_communities_search ON communities
 USING GIN(to_tsvector('english', name || ' ' || COALESCE(description, '')));
 
 -- Frequently queried columns
-CREATE INDEX idx_events_upcoming ON events(start_at) 
+CREATE INDEX idx_events_upcoming ON events(start_at)
 WHERE status = 'published' AND start_at > NOW();
 
-CREATE INDEX idx_posts_recent ON posts(created_at DESC) 
+CREATE INDEX idx_posts_recent ON posts(created_at DESC)
 WHERE deleted_at IS NULL;
 
 -- Composite indexes for common queries
@@ -486,7 +488,7 @@ CREATE INDEX idx_orders_user_status ON orders(user_id, status);
 ```sql
 -- Insert sample categories
 INSERT INTO communities (name, slug, description, category, organizer_id)
-VALUES 
+VALUES
     ('Tech Innovators', 'tech-innovators', 'Community for tech enthusiasts', 'technology', auth.uid()),
     ('Fitness Warriors', 'fitness-warriors', 'Get fit together', 'fitness', auth.uid());
 

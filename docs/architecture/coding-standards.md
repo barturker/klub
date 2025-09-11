@@ -1,11 +1,13 @@
 # Coding Standards
 
 ## Overview
+
 This document defines the coding standards and best practices for the Klub project. All contributors should follow these guidelines to maintain code quality, consistency, and readability.
 
 ## General Principles
 
 ### Core Values
+
 1. **Readability** - Code is read more often than written
 2. **Simplicity** - Prefer simple, clear solutions over clever ones
 3. **Consistency** - Follow established patterns throughout the codebase
@@ -15,6 +17,7 @@ This document defines the coding standards and best practices for the Klub proje
 ## TypeScript Standards
 
 ### Type Safety
+
 ```typescript
 // ✅ Good - Explicit types
 interface User {
@@ -35,32 +38,36 @@ function processData(data: any) {
 ```
 
 ### Strict Mode
+
 - TypeScript strict mode is **enabled**
 - No implicit `any` types
 - Strict null checks
 - Strict function types
 
 ### Type Definitions
+
 - Define interfaces for all data structures
 - Use type aliases for unions and complex types
 - Export shared types from dedicated `.types.ts` files
 - Prefer interfaces over type aliases for object shapes
 
 ### Enums and Constants
+
 ```typescript
 // Use const assertions for literal types
 const STATUS = {
   PENDING: 'pending',
   ACTIVE: 'active',
-  COMPLETED: 'completed'
+  COMPLETED: 'completed',
 } as const;
 
-type Status = typeof STATUS[keyof typeof STATUS];
+type Status = (typeof STATUS)[keyof typeof STATUS];
 ```
 
 ## React & Next.js Standards
 
 ### Component Structure
+
 ```typescript
 // ✅ Good - Functional component with proper typing
 interface ButtonProps {
@@ -70,11 +77,11 @@ interface ButtonProps {
   disabled?: boolean;
 }
 
-export function Button({ 
-  children, 
-  onClick, 
+export function Button({
+  children,
+  onClick,
   variant = 'primary',
-  disabled = false 
+  disabled = false
 }: ButtonProps) {
   return (
     <button
@@ -89,6 +96,7 @@ export function Button({
 ```
 
 ### File Organization
+
 ```
 components/
   Button/
@@ -99,6 +107,7 @@ components/
 ```
 
 ### Component Guidelines
+
 - Use functional components with hooks
 - One component per file
 - Components should be pure when possible
@@ -106,6 +115,7 @@ components/
 - Implement proper error boundaries
 
 ### Hooks Rules
+
 ```typescript
 // Custom hooks must start with 'use'
 function useAuth() {
@@ -115,7 +125,7 @@ function useAuth() {
 // Hooks must be called at the top level
 function Component() {
   const auth = useAuth(); // ✅ Good
-  
+
   if (condition) {
     const data = useData(); // ❌ Bad - conditional hook
   }
@@ -123,6 +133,7 @@ function Component() {
 ```
 
 ### Server vs Client Components
+
 ```typescript
 // Server Component (default)
 // app/components/ServerComponent.tsx
@@ -146,30 +157,35 @@ export function ClientComponent() {
 ## Styling Standards
 
 ### Tailwind CSS
+
 ```tsx
 // ✅ Good - Using Tailwind utilities
-<div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-md">
+<div className="flex items-center justify-between rounded-lg bg-white p-4 shadow-md">
   <h2 className="text-xl font-semibold text-gray-900">Title</h2>
-</div>
+</div>;
 
 // ✅ Good - Using cn() for conditional classes
 import { cn } from '@/lib/utils';
 
-<button className={cn(
-  "px-4 py-2 rounded",
-  variant === 'primary' && "bg-blue-500 text-white",
-  variant === 'secondary' && "bg-gray-200 text-gray-900",
-  disabled && "opacity-50 cursor-not-allowed"
-)} />
+<button
+  className={cn(
+    'rounded px-4 py-2',
+    variant === 'primary' && 'bg-blue-500 text-white',
+    variant === 'secondary' && 'bg-gray-200 text-gray-900',
+    disabled && 'cursor-not-allowed opacity-50'
+  )}
+/>;
 ```
 
 ### CSS Organization
+
 - Use Tailwind utilities as primary styling method
 - Keep custom CSS in `globals.css` to minimum
 - Use CSS modules only when necessary
 - Follow mobile-first responsive design
 
 ### Design Tokens
+
 - Use Tailwind config for design tokens
 - Maintain consistent spacing scale
 - Define custom colors in config
@@ -178,6 +194,7 @@ import { cn } from '@/lib/utils';
 ## Code Organization
 
 ### File Naming
+
 - **Components**: PascalCase (e.g., `UserProfile.tsx`)
 - **Utilities**: camelCase (e.g., `formatDate.ts`)
 - **Types**: PascalCase with `.types.ts` suffix
@@ -185,6 +202,7 @@ import { cn } from '@/lib/utils';
 - **Styles**: Same name with `.module.css` if needed
 
 ### Directory Structure
+
 ```
 src/
   app/              # Next.js app directory
@@ -198,6 +216,7 @@ src/
 ```
 
 ### Import Order
+
 ```typescript
 // 1. React/Next.js imports
 import { useState, useEffect } from 'react';
@@ -222,6 +241,7 @@ import styles from './Component.module.css';
 ```
 
 ### Barrel Exports
+
 ```typescript
 // components/ui/index.ts
 export { Button } from './Button';
@@ -232,6 +252,7 @@ export { Card } from './Card';
 ## JavaScript/TypeScript Best Practices
 
 ### Variables and Functions
+
 ```typescript
 // Use const by default, let when reassignment needed
 const MAX_RETRIES = 3;
@@ -248,6 +269,7 @@ const calcTotPrc = (itms: Item[]) => { // ❌ Bad
 ```
 
 ### Async/Await
+
 ```typescript
 // ✅ Good - Using async/await with proper error handling
 async function fetchUserData(userId: string) {
@@ -265,6 +287,7 @@ async function fetchUserData(userId: string) {
 ```
 
 ### Error Handling
+
 ```typescript
 // Define custom error types
 class ValidationError extends Error {
@@ -287,17 +310,18 @@ try {
 ```
 
 ### Array Methods
+
 ```typescript
 // Prefer functional methods over loops
-const activeUsers = users.filter(user => user.isActive);
-const userNames = users.map(user => user.name);
+const activeUsers = users.filter((user) => user.isActive);
+const userNames = users.map((user) => user.name);
 const totalAge = users.reduce((sum, user) => sum + user.age, 0);
 
 // Use early returns
 function processUser(user: User) {
   if (!user.isActive) return null;
   if (!user.email) return null;
-  
+
   // Process active user with email
 }
 ```
@@ -305,30 +329,33 @@ function processUser(user: User) {
 ## Database & Supabase Standards
 
 ### Query Patterns
+
 ```typescript
 // ✅ Good - Type-safe Supabase queries
 import { createClient } from '@/lib/supabase/server';
 
 export async function getUser(userId: string) {
   const supabase = createClient();
-  
+
   const { data, error } = await supabase
     .from('users')
     .select('*')
     .eq('id', userId)
     .single();
-    
+
   if (error) throw error;
   return data;
 }
 ```
 
 ### Database Types
+
 - Always generate types from database schema
 - Use generated types in all database operations
 - Keep types in sync with migrations
 
 ### Row Level Security
+
 - Implement RLS policies for all tables
 - Test policies thoroughly
 - Document policy logic
@@ -336,6 +363,7 @@ export async function getUser(userId: string) {
 ## API Standards
 
 ### RESTful Endpoints
+
 ```typescript
 // app/api/users/[id]/route.ts
 export async function GET(
@@ -361,31 +389,39 @@ export async function DELETE(
 ```
 
 ### Response Format
+
 ```typescript
 // Success response
-return Response.json({
-  data: result,
-  error: null
-}, { status: 200 });
+return Response.json(
+  {
+    data: result,
+    error: null,
+  },
+  { status: 200 }
+);
 
 // Error response
-return Response.json({
-  data: null,
-  error: {
-    message: 'User not found',
-    code: 'USER_NOT_FOUND'
-  }
-}, { status: 404 });
+return Response.json(
+  {
+    data: null,
+    error: {
+      message: 'User not found',
+      code: 'USER_NOT_FOUND',
+    },
+  },
+  { status: 404 }
+);
 ```
 
 ### Validation
+
 ```typescript
 import { z } from 'zod';
 
 const userSchema = z.object({
   email: z.string().email(),
   name: z.string().min(1).max(100),
-  age: z.number().min(0).max(150)
+  age: z.number().min(0).max(150),
 });
 
 // Validate request body
@@ -396,16 +432,17 @@ const validatedData = userSchema.parse(body);
 ## Testing Standards
 
 ### Test Structure
+
 ```typescript
 describe('Button Component', () => {
   it('should render children correctly', () => {
     // Test implementation
   });
-  
+
   it('should handle click events', () => {
     // Test implementation
   });
-  
+
   it('should apply variant styles', () => {
     // Test implementation
   });
@@ -413,6 +450,7 @@ describe('Button Component', () => {
 ```
 
 ### Testing Guidelines
+
 - Write tests for critical paths
 - Test edge cases and error scenarios
 - Mock external dependencies
@@ -422,6 +460,7 @@ describe('Button Component', () => {
 ## Performance Guidelines
 
 ### Code Splitting
+
 ```typescript
 // Dynamic imports for code splitting
 const HeavyComponent = dynamic(() => import('./HeavyComponent'), {
@@ -431,6 +470,7 @@ const HeavyComponent = dynamic(() => import('./HeavyComponent'), {
 ```
 
 ### Optimization Techniques
+
 - Use React.memo for expensive components
 - Implement proper key props in lists
 - Lazy load images and components
@@ -438,34 +478,32 @@ const HeavyComponent = dynamic(() => import('./HeavyComponent'), {
 - Use Server Components by default
 
 ### Image Optimization
+
 ```tsx
 import Image from 'next/image';
 
 // ✅ Good - Using Next.js Image component
-<Image
-  src="/hero.jpg"
-  alt="Hero image"
-  width={1200}
-  height={600}
-  priority
-/>
+<Image src="/hero.jpg" alt="Hero image" width={1200} height={600} priority />;
 ```
 
 ## Security Standards
 
 ### Input Validation
+
 - Always validate user input
 - Sanitize data before storage
 - Use parameterized queries
 - Implement rate limiting
 
 ### Authentication
+
 - Use Supabase Auth for authentication
 - Implement proper session management
 - Follow OAuth best practices
 - Never expose sensitive data
 
 ### Environment Variables
+
 ```typescript
 // ✅ Good - Type-safe env vars
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -480,6 +518,7 @@ if (!supabaseUrl) {
 ## Git Commit Standards
 
 ### Commit Messages
+
 ```
 feat: Add user authentication
 fix: Resolve navigation bug in mobile view
@@ -491,6 +530,7 @@ chore: Update dependencies
 ```
 
 ### Branch Naming
+
 ```
 feature/user-authentication
 bugfix/mobile-navigation
@@ -501,6 +541,7 @@ chore/update-dependencies
 ## Documentation Standards
 
 ### Code Comments
+
 ```typescript
 /**
  * Calculates the total price including tax
@@ -514,6 +555,7 @@ function calculateTotal(items: CartItem[], taxRate: number): number {
 ```
 
 ### README Files
+
 - Include setup instructions
 - Document environment variables
 - Provide API documentation
@@ -522,6 +564,7 @@ function calculateTotal(items: CartItem[], taxRate: number): number {
 ## Code Review Checklist
 
 ### Before Submitting PR
+
 - [ ] Code follows style guidelines
 - [ ] Self-review performed
 - [ ] Comments added for complex logic
@@ -533,6 +576,7 @@ function calculateTotal(items: CartItem[], taxRate: number): number {
 - [ ] Accessibility checked
 
 ### Review Focus Areas
+
 1. Logic correctness
 2. Performance implications
 3. Security vulnerabilities
@@ -543,16 +587,19 @@ function calculateTotal(items: CartItem[], taxRate: number): number {
 ## Tooling Configuration
 
 ### ESLint
+
 - Extends Next.js recommended config
 - TypeScript rules enabled
 - Custom rules as needed
 
 ### TypeScript
+
 - Strict mode enabled
 - No implicit any
 - Path aliases configured
 
 ### Prettier (if added)
+
 ```json
 {
   "semi": true,
@@ -564,6 +611,7 @@ function calculateTotal(items: CartItem[], taxRate: number): number {
 ```
 
 ## Continuous Improvement
+
 - Regularly review and update standards
 - Discuss improvements in team meetings
 - Document decisions and rationale
@@ -571,6 +619,7 @@ function calculateTotal(items: CartItem[], taxRate: number): number {
 - Learn from post-mortems
 
 ## Resources
+
 - [Next.js Documentation](https://nextjs.org/docs)
 - [React Documentation](https://react.dev)
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/)

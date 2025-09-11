@@ -3,8 +3,9 @@
 ## UX Expert Prompt
 
 Please review this PRD and create the UX/UI architecture for klub. Focus on:
+
 1. Mobile-first design patterns for iOS and Android
-2. Information architecture for community, events, and payment flows  
+2. Information architecture for community, events, and payment flows
 3. Component library definition following the design system
 4. Accessibility compliance with WCAG AA standards
 5. User journey maps for organizer and member personas
@@ -14,6 +15,7 @@ Use the UI Design Goals section as your north star, and ensure all screens liste
 ## Architect Prompt
 
 Please review this PRD and create the technical architecture for klub. Focus on:
+
 1. Detailed system design for the modular monolith with clear domain boundaries
 2. API schema design using GraphQL with proper federation setup
 3. Database schema with relationships for communities, events, members, and payments

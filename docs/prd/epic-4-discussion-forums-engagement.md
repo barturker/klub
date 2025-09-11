@@ -9,6 +9,7 @@ I want **to create posts with text and media**,
 so that **I can share content with my community**.
 
 **Acceptance Criteria:**
+
 1. Post composer with rich text formatting
 2. Image upload with multi-image support
 3. Link preview with metadata extraction
@@ -25,6 +26,7 @@ I want **to comment on posts and reply to others**,
 so that **I can engage in meaningful discussions**.
 
 **Acceptance Criteria:**
+
 1. Nested comments up to 3 levels deep
 2. @mention functionality with notifications
 3. Comment editing within 5 minutes
@@ -41,6 +43,7 @@ I want **to manage community content**,
 so that **the community remains safe and on-topic**.
 
 **Acceptance Criteria:**
+
 1. Report button on all content with reason selection
 2. Moderation queue with reported content
 3. Actions: approve, remove, warn user
@@ -57,6 +60,7 @@ I want **to stay updated on community activity**,
 so that **I don't miss important discussions**.
 
 **Acceptance Criteria:**
+
 1. In-app notification center
 2. Notification types: mentions, replies, likes, events
 3. Push notification preferences per type
