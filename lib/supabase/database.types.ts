@@ -96,45 +96,113 @@ export type Database = {
           avatar_url: string | null
           cover_image_url: string | null
           created_at: string
+          custom_domain: string | null
           description: string | null
+          features: Json | null
+          has_events: boolean | null
           id: string
           is_public: boolean
+          last_settings_changed_at: string | null
+          last_settings_changed_by: string | null
           member_count: number
           name: string
           organizer_id: string
+          privacy_level: string | null
           search_tsv: unknown | null
           slug: string
+          theme_color: string | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
           cover_image_url?: string | null
           created_at?: string
+          custom_domain?: string | null
           description?: string | null
+          features?: Json | null
+          has_events?: boolean | null
           id?: string
           is_public?: boolean
+          last_settings_changed_at?: string | null
+          last_settings_changed_by?: string | null
           member_count?: number
           name: string
           organizer_id: string
+          privacy_level?: string | null
           search_tsv?: unknown | null
           slug: string
+          theme_color?: string | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
           cover_image_url?: string | null
           created_at?: string
+          custom_domain?: string | null
           description?: string | null
+          features?: Json | null
+          has_events?: boolean | null
           id?: string
           is_public?: boolean
+          last_settings_changed_at?: string | null
+          last_settings_changed_by?: string | null
           member_count?: number
           name?: string
           organizer_id?: string
+          privacy_level?: string | null
           search_tsv?: unknown | null
           slug?: string
+          theme_color?: string | null
           updated_at?: string
         }
         Relationships: []
+      }
+      community_join_requests: {
+        Row: {
+          community_id: string
+          expires_at: string | null
+          id: string
+          processed_at: string | null
+          processed_by: string | null
+          rejection_reason: string | null
+          request_message: string | null
+          requested_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          community_id: string
+          expires_at?: string | null
+          id?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          rejection_reason?: string | null
+          request_message?: string | null
+          requested_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          community_id?: string
+          expires_at?: string | null
+          id?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          rejection_reason?: string | null
+          request_message?: string | null
+          requested_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_join_requests_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       community_members: {
         Row: {
@@ -161,6 +229,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "community_members_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_settings_history: {
+        Row: {
+          change_type: string
+          changed_at: string
+          changed_by: string | null
+          changed_fields: string[]
+          community_id: string
+          id: string
+          ip_address: unknown | null
+          new_values: Json
+          old_values: Json | null
+          user_agent: string | null
+        }
+        Insert: {
+          change_type: string
+          changed_at?: string
+          changed_by?: string | null
+          changed_fields: string[]
+          community_id: string
+          id?: string
+          ip_address?: unknown | null
+          new_values: Json
+          old_values?: Json | null
+          user_agent?: string | null
+        }
+        Update: {
+          change_type?: string
+          changed_at?: string
+          changed_by?: string | null
+          changed_fields?: string[]
+          community_id?: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json
+          old_values?: Json | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_settings_history_community_id_fkey"
             columns: ["community_id"]
             isOneToOne: false
             referencedRelation: "communities"
@@ -364,6 +479,7 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           created_at: string
+          email: string | null
           full_name: string | null
           id: string
           updated_at: string
@@ -374,6 +490,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          email?: string | null
           full_name?: string | null
           id: string
           updated_at?: string
@@ -384,11 +501,42 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          email?: string | null
           full_name?: string | null
           id?: string
           updated_at?: string
           username?: string | null
           website?: string | null
+        }
+        Relationships: []
+      }
+      rate_limits: {
+        Row: {
+          action: string
+          count: number
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          action: string
+          count?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          window_start?: string
+        }
+        Update: {
+          action?: string
+          count?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          window_start?: string
         }
         Relationships: []
       }
@@ -716,6 +864,23 @@ export type Database = {
         Args: { "": unknown } | { "": unknown }
         Returns: string
       }
+      check_rate_limit: {
+        Args: {
+          p_action: string
+          p_max_attempts: number
+          p_user_id: string
+          p_window_hours?: number
+        }
+        Returns: {
+          allowed: boolean
+          current_count: number
+          reset_at: string
+        }[]
+      }
+      cleanup_old_rate_limits: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       disablelongtransactions: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -746,6 +911,10 @@ export type Database = {
       equals: {
         Args: { geom1: unknown; geom2: unknown }
         Returns: boolean
+      }
+      expire_old_join_requests: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       generate_pass_for_ticket: {
         Args: { p_ticket_id: string }
@@ -1014,6 +1183,10 @@ export type Database = {
       gtrgm_out: {
         Args: { "": unknown }
         Returns: unknown
+      }
+      increment_rate_limit: {
+        Args: { p_action: string; p_user_id: string; p_window_hours?: number }
+        Returns: undefined
       }
       json: {
         Args: { "": unknown }
