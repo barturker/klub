@@ -1,5 +1,33 @@
 # Supabase Migration Rules for Claude AI
 
+## 🚫 Forbidden Operations (Hard Rules)
+
+These rules must NEVER be violated:
+
+❌ **ALTER TABLE ... DISABLE ROW LEVEL SECURITY** → RLS must ALWAYS remain ENABLED
+
+❌ **Global RLS or bulk policy deletion** → Policy changes must be additive (add new, test, then remove old)
+
+❌ **DROP TABLE, DROP TYPE, DROP POLICY, DROP FUNCTION** destructive changes → Only with explicit deprecation process, in separate migration with manual approval
+
+❌ **Column rename/drop** → First add new column + populate + app transition → then remove old
+
+❌ **ENUM modification** → Don't use ALTER TYPE. Prefer TEXT + CHECK approach
+
+## ✅ Allowed Pattern for RLS/Policies
+
+1. Add new policy → test → remove old in separate migration if needed
+2. Policy names must be unique and descriptive (e.g., cjr_insert, csh_select_admins)
+3. Privacy or ownership controls must be explicit in USING/WITH CHECK
+4. To remove policy: first remove from app → verify in staging → separate PR for prod
+
+## 🛡️ Safety Net
+
+- All migrations must be idempotent (IF NOT EXISTS, named constraint/index/policy)
+- Migration order: Columns → Constraints → Data Backfill → Indexes → Policies
+- Large indexes use CREATE INDEX CONCURRENTLY (or separate transaction)
+- Migration PRs must include: Problem, Options, Decision, Rollout & Rollback Plan
+
 ## 🚀 Proactive Migration Approach
 
 When you detect database schema issues or improvements, **create and apply migrations immediately** without asking for permission. This saves time and ensures consistency.

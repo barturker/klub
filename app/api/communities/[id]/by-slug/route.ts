@@ -3,10 +3,11 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { slug } = await params;
+    // In this case, 'id' parameter is actually the slug
+    const slug = params.id;
     const supabase = await createClient();
     
     const { data, error } = await supabase
@@ -36,7 +37,7 @@ export async function GET(
       updated_at: data.updated_at,
     });
   } catch (error) {
-    console.error('Error fetching community:', error);
+    console.error('Error fetching community by slug:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
     const validatedData = createCommunitySchema.parse(body);
 
     // Check if the user already has a community with the same name
+    // NOTE: We're NOT joining with community_members to avoid RLS issues
     const { data: existingCommunities, error: checkError } = await supabase
       .from('communities')
       .select('id, name')

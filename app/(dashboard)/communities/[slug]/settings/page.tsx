@@ -17,7 +17,7 @@ interface CommunitySettingsPageProps {
 export default async function CommunitySettingsPage({
   params,
 }: CommunitySettingsPageProps) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Get current user
   const {
