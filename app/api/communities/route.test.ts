@@ -10,7 +10,15 @@ jest.mock('@/lib/utils/slug-generator');
 jest.mock('@/lib/middleware/rate-limit');
 
 describe('POST /api/communities', () => {
-  let mockSupabase: any;
+  let mockSupabase: {
+    auth: {
+      getUser: jest.Mock;
+    };
+    from: jest.Mock;
+    insert: jest.Mock;
+    select: jest.Mock;
+    single: jest.Mock;
+  };
   let mockRequest: NextRequest;
 
   beforeEach(() => {

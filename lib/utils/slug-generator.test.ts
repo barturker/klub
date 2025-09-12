@@ -56,7 +56,12 @@ describe('slug-generator', () => {
   });
 
   describe('generateUniqueSlug', () => {
-    let mockSupabase: any;
+    let mockSupabase: {
+      from: jest.Mock;
+      select: jest.Mock;
+      eq: jest.Mock;
+      maybeSingle: jest.Mock;
+    };
 
     beforeEach(() => {
       mockSupabase = {

@@ -102,8 +102,8 @@ export async function incrementRateLimit(
  */
 export function withRateLimit(config: RateLimitConfig) {
   return async function rateLimitMiddleware(
-    request: Request,
-    context: { params: any }
+    _request: Request,
+    _context: { params: Record<string, unknown> }
   ) {
     const supabase = await createClient();
     

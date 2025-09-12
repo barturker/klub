@@ -277,7 +277,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_rate_limit: {
+        Args: {
+          p_user_id: string
+          p_action: string
+          p_max_attempts: number
+          p_window_hours?: number
+        }
+        Returns: {
+          allowed: boolean
+          current_count: number
+          remaining_attempts: number
+        }
+      }
+      increment_rate_limit: {
+        Args: {
+          p_user_id: string
+          p_action: string
+          p_window_hours?: number
+        }
+        Returns: void
+      }
+      cleanup_old_rate_limits: {
+        Args: Record<PropertyKey, never>
+        Returns: void
+      }
     }
     Enums: {
       [_ in never]: never

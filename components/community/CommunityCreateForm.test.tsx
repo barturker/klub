@@ -22,7 +22,9 @@ global.fetch = jest.fn();
 
 describe('CommunityCreateForm', () => {
   let mockPush: jest.Mock;
-  let mockRouter: any;
+  let mockRouter: {
+    push: jest.Mock;
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -220,7 +222,7 @@ describe('CommunityCreateForm', () => {
   describe('Form Submission', () => {
     it('should disable form while submitting', async () => {
       const user = userEvent.setup();
-      let resolvePromise: any;
+      let resolvePromise: (value: unknown) => void;
       const promise = new Promise((resolve) => {
         resolvePromise = resolve;
       });

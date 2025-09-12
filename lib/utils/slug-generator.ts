@@ -15,7 +15,7 @@ export async function generateUniqueSlug(name: string): Promise<string> {
   let isUnique = false;
 
   while (!isUnique) {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('communities')
       .select('slug')
       .eq('slug', slug)

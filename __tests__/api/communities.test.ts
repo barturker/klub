@@ -17,7 +17,18 @@ jest.mock('@/lib/utils/slug-generator', () => ({
 }));
 
 describe('Community API Integration Tests', () => {
-  let mockSupabase: any;
+  let mockSupabase: {
+    auth: {
+      getUser: jest.Mock;
+    };
+    from: jest.Mock;
+    select: jest.Mock;
+    eq: jest.Mock;
+    single: jest.Mock;
+    maybeSingle: jest.Mock;
+    insert: jest.Mock;
+    rpc: jest.Mock;
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -155,7 +166,11 @@ describe('Community API Integration Tests', () => {
       const supabase = await createClient();
       const { data, error } = await supabase
         .from('communities')
-        .insert({ name: 'Test' })
+        .insert({ 
+          name: 'Test',
+          slug: 'test-slug',
+          organizer_id: 'user-123'
+        })
         .select()
         .single();
 
