@@ -57,6 +57,31 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = createCommunitySchema.parse(body);
 
+    // Check if the user already has a community with the same name
+    const { data: existingCommunities, error: checkError } = await supabase
+      .from('communities')
+      .select('id, name')
+      .eq('organizer_id', user.id)
+      .eq('name', validatedData.name);
+
+    if (checkError) {
+      console.error('Error checking existing communities:', checkError);
+      return NextResponse.json(
+        { error: 'Failed to check existing communities' },
+        { status: 500 }
+      );
+    }
+
+    if (existingCommunities && existingCommunities.length > 0) {
+      return NextResponse.json(
+        { 
+          error: 'Duplicate community name',
+          message: 'You already have a community with this name. Please choose a different name.'
+        },
+        { status: 400 }
+      );
+    }
+
     const slug = await generateUniqueSlug(validatedData.name);
 
     const { data, error } = await supabase

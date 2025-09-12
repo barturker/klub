@@ -45,15 +45,24 @@ export function CommunityCreateForm() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to create community');
+        
+        // Handle expected user errors (400 status) without throwing
+        if (response.status === 400) {
+          toast.error(error.message || error.error || 'Invalid request');
+          return;
+        }
+        
+        // For actual server errors (500+), throw to catch block
+        throw new Error(error.message || error.error || 'Failed to create community');
       }
 
       const result = await response.json();
       toast.success('Community created successfully!');
       router.push(`/communities/${result.slug}`);
     } catch (error) {
-      console.error('Error creating community:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to create community');
+      // This block now only handles unexpected errors
+      console.error('Unexpected error creating community:', error);
+      toast.error('An unexpected error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
