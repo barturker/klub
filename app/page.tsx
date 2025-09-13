@@ -19,6 +19,7 @@ import {
   Globe,
 } from 'lucide-react';
 import Link from 'next/link';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 export default function Home() {
   return (
@@ -33,6 +34,7 @@ export default function Home() {
               </Link>
             </div>
             <div className="flex items-center gap-4">
+              <ThemeToggle />
               <Link href="/auth">
                 <Button variant="ghost">Sign In</Button>
               </Link>

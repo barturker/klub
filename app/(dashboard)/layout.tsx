@@ -18,9 +18,12 @@ import {
   IconBrandTabler,
   IconUserPlus,
   IconLogout2,
+  IconMoon,
+  IconSun,
 } from '@tabler/icons-react';
 import { createClient } from '@/lib/supabase/client';
 import { motion } from 'framer-motion';
+import { useTheme } from 'next-themes';
 
 export default function DashboardLayout({
   children,
@@ -34,6 +37,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+  const { theme, setTheme } = useTheme();
 
   // Mark component as mounted
   useEffect(() => {
@@ -55,6 +59,10 @@ export default function DashboardLayout({
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push('/auth');
+  };
+
+  const handleThemeToggle = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
   const links = [
@@ -100,13 +108,6 @@ export default function DashboardLayout({
         <IconSettings className="h-5 w-5 flex-shrink-0 text-neutral-700 dark:text-neutral-200" />
       ),
     },
-    {
-      label: 'Logout',
-      href: '#',
-      icon: (
-        <IconLogout2 className="h-5 w-5 flex-shrink-0 text-neutral-700 dark:text-neutral-200" />
-      ),
-    },
   ];
 
   // Don't render until mounted to prevent hydration mismatch
@@ -130,21 +131,34 @@ export default function DashboardLayout({
           <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
             {open ? <Logo /> : <LogoIcon />}
             <div className="mt-8 flex flex-col gap-2">
-              {links.map((link, idx) => {
-                if (link.label === 'Logout') {
-                  return (
-                    <SidebarLink 
-                      key={idx} 
-                      link={link} 
-                      onClick={handleSignOut}
-                    />
-                  );
-                }
-                return <SidebarLink key={idx} link={link} />;
-              })}
+              {links.map((link, idx) => (
+                <SidebarLink key={idx} link={link} />
+              ))}
+              <SidebarLink
+                link={{
+                  label: theme === 'dark' ? 'Light Mode' : 'Dark Mode',
+                  href: '#',
+                  icon: theme === 'dark' ? (
+                    <IconSun className="h-5 w-5 flex-shrink-0 text-neutral-700 dark:text-neutral-200" />
+                  ) : (
+                    <IconMoon className="h-5 w-5 flex-shrink-0 text-neutral-700 dark:text-neutral-200" />
+                  ),
+                }}
+                onClick={handleThemeToggle}
+              />
+              <SidebarLink
+                link={{
+                  label: 'Logout',
+                  href: '#',
+                  icon: (
+                    <IconLogout2 className="h-5 w-5 flex-shrink-0 text-neutral-700 dark:text-neutral-200" />
+                  ),
+                }}
+                onClick={handleSignOut}
+              />
             </div>
           </div>
-          <div>
+          <div className="flex flex-col gap-2">
             {user && (
               <SidebarLink
                 link={{
