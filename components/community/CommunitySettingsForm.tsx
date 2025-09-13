@@ -26,6 +26,19 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertTriangle, Trash2 } from 'lucide-react';
 import { LogoUpload } from './LogoUpload';
 import { CoverUpload } from './CoverUpload';
 import { ThemeSelector } from './ThemeSelector';
@@ -51,6 +64,8 @@ const formSchema = z.object({
 export function CommunitySettingsForm({ community }: CommunitySettingsFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [logoUrl, setLogoUrl] = useState(community.logo_url);
   const [coverImageUrl, setCoverImageUrl] = useState(community.cover_image_url);
   const [themeColor, setThemeColor] = useState(community.theme_color || '#3B82F6');
@@ -121,13 +136,47 @@ export function CommunitySettingsForm({ community }: CommunitySettingsFormProps)
     }
   }
 
+  async function handleDeleteCommunity() {
+    if (deleteConfirmation !== community.name) {
+      toast.error('Please type the community name correctly to confirm deletion');
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+
+      const response = await fetch(`/api/communities/${community.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete community');
+      }
+
+      toast.success('Community deleted successfully');
+      router.push('/communities');
+    } catch (error) {
+      console.error('Error deleting community:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to delete community');
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   return (
     <Tabs defaultValue="general" className="w-full">
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="general">General</TabsTrigger>
         <TabsTrigger value="branding">Branding</TabsTrigger>
         <TabsTrigger value="privacy">Privacy</TabsTrigger>
         <TabsTrigger value="features">Features</TabsTrigger>
+        <TabsTrigger value="danger" className="text-red-600 dark:text-red-400">
+          Danger Zone
+        </TabsTrigger>
       </TabsList>
 
       <Form {...form}>
@@ -360,6 +409,83 @@ export function CommunitySettingsForm({ community }: CommunitySettingsFormProps)
                   >
                     {features.resources ? 'Enabled' : 'Disabled'}
                   </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="danger">
+            <Card className="border-red-200 dark:border-red-900" hoverable={false}>
+              <CardHeader>
+                <CardTitle className="text-red-600 dark:text-red-400">
+                  Danger Zone
+                </CardTitle>
+                <CardDescription>
+                  Irreversible and destructive actions
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <Alert className="border-red-200 dark:border-red-900">
+                  <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                  <AlertDescription className="text-red-600 dark:text-red-400">
+                    Once you delete a community, there is no going back. All data including members, 
+                    events, discussions, and resources will be permanently deleted.
+                  </AlertDescription>
+                </Alert>
+
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Delete this community</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Once you delete a community, it cannot be recovered. All content, members, 
+                      and settings will be permanently removed.
+                    </p>
+                    
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" className="gap-2">
+                          <Trash2 className="h-4 w-4" />
+                          Delete Community
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription className="space-y-4">
+                            <p>
+                              This action cannot be undone. This will permanently delete the
+                              <strong className="font-semibold"> {community.name} </strong>
+                              community and remove all associated data.
+                            </p>
+                            
+                            <div className="space-y-2">
+                              <p className="text-sm font-medium">
+                                Please type <strong className="font-mono bg-muted px-1">{community.name}</strong> to confirm:
+                              </p>
+                              <Input
+                                placeholder="Type community name here"
+                                value={deleteConfirmation}
+                                onChange={(e) => setDeleteConfirmation(e.target.value)}
+                                className="font-mono"
+                              />
+                            </div>
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel onClick={() => setDeleteConfirmation('')}>
+                            Cancel
+                          </AlertDialogCancel>
+                          <Button
+                            variant="destructive"
+                            onClick={handleDeleteCommunity}
+                            disabled={deleteConfirmation !== community.name || isDeleting}
+                          >
+                            {isDeleting ? 'Deleting...' : 'Delete Community'}
+                          </Button>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
               </CardContent>
             </Card>
