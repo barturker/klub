@@ -7,7 +7,7 @@ const settingsSchema = z.object({
   description: z.string().min(10).optional(),
   category: z.string().optional(),
   location: z.string().optional(),
-  website_url: z.string().url().optional().nullable(),
+  website_url: z.union([z.string().url(), z.literal('')]).optional().nullable(),
   custom_domain: z.string().optional().nullable(),
   theme_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
   privacy_level: z.enum(['public', 'private', 'invite_only']).optional(),
@@ -126,20 +126,19 @@ export async function PATCH(
     const validatedData = settingsSchema.parse(body);
 
     // Track changes for history
-    const changes: Record<string, { old: unknown; new: unknown }> = {};
-    const updatedFields: string[] = [];
+    const oldValues: Record<string, unknown> = {};
+    const newValues: Record<string, unknown> = {};
+    const changedFields: string[] = [];
 
     Object.entries(validatedData).forEach(([key, value]) => {
       if (value !== undefined && community[key] !== value) {
-        changes[key] = {
-          old: community[key],
-          new: value,
-        };
-        updatedFields.push(key);
+        oldValues[key] = community[key];
+        newValues[key] = value;
+        changedFields.push(key);
       }
     });
 
-    if (updatedFields.length === 0) {
+    if (changedFields.length === 0) {
       return NextResponse.json({
         success: true,
         updated_fields: [],
@@ -164,13 +163,16 @@ export async function PATCH(
     }
 
     // Record changes in history table
-    if (Object.keys(changes).length > 0) {
+    if (changedFields.length > 0) {
       const { error: historyError } = await supabase
         .from('community_settings_history')
         .insert({
           community_id: params.id,
           changed_by: user.id,
-          changes,
+          old_values: oldValues,
+          new_values: newValues,
+          changed_fields: changedFields,
+          change_type: 'update',
         });
 
       if (historyError) {
@@ -180,7 +182,7 @@ export async function PATCH(
 
     return NextResponse.json({
       success: true,
-      updated_fields: updatedFields,
+      updated_fields: changedFields,
       data: updatedCommunity,
     });
   } catch (error) {

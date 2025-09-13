@@ -41,7 +41,7 @@ interface CommunitySettingsFormProps {
 const formSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   description: z.string().min(10, 'Description must be at least 10 characters'),
-  category: z.string().min(1, 'Please select a category'),
+  category: z.string().optional(),
   location: z.string().optional(),
   website_url: z.string().url().optional().or(z.literal('')),
   custom_domain: z.string().optional(),
@@ -76,17 +76,34 @@ export function CommunitySettingsForm({ community }: CommunitySettingsFormProps)
     try {
       setIsLoading(true);
 
+      // Sadece dolu ve değişmiş alanları gönder
+      const payload: any = {};
+      
+      // Form alanlarını kontrol et
+      Object.entries(values).forEach(([key, value]) => {
+        // Boş string değilse ve mevcut değerden farklıysa ekle
+        if (value !== '' && value !== undefined && value !== (community as any)[key]) {
+          payload[key] = value;
+        }
+      });
+      
+      // Theme, privacy ve features her zaman gönder (çünkü form dışından geliyorlar)
+      if (themeColor !== community.theme_color) {
+        payload.theme_color = themeColor;
+      }
+      if (privacyLevel !== community.privacy_level) {
+        payload.privacy_level = privacyLevel;
+      }
+      if (JSON.stringify(features) !== JSON.stringify(community.features)) {
+        payload.features = features;
+      }
+
       const response = await fetch(`/api/communities/${community.id}/settings`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...values,
-          theme_color: themeColor,
-          privacy_level: privacyLevel,
-          features,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
