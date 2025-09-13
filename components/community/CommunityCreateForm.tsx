@@ -100,8 +100,10 @@ export function CommunityCreateForm() {
 
       <Button
         type="submit"
+        variant="submit"
         disabled={isSubmitting}
         className="w-full"
+        size="lg"
       >
         {isSubmitting ? (
           <>

@@ -20,7 +20,7 @@ export default async function CreateCommunityPage() {
 
   return (
     <div className="container max-w-2xl py-8">
-      <Card>
+      <Card hoverable={false}>
         <CardHeader>
           <CardTitle>Create a New Community</CardTitle>
           <CardDescription>

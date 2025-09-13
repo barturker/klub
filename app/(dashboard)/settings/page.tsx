@@ -63,7 +63,7 @@ export default function SettingsPage() {
         </TabsList>
 
         <TabsContent value="profile">
-          <Card>
+          <Card hoverable={false}>
             <CardHeader>
               <CardTitle>Profile Information</CardTitle>
               <CardDescription>
@@ -91,13 +91,13 @@ export default function SettingsPage() {
                   placeholder="Tell us about yourself"
                 />
               </div>
-              <Button>Save Changes</Button>
+              <Button variant="save" size="lg">Save Changes</Button>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="notifications">
-          <Card>
+          <Card hoverable={false}>
             <CardHeader>
               <CardTitle>Notification Preferences</CardTitle>
               <CardDescription>
@@ -130,7 +130,7 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="security">
-          <Card>
+          <Card hoverable={false}>
             <CardHeader>
               <CardTitle>Security Settings</CardTitle>
               <CardDescription>

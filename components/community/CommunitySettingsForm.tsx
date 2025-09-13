@@ -115,7 +115,7 @@ export function CommunitySettingsForm({ community }: CommunitySettingsFormProps)
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <TabsContent value="general">
-            <Card>
+            <Card hoverable={false}>
               <CardHeader>
                 <CardTitle>General Settings</CardTitle>
                 <CardDescription>
@@ -248,7 +248,7 @@ export function CommunitySettingsForm({ community }: CommunitySettingsFormProps)
           </TabsContent>
 
           <TabsContent value="branding">
-            <Card>
+            <Card hoverable={false}>
               <CardHeader>
                 <CardTitle>Branding & Appearance</CardTitle>
                 <CardDescription>
@@ -316,7 +316,7 @@ export function CommunitySettingsForm({ community }: CommunitySettingsFormProps)
           </TabsContent>
 
           <TabsContent value="features">
-            <Card>
+            <Card hoverable={false}>
               <CardHeader>
                 <CardTitle>Community Features</CardTitle>
                 <CardDescription>
@@ -387,7 +387,7 @@ export function CommunitySettingsForm({ community }: CommunitySettingsFormProps)
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" variant="save" size="lg" disabled={isLoading}>
               {isLoading ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
