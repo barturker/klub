@@ -1,0 +1,20 @@
+/* Modal Backdrop Improvements Only - Minimal changes to preserve shadcn defaults */
+
+/* Just improve the backdrop opacity for better content blocking */
+[data-slot="dialog-overlay"],
+[data-slot="sheet-overlay"],
+[data-slot="alert-dialog-overlay"],
+[data-slot="drawer-overlay"] {
+  /* Only override the opacity, keep everything else from shadcn */
+  background-color: rgba(0, 0, 0, 0.75) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Dark mode - slightly stronger backdrop */
+.dark [data-slot="dialog-overlay"],
+.dark [data-slot="sheet-overlay"],
+.dark [data-slot="alert-dialog-overlay"],
+.dark [data-slot="drawer-overlay"] {
+  background-color: rgba(0, 0, 0, 0.85) !important;
+}
