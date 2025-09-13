@@ -7,16 +7,17 @@ import { Users, Calendar, Settings } from 'lucide-react';
 import Link from 'next/link';
 
 interface PageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const supabase = await createClient();
+  const { slug } = await params;
   
   const { data: community } = await supabase
     .from('communities')
     .select('name, description')
-    .eq('slug', params.slug)
+    .eq('slug', slug)
     .single();
 
   if (!community) {
@@ -33,13 +34,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function CommunityPage({ params }: PageProps) {
   const supabase = await createClient();
+  const { slug } = await params;
   
   const { data: { user } } = await supabase.auth.getUser();
   
   const { data: community, error } = await supabase
     .from('communities')
     .select('*')
-    .eq('slug', params.slug)
+    .eq('slug', slug)
     .single();
 
   if (error || !community) {

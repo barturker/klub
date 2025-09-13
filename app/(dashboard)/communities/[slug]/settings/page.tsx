@@ -9,15 +9,16 @@ export const metadata: Metadata = {
 };
 
 interface CommunitySettingsPageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 export default async function CommunitySettingsPage({
   params,
 }: CommunitySettingsPageProps) {
   const supabase = await createClient();
+  const { slug } = await params;
 
   // Get current user
   const {
@@ -32,7 +33,7 @@ export default async function CommunitySettingsPage({
   const { data: community, error } = await supabase
     .from('communities')
     .select('*')
-    .eq('slug', params.slug)
+    .eq('slug', slug)
     .single();
 
   if (error || !community) {

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,43 +36,37 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-// Mock data for charts
-const revenueData = [
-  { month: 'Jan', revenue: 4000, tickets: 240 },
-  { month: 'Feb', revenue: 3000, tickets: 198 },
-  { month: 'Mar', revenue: 5000, tickets: 300 },
-  { month: 'Apr', revenue: 4500, tickets: 280 },
-  { month: 'May', revenue: 6000, tickets: 350 },
-  { month: 'Jun', revenue: 5500, tickets: 320 },
-];
+interface DashboardStats {
+  communities: number;
+  events: number;
+  tickets: number;
+  revenue: number;
+  recentActivities: any[];
+  upcomingEvents: any[];
+}
 
-const communityGrowth = [
-  { day: 'Mon', members: 120 },
-  { day: 'Tue', members: 132 },
-  { day: 'Wed', members: 145 },
-  { day: 'Thu', members: 160 },
-  { day: 'Fri', members: 178 },
-  { day: 'Sat', members: 195 },
-  { day: 'Sun', members: 210 },
-];
-
-const eventCategories = [
-  { name: 'Music', value: 35, color: '#8b5cf6' },
-  { name: 'Sports', value: 25, color: '#ec4899' },
-  { name: 'Tech', value: 20, color: '#3b82f6' },
-  { name: 'Art', value: 20, color: '#10b981' },
-];
+interface AnalyticsData {
+  revenueData: Array<{ month: string; revenue: number; tickets: number }>;
+  communityGrowth: Array<{ day: string; members: number }>;
+  eventCategories: Array<{ name: string; value: number; color: string }>;
+}
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<DashboardStats>({
     communities: 0,
     events: 0,
     tickets: 0,
     revenue: 0,
+    recentActivities: [],
+    upcomingEvents: []
+  });
+  const [analytics, setAnalytics] = useState<AnalyticsData>({
+    revenueData: [],
+    communityGrowth: [],
+    eventCategories: []
   });
   const [user, setUser] = useState<any>(null);
-  const supabase = createClient();
 
   useEffect(() => {
     fetchDashboardData();
@@ -81,30 +74,42 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-
-      // Fetch actual data from database
-      const [communitiesRes, eventsRes, ticketsRes] = await Promise.all([
-        supabase.from('communities').select('*', { count: 'exact' }),
-        supabase.from('events').select('*', { count: 'exact' }),
-        supabase.from('tickets').select('*', { count: 'exact' }),
+      // Fetch dashboard stats
+      const [statsResponse, analyticsResponse] = await Promise.all([
+        fetch('/api/dashboard/stats'),
+        fetch('/api/dashboard/analytics')
       ]);
 
-      setStats({
-        communities: communitiesRes.count || 12,
-        events: eventsRes.count || 48,
-        tickets: ticketsRes.count || 1250,
-        revenue: 25600, // This would be calculated from actual ticket sales
-      });
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
+        setStats(statsData);
+      }
+
+      if (analyticsResponse.ok) {
+        const analyticsData = await analyticsResponse.json();
+        setAnalytics(analyticsData);
+      }
+
+      // Get user info from localStorage or session
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      // Use mock data as fallback
+      // Use fallback data
       setStats({
-        communities: 12,
-        events: 48,
-        tickets: 1250,
-        revenue: 25600,
+        communities: 0,
+        events: 0,
+        tickets: 0,
+        revenue: 0,
+        recentActivities: [],
+        upcomingEvents: []
+      });
+      setAnalytics({
+        revenueData: [],
+        communityGrowth: [],
+        eventCategories: []
       });
     } finally {
       setLoading(false);
@@ -148,64 +153,61 @@ export default function DashboardPage() {
     </Card>
   );
 
-  const recentActivities = [
-    {
-      id: 1,
-      user: 'Alice Johnson',
-      action: 'created a new event',
-      target: 'Summer Music Festival',
-      time: '2 hours ago',
-      avatar: null,
-    },
-    {
-      id: 2,
-      user: 'Bob Smith',
-      action: 'joined community',
-      target: 'Tech Innovators',
-      time: '4 hours ago',
-      avatar: null,
-    },
-    {
-      id: 3,
-      user: 'Carol Williams',
-      action: 'purchased tickets for',
-      target: 'Basketball Championship',
-      time: '6 hours ago',
-      avatar: null,
-    },
-    {
-      id: 4,
-      user: 'David Brown',
-      action: 'updated event',
-      target: 'Art Exhibition 2024',
-      time: '1 day ago',
-      avatar: null,
-    },
-  ];
+  // Format recent activities for display
+  const formatActivity = (activity: any) => {
+    const timeAgo = getTimeAgo(activity.timestamp);
+    
+    if (activity.type === 'member_joined') {
+      return {
+        user: activity.user,
+        action: 'joined community',
+        target: activity.community,
+        time: timeAgo,
+        avatar: null
+      };
+    } else if (activity.type === 'ticket_purchased') {
+      return {
+        user: activity.user,
+        action: 'purchased tickets for',
+        target: activity.event,
+        time: timeAgo,
+        avatar: null
+      };
+    }
+    return null;
+  };
 
-  const upcomingEvents = [
-    {
-      id: 1,
-      name: 'Tech Conference 2024',
-      date: 'Mar 15, 2024',
-      attendees: 250,
-      status: 'upcoming',
-    },
-    {
-      id: 2,
-      name: 'Summer Music Festival',
-      date: 'Jun 20, 2024',
-      attendees: 500,
-      status: 'selling-fast',
-    },
-    {
-      id: 3,
-      name: 'Art Exhibition Opening',
-      date: 'Apr 5, 2024',
-      attendees: 100,
-      status: 'upcoming',
-    },
-  ];
+  const getTimeAgo = (timestamp: string) => {
+    const now = new Date();
+    const then = new Date(timestamp);
+    const diffMs = now.getTime() - then.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    if (diffHours > 0) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffMins > 0) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    return 'just now';
+  };
+
+  const recentActivities = stats.recentActivities
+    .map(formatActivity)
+    .filter(Boolean)
+    .slice(0, 5);
+
+  // Format upcoming events
+  const upcomingEvents = stats.upcomingEvents.map((event: any) => ({
+    id: event.id,
+    name: event.title || event.name,
+    date: new Date(event.date).toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    }),
+    attendees: event.max_attendees || 100,
+    status: event.status || 'upcoming'
+  }));
 
   if (loading) {
     return (
@@ -224,7 +226,7 @@ export default function DashboardPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Welcome back, {user?.user_metadata?.name || user?.email?.split('@')[0] || 'User'}!
+            Welcome back{user ? `, ${user.name || user.email?.split('@')[0]}` : ''}!
           </h1>
           <p className="text-muted-foreground mt-2">
             Here's what's happening with your communities today.
@@ -287,27 +289,33 @@ export default function DashboardPage() {
             <CardDescription>Monthly revenue and ticket sales overview</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height="300">
-              <AreaChart data={revenueData}>
-                <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="month" className="text-xs" />
-                <YAxis className="text-xs" />
-                <Tooltip />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#8b5cf6"
-                  fillOpacity={1}
-                  fill="url(#colorRevenue)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {analytics.revenueData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="300">
+                <AreaChart data={analytics.revenueData}>
+                  <defs>
+                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="month" className="text-xs" />
+                  <YAxis className="text-xs" />
+                  <Tooltip />
+                  <Area
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="#8b5cf6"
+                    fillOpacity={1}
+                    fill="url(#colorRevenue)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px]">
+                <p className="text-muted-foreground">No data available</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -318,25 +326,31 @@ export default function DashboardPage() {
             <CardDescription>Distribution by type</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height="300">
-              <PieChart>
-                <Pie
-                  data={eventCategories}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {eventCategories.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            {analytics.eventCategories.length > 0 ? (
+              <ResponsiveContainer width="100%" height="300">
+                <PieChart>
+                  <Pie
+                    data={analytics.eventCategories}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {analytics.eventCategories.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px]">
+                <p className="text-muted-foreground">No events yet</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -357,12 +371,12 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentActivities.map((activity) => (
-                  <div key={activity.id} className="flex items-center gap-4">
+                {recentActivities.length > 0 ? recentActivities.map((activity, index) => (
+                  <div key={index} className="flex items-center gap-4">
                     <Avatar className="h-9 w-9">
                       <AvatarImage src={activity.avatar || ''} />
                       <AvatarFallback>
-                        {activity.user.split(' ').map(n => n[0]).join('')}
+                        {activity.user.split(' ').map((n: string) => n[0]).join('')}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 space-y-1">
@@ -377,7 +391,11 @@ export default function DashboardPage() {
                       </p>
                     </div>
                   </div>
-                ))}
+                )) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No recent activity to display
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -391,7 +409,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {upcomingEvents.map((event) => (
+                {upcomingEvents.length > 0 ? upcomingEvents.map((event: any) => (
                   <div key={event.id} className="flex items-center justify-between">
                     <div className="flex-1">
                       <p className="font-medium">{event.name}</p>
@@ -409,7 +427,11 @@ export default function DashboardPage() {
                       )}
                     </div>
                   </div>
-                ))}
+                )) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No upcoming events scheduled
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -422,21 +444,27 @@ export default function DashboardPage() {
               <CardDescription>Member growth over the last week</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height="300">
-                <LineChart data={communityGrowth}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="day" className="text-xs" />
-                  <YAxis className="text-xs" />
-                  <Tooltip />
-                  <Line
-                    type="monotone"
-                    dataKey="members"
-                    stroke="#10b981"
-                    strokeWidth={2}
-                    dot={{ fill: '#10b981' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              {analytics.communityGrowth.length > 0 ? (
+                <ResponsiveContainer width="100%" height="300">
+                  <LineChart data={analytics.communityGrowth}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="day" className="text-xs" />
+                    <YAxis className="text-xs" />
+                    <Tooltip />
+                    <Line
+                      type="monotone"
+                      dataKey="members"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      dot={{ fill: '#10b981' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[300px]">
+                  <p className="text-muted-foreground">No growth data available</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

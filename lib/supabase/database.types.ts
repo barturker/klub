@@ -1,3 +1,4 @@
+
 export type Json =
   | string
   | number
@@ -93,7 +94,6 @@ export type Database = {
       }
       communities: {
         Row: {
-          avatar_url: string | null
           cover_image_url: string | null
           created_at: string
           custom_domain: string | null
@@ -104,6 +104,7 @@ export type Database = {
           is_public: boolean
           last_settings_changed_at: string | null
           last_settings_changed_by: string | null
+          logo_url: string | null
           member_count: number
           name: string
           organizer_id: string
@@ -114,7 +115,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          avatar_url?: string | null
           cover_image_url?: string | null
           created_at?: string
           custom_domain?: string | null
@@ -125,6 +125,7 @@ export type Database = {
           is_public?: boolean
           last_settings_changed_at?: string | null
           last_settings_changed_by?: string | null
+          logo_url?: string | null
           member_count?: number
           name: string
           organizer_id: string
@@ -135,7 +136,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          avatar_url?: string | null
           cover_image_url?: string | null
           created_at?: string
           custom_domain?: string | null
@@ -146,6 +146,7 @@ export type Database = {
           is_public?: boolean
           last_settings_changed_at?: string | null
           last_settings_changed_by?: string | null
+          logo_url?: string | null
           member_count?: number
           name?: string
           organizer_id?: string
