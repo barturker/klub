@@ -38,7 +38,7 @@ interface Community {
   category: string;
   location: string;
   logo_url: string | null;
-  cover_url: string | null;
+  cover_image_url: string | null;
   is_private: boolean;
   created_at: string;
   updated_at: string;
@@ -354,18 +354,15 @@ export default function CommunitiesPage() {
           {filteredCommunities.map((community) => (
             <Card key={community.id} className="overflow-hidden hover:shadow-lg transition-shadow">
               {/* Cover Image */}
-              {community.cover_url && (
-                <div className="h-32 bg-gradient-to-br from-purple-500 to-pink-500">
+              <div className="h-32 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800">
+                {community.cover_image_url && (
                   <img 
-                    src={community.cover_url} 
+                    src={community.cover_image_url} 
                     alt={community.name}
                     className="w-full h-full object-cover"
                   />
-                </div>
-              )}
-              {!community.cover_url && (
-                <div className="h-32 bg-gradient-to-br from-purple-500 to-pink-500" />
-              )}
+                )}
+              </div>
               
               <CardHeader className="relative">
                 {/* Logo */}

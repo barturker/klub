@@ -27,6 +27,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LogoUpload } from './LogoUpload';
+import { CoverUpload } from './CoverUpload';
 import { ThemeSelector } from './ThemeSelector';
 import { PrivacySettings } from './PrivacySettings';
 import { toast } from 'sonner';
@@ -51,7 +52,7 @@ export function CommunitySettingsForm({ community }: CommunitySettingsFormProps)
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [logoUrl, setLogoUrl] = useState(community.logo_url);
-  const [, setCoverImageUrl] = useState(community.cover_image_url);
+  const [coverImageUrl, setCoverImageUrl] = useState(community.cover_image_url);
   const [themeColor, setThemeColor] = useState(community.theme_color || '#3B82F6');
   const [privacyLevel, setPrivacyLevel] = useState(community.privacy_level || 'public');
   const [features, setFeatures] = useState(community.features || {
@@ -279,47 +280,16 @@ export function CommunitySettingsForm({ community }: CommunitySettingsFormProps)
                   onLogoChange={setLogoUrl}
                 />
 
+                <CoverUpload
+                  communityId={community.id}
+                  currentCoverUrl={coverImageUrl}
+                  onCoverChange={setCoverImageUrl}
+                />
+
                 <ThemeSelector
                   currentColor={themeColor}
                   onColorChange={setThemeColor}
                 />
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Cover Image</label>
-                  <p className="text-sm text-muted-foreground">
-                    Upload a cover image for your community page
-                  </p>
-                  <div className="mt-2">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      disabled={isLoading}
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-
-                        const formData = new FormData();
-                        formData.append('file', file);
-
-                        try {
-                          const response = await fetch(`/api/communities/${community.id}/cover`, {
-                            method: 'POST',
-                            body: formData,
-                          });
-
-                          if (!response.ok) throw new Error('Upload failed');
-
-                          const data = await response.json();
-                          setCoverImageUrl(data.cover_url);
-                          toast.success('Cover image uploaded successfully');
-                        } catch (error) {
-                          console.error('Error uploading cover:', error);
-                          toast.error('Failed to upload cover image');
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
