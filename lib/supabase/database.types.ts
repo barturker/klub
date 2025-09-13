@@ -1,4 +1,3 @@
-
 export type Json =
   | string
   | number
@@ -1153,6 +1152,30 @@ export type Database = {
         Args: { "": number }
         Returns: string
       }
+      get_visible_communities: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          cover_image_url: string | null
+          created_at: string
+          custom_domain: string | null
+          description: string | null
+          features: Json | null
+          has_events: boolean | null
+          id: string
+          is_public: boolean
+          last_settings_changed_at: string | null
+          last_settings_changed_by: string | null
+          logo_url: string | null
+          member_count: number
+          name: string
+          organizer_id: string
+          privacy_level: string | null
+          search_tsv: unknown | null
+          slug: string
+          theme_color: string | null
+          updated_at: string
+        }[]
+      }
       gettransactionid: {
         Args: Record<PropertyKey, never>
         Returns: unknown
@@ -1188,6 +1211,10 @@ export type Database = {
       increment_rate_limit: {
         Args: { p_action: string; p_user_id: string; p_window_hours?: number }
         Returns: undefined
+      }
+      is_community_member: {
+        Args: { p_community_id: string; p_user_id: string }
+        Returns: boolean
       }
       json: {
         Args: { "": unknown }
