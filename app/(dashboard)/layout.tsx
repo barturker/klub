@@ -27,11 +27,18 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const [mounted, setMounted] = useState(false);
+  // Sidebar should be closed by default, opens on hover
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+
+  // Mark component as mounted
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const getUser = async () => {
@@ -102,12 +109,23 @@ export default function DashboardLayout({
     },
   ];
 
+  // Don't render until mounted to prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="text-center">
+          <IconHome className="h-8 w-8 animate-pulse mx-auto mb-4" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cn(
       "flex flex-col md:flex-row bg-gray-100 dark:bg-neutral-800 w-full flex-1 mx-auto border border-neutral-200 dark:border-neutral-700 overflow-hidden",
       "h-screen"
     )}>
-      <Sidebar open={open} setOpen={setOpen} animate>
+      <Sidebar open={open} setOpen={setOpen} animate={true}>
         <SidebarBody className="justify-between gap-10">
           <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
             {open ? <Logo /> : <LogoIcon />}
@@ -115,9 +133,11 @@ export default function DashboardLayout({
               {links.map((link, idx) => {
                 if (link.label === 'Logout') {
                   return (
-                    <div key={idx} onClick={handleSignOut}>
-                      <SidebarLink link={link} />
-                    </div>
+                    <SidebarLink 
+                      key={idx} 
+                      link={link} 
+                      onClick={handleSignOut}
+                    />
                   );
                 }
                 return <SidebarLink key={idx} link={link} />;

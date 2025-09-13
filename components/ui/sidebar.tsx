@@ -1,5 +1,6 @@
 "use client";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 import React, { useState, createContext, useContext } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { IconMenu2, IconX } from "@tabler/icons-react";
@@ -157,14 +158,43 @@ export const MobileSidebar = ({
 export const SidebarLink = ({
   link,
   className,
+  onClick,
   ...props
 }: {
   link: Links;
   className?: string;
+  onClick?: () => void;
 }) => {
   const { open, animate } = useSidebar();
+  
+  // If onClick is provided (for logout), use button instead of Link
+  if (onClick) {
+    return (
+      <button
+        onClick={onClick}
+        className={cn(
+          "flex items-center justify-start gap-2  group/sidebar py-2 w-full",
+          className
+        )}
+        {...props}
+      >
+        {link.icon}
+
+        <motion.span
+          animate={{
+            display: animate ? (open ? "inline-block" : "none") : "inline-block",
+            opacity: animate ? (open ? 1 : 0) : 1,
+          }}
+          className="text-neutral-700 dark:text-neutral-200 text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block !p-0 !m-0"
+        >
+          {link.label}
+        </motion.span>
+      </button>
+    );
+  }
+  
   return (
-    <a
+    <Link
       href={link.href}
       className={cn(
         "flex items-center justify-start gap-2  group/sidebar py-2",
@@ -183,6 +213,6 @@ export const SidebarLink = ({
       >
         {link.label}
       </motion.span>
-    </a>
+    </Link>
   );
 };

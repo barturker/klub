@@ -18,31 +18,57 @@ import {
   Zap,
   Globe,
 } from 'lucide-react';
+import Link from 'next/link';
 
 export default function Home() {
   return (
     <div className="bg-background min-h-screen">
+      {/* Navbar */}
+      <nav className="border-b">
+        <div className="container mx-auto px-4">
+          <div className="flex h-16 items-center justify-between">
+            <div className="flex items-center gap-6">
+              <Link href="/" className="font-semibold text-xl">
+                Klub
+              </Link>
+            </div>
+            <div className="flex items-center gap-4">
+              <Link href="/auth">
+                <Button variant="ghost">Sign In</Button>
+              </Link>
+              <Link href="/auth">
+                <Button>Get Started</Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
+
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-16 md:py-24">
         <div className="mx-auto max-w-3xl space-y-6 text-center">
           <Badge variant="secondary" className="mb-4">
-            Next.js 15 + shadcn/ui
+            Community Management Platform
           </Badge>
           <h1 className="text-4xl font-bold tracking-tight md:text-6xl">
             Welcome to <span className="text-primary">Klub</span>
           </h1>
           <p className="text-muted-foreground text-xl">
-            A modern web application built with the latest technologies. Fast,
-            secure, and scalable.
+            Build and manage vibrant communities with powerful tools for events, 
+            memberships, and engagement.
           </p>
           <div className="flex justify-center gap-4 pt-4">
-            <Button size="lg">
-              Get Started
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-            <Button size="lg" variant="outline">
-              Learn More
-            </Button>
+            <Link href="/auth">
+              <Button size="lg">
+                Get Started
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+            <Link href="/dashboard">
+              <Button size="lg" variant="outline">
+                Explore Dashboard
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
