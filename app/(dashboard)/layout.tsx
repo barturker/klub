@@ -34,6 +34,7 @@ export default function DashboardLayout({
   // Sidebar should be closed by default, opens on hover
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -51,10 +52,21 @@ export default function DashboardLayout({
         router.push('/auth');
       } else {
         setUser(user);
+
+        // Fetch user profile for avatar
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('avatar_url, display_name, full_name')
+          .eq('id', user.id)
+          .single();
+
+        if (profileData) {
+          setProfile(profileData);
+        }
       }
     };
     getUser();
-  }, [router, supabase.auth]);
+  }, [router, supabase]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -162,11 +174,17 @@ export default function DashboardLayout({
             {user && (
               <SidebarLink
                 link={{
-                  label: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-                  href: '#',
-                  icon: (
+                  label: profile?.display_name || profile?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+                  href: '/profile',
+                  icon: profile?.avatar_url ? (
+                    <img
+                      src={profile.avatar_url}
+                      alt="Profile"
+                      className="h-7 w-7 flex-shrink-0 rounded-full object-cover"
+                    />
+                  ) : (
                     <div className="h-7 w-7 flex-shrink-0 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-xs font-semibold">
-                      {user.email?.charAt(0).toUpperCase()}
+                      {(profile?.display_name || profile?.full_name || user.email)?.charAt(0).toUpperCase()}
                     </div>
                   ),
                 }}
