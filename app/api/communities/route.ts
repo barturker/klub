@@ -97,9 +97,29 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Error creating community:', error);
+      console.error('Error creating community - Full error:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        data: {
+          name: validatedData.name,
+          slug,
+          organizer_id: user.id
+        }
+      });
+
+      // Return more detailed error for debugging
       return NextResponse.json(
-        { error: 'Failed to create community' },
+        {
+          error: 'Failed to create community',
+          debug: {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            hint: error.hint
+          }
+        },
         { status: 500 }
       );
     }

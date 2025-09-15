@@ -45,13 +45,20 @@ export function CommunityCreateForm() {
 
       if (!response.ok) {
         const error = await response.json();
-        
+
+        // Log debug info for 500 errors
+        if (response.status === 500 && error.debug) {
+          console.error('Community creation failed - Debug info:', error.debug);
+          toast.error(`Database error: ${error.debug.message || 'Unknown error'}`);
+          return;
+        }
+
         // Handle expected user errors (400 status) without throwing
         if (response.status === 400) {
           toast.error(error.message || error.error || 'Invalid request');
           return;
         }
-        
+
         // For actual server errors (500+), throw to catch block
         throw new Error(error.message || error.error || 'Failed to create community');
       }

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Users, Calendar, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { InvitationSection } from '@/components/invitations/InvitationSection';
+import { FixAdminAccess } from '@/components/community/FixAdminAccess';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -121,19 +122,10 @@ export default async function CommunityPage({ params }: PageProps) {
         </CardContent>
       </Card>
 
-      {/* Debug info - Remove this in production */}
-      {user && (
-        <Card className="bg-yellow-50 border-yellow-200">
-          <CardContent className="pt-6">
-            <p className="text-sm">Debug Info:</p>
-            <p className="text-xs">User ID: {user.id}</p>
-            <p className="text-xs">Community Organizer ID: {community.organizer_id}</p>
-            <p className="text-xs">Is Organizer: {isOrganizer ? 'Yes' : 'No'}</p>
-            <p className="text-xs">Member Role: {memberRole || 'Not a member'}</p>
-            <p className="text-xs">Is Admin: {isAdmin ? 'Yes' : 'No'}</p>
-            <p className="text-xs">Is Moderator: {isModerator ? 'Yes' : 'No'}</p>
-          </CardContent>
-        </Card>
+
+      {/* Show fix button if user is organizer but not admin */}
+      {isOrganizer && !memberRole && user && (
+        <FixAdminAccess communityId={community.id} userId={user.id} />
       )}
 
       {/* Invitation Section - Only visible to admins and moderators */}

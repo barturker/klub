@@ -305,15 +305,9 @@ export function InvitationSection({ communityId, isAdmin, isModerator }: Invitat
                       <TableCell className="font-mono">{invitation.token}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarImage src={invitation.creator?.avatar_url || undefined} />
-                            <AvatarFallback className="text-xs">
-                              {invitation.creator?.username?.[0]?.toUpperCase() || '?'}
-                            </AvatarFallback>
-                          </Avatar>
                           <div>
                             <div className="text-sm">
-                              {invitation.creator?.username || invitation.creator?.full_name || 'Unknown'}
+                              {invitation.created_by || 'Unknown'}
                             </div>
                             <Badge variant="outline" className="text-xs">
                               {invitation.created_by_role}
@@ -333,23 +327,7 @@ export function InvitationSection({ communityId, isAdmin, isModerator }: Invitat
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {invitation.invitation_uses.length > 0 ? (
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-6 w-6">
-                              <AvatarImage src={invitation.invitation_uses[0].user?.avatar_url || undefined} />
-                              <AvatarFallback className="text-xs">
-                                {invitation.invitation_uses[0].user?.username?.[0]?.toUpperCase() || '?'}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm">
-                              {invitation.invitation_uses[0].user?.username ||
-                               invitation.invitation_uses[0].user?.full_name ||
-                               'Unknown'}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
+                        <span className="text-muted-foreground">-</span>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
