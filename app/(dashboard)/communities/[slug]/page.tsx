@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Users, Calendar, Settings } from 'lucide-react';
 import Link from 'next/link';
+import { InvitationSection } from '@/components/invitations/InvitationSection';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -50,8 +51,31 @@ export default async function CommunityPage({ params }: PageProps) {
 
   const isOrganizer = user?.id === community.organizer_id;
 
+  // Get user's role in the community if they are a member
+  let memberRole = null;
+  let isAdmin = false;
+  let isModerator = false;
+
+  if (user) {
+    const { data: memberData } = await supabase
+      .from('community_members')
+      .select('role')
+      .eq('community_id', community.id)
+      .eq('user_id', user.id)
+      .single();
+
+    if (memberData) {
+      memberRole = memberData.role;
+      isAdmin = memberRole === 'admin' || isOrganizer;
+      isModerator = memberRole === 'moderator';
+    } else if (isOrganizer) {
+      // If user is organizer but not in community_members table, still give admin access
+      isAdmin = true;
+    }
+  }
+
   return (
-    <div className="container py-8">
+    <div className="container py-8 space-y-6">
       <Card>
         <CardHeader>
           <div className="flex items-start justify-between">
@@ -82,9 +106,9 @@ export default async function CommunityPage({ params }: PageProps) {
               <span>Created {new Date(community.created_at).toLocaleDateString()}</span>
             </div>
           </div>
-          
+
           <div className="mt-6 flex gap-3">
-            {!isOrganizer && user && (
+            {!memberRole && user && (
               <Button>Join Community</Button>
             )}
             {!user && (
@@ -96,6 +120,30 @@ export default async function CommunityPage({ params }: PageProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Debug info - Remove this in production */}
+      {user && (
+        <Card className="bg-yellow-50 border-yellow-200">
+          <CardContent className="pt-6">
+            <p className="text-sm">Debug Info:</p>
+            <p className="text-xs">User ID: {user.id}</p>
+            <p className="text-xs">Community Organizer ID: {community.organizer_id}</p>
+            <p className="text-xs">Is Organizer: {isOrganizer ? 'Yes' : 'No'}</p>
+            <p className="text-xs">Member Role: {memberRole || 'Not a member'}</p>
+            <p className="text-xs">Is Admin: {isAdmin ? 'Yes' : 'No'}</p>
+            <p className="text-xs">Is Moderator: {isModerator ? 'Yes' : 'No'}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Invitation Section - Only visible to admins and moderators */}
+      {(isAdmin || isModerator) && (
+        <InvitationSection
+          communityId={community.id}
+          isAdmin={isAdmin}
+          isModerator={isModerator}
+        />
+      )}
     </div>
   );
 }

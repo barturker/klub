@@ -379,6 +379,79 @@ export type Database = {
           },
         ]
       }
+      invitation_uses: {
+        Row: {
+          accepted_at: string
+          id: string
+          invitation_id: string
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          id?: string
+          invitation_id: string
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string
+          id?: string
+          invitation_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitation_uses_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "invitations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invitations: {
+        Row: {
+          community_id: string
+          created_at: string
+          created_by: string
+          created_by_role: Database["public"]["Enums"]["member_role"]
+          expires_at: string
+          id: string
+          max_uses: number
+          token: string
+          uses_count: number
+        }
+        Insert: {
+          community_id: string
+          created_at?: string
+          created_by: string
+          created_by_role?: Database["public"]["Enums"]["member_role"]
+          expires_at?: string
+          id?: string
+          max_uses?: number
+          token: string
+          uses_count?: number
+        }
+        Update: {
+          community_id?: string
+          created_at?: string
+          created_by?: string
+          created_by_role?: Database["public"]["Enums"]["member_role"]
+          expires_at?: string
+          id?: string
+          max_uses?: number
+          token?: string
+          uses_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitations_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           amount_cents: number
@@ -521,6 +594,7 @@ export type Database = {
           id: string
           interests: string[] | null
           last_active: string | null
+          location: string | null
           member_since: string | null
           metadata: Json | null
           privacy_level: string | null
@@ -540,6 +614,7 @@ export type Database = {
           id: string
           interests?: string[] | null
           last_active?: string | null
+          location?: string | null
           member_since?: string | null
           metadata?: Json | null
           privacy_level?: string | null
@@ -559,6 +634,7 @@ export type Database = {
           id?: string
           interests?: string[] | null
           last_active?: string | null
+          location?: string | null
           member_since?: string | null
           metadata?: Json | null
           privacy_level?: string | null
@@ -844,6 +920,14 @@ export type Database = {
       _st_within: {
         Args: { geom1: unknown; geom2: unknown }
         Returns: boolean
+      }
+      accept_invitation: {
+        Args: { p_token: string; p_user_id: string }
+        Returns: {
+          community_id: string
+          message: string
+          success: boolean
+        }[]
       }
       addauth: {
         Args: { "": string }
@@ -1279,6 +1363,17 @@ export type Database = {
       is_community_member: {
         Args: { p_community_id: string; p_user_id: string }
         Returns: boolean
+      }
+      is_invitation_valid: {
+        Args: { p_token: string }
+        Returns: {
+          community_id: string
+          community_name: string
+          expires_at: string
+          invitation_id: string
+          uses_remaining: number
+          valid: boolean
+        }[]
       }
       json: {
         Args: { "": unknown }
