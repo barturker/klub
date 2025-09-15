@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
+import { emitProfileUpdate, PROFILE_EVENTS } from '@/lib/events/profile-events';
 
 interface AvatarUploadProps {
   currentAvatarUrl?: string | null;
@@ -139,6 +140,9 @@ export function AvatarUpload({ currentAvatarUrl, onUploadComplete, className }: 
       setImageSrc(null);
       setCrop({ x: 0, y: 0 });
       setZoom(1);
+
+      // Emit event to update sidebar
+      emitProfileUpdate(PROFILE_EVENTS.AVATAR_UPDATED, { avatar_url: data.avatar_url });
 
       if (onUploadComplete) {
         onUploadComplete(data.avatar_url);

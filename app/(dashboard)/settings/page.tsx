@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { AvatarUpload } from '@/components/profile/AvatarUpload';
+import { emitProfileUpdate, PROFILE_EVENTS } from '@/lib/events/profile-events';
 
 export default function SettingsPage() {
   const [user, setUser] = useState<any>(null);
@@ -66,6 +67,12 @@ export default function SettingsPage() {
       }
 
       toast.success('Profile updated successfully!');
+
+      // Emit event to update sidebar
+      emitProfileUpdate(PROFILE_EVENTS.PROFILE_UPDATED, {
+        display_name: displayName,
+        bio: bio
+      });
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error('Failed to update profile');

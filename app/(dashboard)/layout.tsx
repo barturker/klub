@@ -24,6 +24,7 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import { motion } from 'framer-motion';
 import { useTheme } from 'next-themes';
+import { listenToProfileUpdate, PROFILE_EVENTS } from '@/lib/events/profile-events';
 
 export default function DashboardLayout({
   children,
@@ -45,6 +46,18 @@ export default function DashboardLayout({
     setMounted(true);
   }, []);
 
+  const fetchUserProfile = async (userId: string) => {
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('avatar_url, display_name, full_name')
+      .eq('id', userId)
+      .single();
+
+    if (profileData) {
+      setProfile(profileData);
+    }
+  };
+
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -52,21 +65,31 @@ export default function DashboardLayout({
         router.push('/auth');
       } else {
         setUser(user);
-
-        // Fetch user profile for avatar
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('avatar_url, display_name, full_name')
-          .eq('id', user.id)
-          .single();
-
-        if (profileData) {
-          setProfile(profileData);
-        }
+        await fetchUserProfile(user.id);
       }
     };
     getUser();
   }, [router, supabase]);
+
+  // Listen for profile updates
+  useEffect(() => {
+    if (!user) return;
+
+    const unsubscribe = listenToProfileUpdate(PROFILE_EVENTS.AVATAR_UPDATED, async () => {
+      // Re-fetch profile when avatar is updated
+      await fetchUserProfile(user.id);
+    });
+
+    const unsubscribeProfile = listenToProfileUpdate(PROFILE_EVENTS.PROFILE_UPDATED, async () => {
+      // Re-fetch profile when any profile data is updated
+      await fetchUserProfile(user.id);
+    });
+
+    return () => {
+      unsubscribe();
+      unsubscribeProfile();
+    };
+  }, [user, supabase]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
