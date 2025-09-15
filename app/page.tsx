@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   ArrowRight,
   CheckCircle,
@@ -27,8 +28,28 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { createClient } from '@/lib/supabase/server';
 
-export default function Home() {
+async function getPublicCommunities() {
+  const supabase = await createClient();
+
+  const { data: communities, error } = await supabase
+    .from('communities')
+    .select('*')
+    .eq('privacy_level', 'public')
+    .order('member_count', { ascending: false })
+    .limit(6);
+
+  if (error) {
+    console.error('Error fetching communities:', error);
+    return [];
+  }
+
+  return communities || [];
+}
+
+export default async function Home() {
+  const communities = await getPublicCommunities();
   return (
     <div className="bg-background min-h-screen">
       {/* Navbar */}
@@ -73,7 +94,7 @@ export default function Home() {
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
-            <Link href="/communities">
+            <Link href="/explore">
               <Button size="lg" variant="outline">
                 Browse Communities
               </Button>
@@ -81,6 +102,87 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <Separator className="container mx-auto" />
+
+      {/* Public Communities Section */}
+      {communities.length > 0 && (
+        <section className="container mx-auto px-4 py-16">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-3xl font-bold mb-2">Popular Communities</h2>
+              <p className="text-muted-foreground">
+                Join vibrant communities and connect with like-minded people
+              </p>
+            </div>
+            <Link href="/explore">
+              <Button variant="outline">
+                View All
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {communities.map((community) => (
+              <Link
+                key={community.id}
+                href={`/explore/${community.slug}`}
+                className="transition-transform hover:scale-[1.02]"
+              >
+                <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">
+                  {community.cover_image_url && (
+                    <div className="h-32 w-full overflow-hidden rounded-t-lg">
+                      <img
+                        src={community.cover_image_url}
+                        alt={`${community.name} cover`}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  )}
+
+                  <CardHeader>
+                    <div className="flex items-start gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={community.avatar_url || undefined} alt={community.name} />
+                        <AvatarFallback>
+                          {community.name.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      <div className="flex-1">
+                        <CardTitle className="text-base">{community.name}</CardTitle>
+                        {community.category && (
+                          <Badge variant="secondary" className="mt-1 text-xs">
+                            {community.category}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent>
+                    <CardDescription className="line-clamp-2 mb-3">
+                      {community.description || 'A vibrant community waiting for you to join!'}
+                    </CardDescription>
+
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        <span>{community.member_count || 0} members</span>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        <Globe className="mr-1 h-2 w-2" />
+                        Public
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <Separator className="container mx-auto" />
 
@@ -447,7 +549,7 @@ export default function Home() {
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
-            <Link href="/communities">
+            <Link href="/explore">
               <Button size="lg" variant="outline" className="min-w-[200px]">
                 Explore Communities
               </Button>
@@ -473,7 +575,7 @@ export default function Home() {
               © 2025 Klub. Community & Event Management Platform.
             </p>
             <div className="flex gap-4">
-              <Link href="/communities">
+              <Link href="/explore">
                 <Button variant="ghost" size="sm">
                   Communities
                 </Button>
