@@ -474,14 +474,58 @@ export type Database = {
           },
         ]
       }
+      profile_views: {
+        Row: {
+          id: string
+          profile_id: string
+          viewed_at: string | null
+          viewer_id: string | null
+        }
+        Insert: {
+          id?: string
+          profile_id: string
+          viewed_at?: string | null
+          viewer_id?: string | null
+        }
+        Update: {
+          id?: string
+          profile_id?: string
+          viewed_at?: string | null
+          viewer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_views_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_views_viewer_id_fkey"
+            columns: ["viewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           bio: string | null
           created_at: string
+          display_name: string | null
           email: string | null
           full_name: string | null
           id: string
+          interests: string[] | null
+          last_active: string | null
+          member_since: string | null
+          metadata: Json | null
+          privacy_level: string | null
+          profile_complete: boolean | null
+          social_links: Json | null
           updated_at: string
           username: string | null
           website: string | null
@@ -490,9 +534,17 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          display_name?: string | null
           email?: string | null
           full_name?: string | null
           id: string
+          interests?: string[] | null
+          last_active?: string | null
+          member_since?: string | null
+          metadata?: Json | null
+          privacy_level?: string | null
+          profile_complete?: boolean | null
+          social_links?: Json | null
           updated_at?: string
           username?: string | null
           website?: string | null
@@ -501,9 +553,17 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          display_name?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
+          interests?: string[] | null
+          last_active?: string | null
+          member_since?: string | null
+          metadata?: Json | null
+          privacy_level?: string | null
+          profile_complete?: boolean | null
+          social_links?: Json | null
           updated_at?: string
           username?: string | null
           website?: string | null
@@ -863,6 +923,10 @@ export type Database = {
       bytea: {
         Args: { "": unknown } | { "": unknown }
         Returns: string
+      }
+      calculate_profile_completion: {
+        Args: { profile_id: string }
+        Returns: number
       }
       check_rate_limit: {
         Args: {

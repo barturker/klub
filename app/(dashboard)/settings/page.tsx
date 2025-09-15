@@ -9,10 +9,17 @@ import { IconSettings, IconUser, IconBell, IconShield } from '@tabler/icons-reac
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
+import { AvatarUpload } from '@/components/profile/AvatarUpload';
 
 export default function SettingsPage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [displayName, setDisplayName] = useState('');
+  const [bio, setBio] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
@@ -23,11 +30,49 @@ export default function SettingsPage() {
         router.push('/auth');
       } else {
         setUser(user);
+        // Fetch profile data
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('display_name, bio, avatar_url')
+          .eq('id', user.id)
+          .single();
+
+        if (profile) {
+          setDisplayName(profile.display_name || '');
+          setBio(profile.bio || '');
+          setAvatarUrl(profile.avatar_url || null);
+        }
       }
       setLoading(false);
     };
     getUser();
-  }, [router, supabase.auth]);
+  }, [router, supabase]);
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          display_name: displayName,
+          bio: bio,
+        })
+        .eq('id', user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success('Profile updated successfully!');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -70,28 +115,55 @@ export default function SettingsPage() {
                 Update your personal information and profile details
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label>Profile Picture</Label>
+                <AvatarUpload
+                  currentAvatarUrl={avatarUrl}
+                  onUploadComplete={(url) => {
+                    setAvatarUrl(url);
+                    toast.success('Avatar uploaded successfully!');
+                  }}
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" value={user?.email || ''} disabled />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="name">Display Name</Label>
-                <Input 
-                  id="name" 
+                <Input
+                  id="name"
                   placeholder="Enter your display name"
-                  defaultValue={user?.user_metadata?.name || ''}
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="bio">Bio</Label>
-                <textarea 
+                <textarea
                   id="bio"
                   className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm"
                   placeholder="Tell us about yourself"
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
                 />
               </div>
-              <Button variant="save" size="lg">Save Changes</Button>
+              <Button
+                onClick={handleSaveProfile}
+                disabled={saving}
+                size="lg"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
