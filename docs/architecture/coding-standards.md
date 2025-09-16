@@ -433,29 +433,95 @@ const validatedData = userSchema.parse(body);
 
 ### Test Structure
 
+#### Unit Tests (Jest + Testing Library)
+
 ```typescript
+// __tests__/components/Button.test.tsx
+import { render, screen, fireEvent } from '@testing-library/react';
+import { Button } from '@/components/ui/Button';
+
 describe('Button Component', () => {
   it('should render children correctly', () => {
-    // Test implementation
+    render(<Button>Click me</Button>);
+    expect(screen.getByText('Click me')).toBeInTheDocument();
   });
 
   it('should handle click events', () => {
-    // Test implementation
+    const handleClick = jest.fn();
+    render(<Button onClick={handleClick}>Click me</Button>);
+
+    fireEvent.click(screen.getByText('Click me'));
+    expect(handleClick).toHaveBeenCalledTimes(1);
   });
 
   it('should apply variant styles', () => {
-    // Test implementation
+    const { rerender } = render(<Button variant="primary">Button</Button>);
+    expect(screen.getByRole('button')).toHaveClass('bg-blue-500');
+
+    rerender(<Button variant="secondary">Button</Button>);
+    expect(screen.getByRole('button')).toHaveClass('bg-gray-200');
+  });
+});
+```
+
+#### End-to-End Tests (Playwright)
+
+```typescript
+// e2e/auth.spec.ts
+import { test, expect } from '@playwright/test';
+
+test.describe('Authentication Flow', () => {
+  test('should allow user to sign in', async ({ page }) => {
+    await page.goto('/login');
+
+    await page.fill('[name="email"]', 'test@example.com');
+    await page.fill('[name="password"]', 'password123');
+    await page.click('button[type="submit"]');
+
+    await expect(page).toHaveURL('/dashboard');
+    await expect(page.locator('h1')).toContainText('Dashboard');
   });
 });
 ```
 
 ### Testing Guidelines
 
-- Write tests for critical paths
-- Test edge cases and error scenarios
-- Mock external dependencies
+#### Coverage Requirements
+- Minimum 80% code coverage for critical paths
+- 100% coverage for utility functions
+- Focus on behavior, not implementation details
+
+#### Test Organization
+- Unit tests in `__tests__` directories next to source files
+- E2E tests in `/e2e` directory
+- Test utilities in `__tests__/utils`
+- Test fixtures in `__tests__/fixtures`
+
+#### Best Practices
+- Use descriptive test names that explain the behavior
+- Follow AAA pattern (Arrange, Act, Assert)
+- Mock external dependencies (API calls, database)
 - Keep tests isolated and independent
-- Use descriptive test names
+- Use data-testid attributes for E2E test selectors
+- Run tests before committing code
+
+#### Testing Commands
+```bash
+# Unit tests
+npm run test              # Run tests once
+npm run test:watch        # Watch mode
+npm run test:coverage     # Coverage report
+
+# E2E tests
+npm run test:e2e          # Run headless
+npm run test:e2e:ui       # Interactive UI mode
+npm run test:e2e:headed   # Run with browser visible
+```
+
+#### CI/CD Integration
+- All tests must pass before merging
+- Coverage reports generated on PR
+- E2E tests run against preview deployments
 
 ## Performance Guidelines
 
@@ -598,17 +664,49 @@ function calculateTotal(items: CartItem[], taxRate: number): number {
 - No implicit any
 - Path aliases configured
 
-### Prettier (if added)
+### Prettier
 
+Prettier is configured and integrated into the project for consistent code formatting:
+
+**.prettierrc**
 ```json
 {
   "semi": true,
   "trailingComma": "es5",
-  "singleQuote": true,
+  "singleQuote": false,
   "printWidth": 80,
-  "tabWidth": 2
+  "tabWidth": 2,
+  "useTabs": false,
+  "plugins": ["prettier-plugin-tailwindcss"]
 }
 ```
+
+**.prettierignore**
+```
+.next
+node_modules
+public
+build
+dist
+coverage
+*.min.js
+*.min.css
+```
+
+**Usage:**
+```bash
+npm run format       # Format all files
+npm run format:check # Check formatting without changes
+```
+
+**VSCode Integration:**
+- Install Prettier extension
+- Set as default formatter
+- Enable format on save
+
+**Tailwind Class Sorting:**
+- Classes are automatically sorted using `prettier-plugin-tailwindcss`
+- Ensures consistent class order across the codebase
 
 ## Continuous Improvement
 
