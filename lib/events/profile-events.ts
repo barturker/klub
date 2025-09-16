@@ -4,12 +4,12 @@ export const PROFILE_EVENTS = {
   PROFILE_UPDATED: 'profileUpdated',
 } as const;
 
-export function emitProfileUpdate(eventType: string, data?: any) {
+export function emitProfileUpdate<T = unknown>(eventType: string, data?: T) {
   const event = new CustomEvent(eventType, { detail: data });
   window.dispatchEvent(event);
 }
 
-export function listenToProfileUpdate(eventType: string, callback: (data: any) => void) {
+export function listenToProfileUpdate<T = unknown>(eventType: string, callback: (data: T) => void) {
   const handler = (event: Event) => {
     const customEvent = event as CustomEvent;
     callback(customEvent.detail);

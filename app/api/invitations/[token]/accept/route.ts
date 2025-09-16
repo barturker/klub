@@ -4,11 +4,12 @@ import { NextResponse } from 'next/server';
 // Accept invitation
 export async function POST(
   request: Request,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const { token } = params;
+    const resolvedParams = await params;
+    const { token } = resolvedParams;
 
     // Check if user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser();

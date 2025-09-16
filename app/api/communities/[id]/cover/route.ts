@@ -9,11 +9,12 @@ const COVER_HEIGHT = 480;
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params;
     const supabase = await createClient();
-    
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json(
@@ -26,7 +27,7 @@ export async function POST(
     const { data: community, error: fetchError } = await supabase
       .from('communities')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .single();
 
     if (fetchError || !community) {
@@ -40,7 +41,7 @@ export async function POST(
     const { data: membership } = await supabase
       .from('community_members')
       .select('role')
-      .eq('community_id', params.id)
+      .eq('community_id', resolvedParams.id)
       .eq('user_id', user.id)
       .single();
 
@@ -103,7 +104,7 @@ export async function POST(
       .toBuffer();
 
     // Upload main cover to Supabase Storage
-    const coverFileName = `${params.id}/cover-${Date.now()}.jpg`;
+    const coverFileName = `${resolvedParams.id}/cover-${Date.now()}.jpg`;
     const { error: coverError } = await supabase.storage
       .from('community-covers')
       .upload(coverFileName, processedCover, {
@@ -120,7 +121,7 @@ export async function POST(
     }
 
     // Upload mobile version
-    const mobileCoverFileName = `${params.id}/cover-mobile-${Date.now()}.jpg`;
+    const mobileCoverFileName = `${resolvedParams.id}/cover-mobile-${Date.now()}.jpg`;
     const { error: mobileError } = await supabase.storage
       .from('community-covers')
       .upload(mobileCoverFileName, mobileCover, {
@@ -148,7 +149,7 @@ export async function POST(
         if (oldCoverPath) {
           await supabase.storage
             .from('community-covers')
-            .remove([`${params.id}/${oldCoverPath}`]);
+            .remove([`${resolvedParams.id}/${oldCoverPath}`]);
         }
       } catch (error) {
         console.error('Error deleting old cover:', error);
@@ -162,7 +163,7 @@ export async function POST(
         cover_image_url: coverUrlData.publicUrl,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', params.id);
+      .eq('id', resolvedParams.id);
 
     if (updateError) {
       console.error('Error updating community cover:', updateError);
@@ -176,7 +177,7 @@ export async function POST(
     await supabase
       .from('community_settings_history')
       .insert({
-        community_id: params.id,
+        community_id: resolvedParams.id,
         changed_by: user.id,
         changes: {
           cover_image_url: {
@@ -202,9 +203,10 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params;
     const supabase = await createClient();
     
     const { data: { user } } = await supabase.auth.getUser();
@@ -219,7 +221,7 @@ export async function DELETE(
     const { data: community, error: fetchError } = await supabase
       .from('communities')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .single();
 
     if (fetchError || !community) {
@@ -233,7 +235,7 @@ export async function DELETE(
     const { data: membership } = await supabase
       .from('community_members')
       .select('role')
-      .eq('community_id', params.id)
+      .eq('community_id', resolvedParams.id)
       .eq('user_id', user.id)
       .single();
 
@@ -253,7 +255,7 @@ export async function DELETE(
         if (coverPath) {
           await supabase.storage
             .from('community-covers')
-            .remove([`${params.id}/${coverPath}`]);
+            .remove([`${resolvedParams.id}/${coverPath}`]);
         }
       } catch (error) {
         console.error('Error deleting cover from storage:', error);
@@ -267,7 +269,7 @@ export async function DELETE(
         cover_image_url: null,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', params.id);
+      .eq('id', resolvedParams.id);
 
     if (updateError) {
       console.error('Error removing community cover:', updateError);
@@ -281,7 +283,7 @@ export async function DELETE(
     await supabase
       .from('community_settings_history')
       .insert({
-        community_id: params.id,
+        community_id: resolvedParams.id,
         changed_by: user.id,
         changes: {
           cover_image_url: {

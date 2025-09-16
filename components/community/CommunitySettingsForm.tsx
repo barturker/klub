@@ -93,12 +93,12 @@ export function CommunitySettingsForm({ community }: CommunitySettingsFormProps)
       setIsLoading(true);
 
       // Sadece dolu ve değişmiş alanları gönder
-      const payload: any = {};
+      const payload: Record<string, unknown> = {};
       
       // Form alanlarını kontrol et
       Object.entries(values).forEach(([key, value]) => {
         // Boş string değilse ve mevcut değerden farklıysa ekle
-        if (value !== '' && value !== undefined && value !== (community as any)[key]) {
+        if (value !== '' && value !== undefined && value !== (community as Record<string, unknown>)[key]) {
           payload[key] = value;
         }
       });

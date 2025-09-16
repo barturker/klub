@@ -13,9 +13,10 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { AvatarUpload } from '@/components/profile/AvatarUpload';
 import { emitProfileUpdate, PROFILE_EVENTS } from '@/lib/events/profile-events';
+import type { User } from '@supabase/supabase-js';
 
 export default function SettingsPage() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [displayName, setDisplayName] = useState('');

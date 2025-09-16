@@ -25,6 +25,8 @@ import { createClient } from '@/lib/supabase/client';
 import { motion } from 'framer-motion';
 import { useTheme } from 'next-themes';
 import { listenToProfileUpdate, PROFILE_EVENTS } from '@/lib/events/profile-events';
+import type { User } from '@supabase/supabase-js';
+import type { Database } from '@/lib/supabase/database.types';
 
 export default function DashboardLayout({
   children,
@@ -34,8 +36,8 @@ export default function DashboardLayout({
   const [mounted, setMounted] = useState(false);
   // Sidebar should be closed by default, opens on hover
   const [open, setOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Database['public']['Tables']['profiles']['Row'] | null>(null);
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();

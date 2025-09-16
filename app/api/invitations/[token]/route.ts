@@ -4,11 +4,12 @@ import { NextResponse } from 'next/server';
 // Validate invitation token
 export async function GET(
   request: Request,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const { token } = params;
+    const resolvedParams = await params;
+    const { token } = resolvedParams;
 
     // Call the is_invitation_valid function
     const { data, error } = await supabase

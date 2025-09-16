@@ -29,6 +29,7 @@ import {
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import type { User } from '@supabase/supabase-js';
 
 interface Community {
   id: string;
@@ -56,7 +57,7 @@ export default function CommunitiesPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedSort, setSelectedSort] = useState('popular');
   const [activeTab, setActiveTab] = useState('all');
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
   const supabase = createClient();
 

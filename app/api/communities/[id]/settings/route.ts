@@ -20,11 +20,12 @@ const settingsSchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params;
     const supabase = await createClient();
-    
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json(
@@ -36,7 +37,7 @@ export async function GET(
     const { data: community, error } = await supabase
       .from('communities')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .single();
 
     if (error || !community) {
@@ -51,7 +52,7 @@ export async function GET(
     const { data: membership } = await supabase
       .from('community_members')
       .select('role')
-      .eq('community_id', params.id)
+      .eq('community_id', resolvedParams.id)
       .eq('user_id', user.id)
       .single();
 
@@ -76,11 +77,12 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params;
     const supabase = await createClient();
-    
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json(
@@ -93,7 +95,7 @@ export async function PATCH(
     const { data: community, error: fetchError } = await supabase
       .from('communities')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .single();
 
     if (fetchError || !community) {
@@ -108,7 +110,7 @@ export async function PATCH(
     const { data: membership } = await supabase
       .from('community_members')
       .select('role')
-      .eq('community_id', params.id)
+      .eq('community_id', resolvedParams.id)
       .eq('user_id', user.id)
       .single();
 
@@ -150,7 +152,7 @@ export async function PATCH(
     const { data: updatedCommunity, error: updateError } = await supabase
       .from('communities')
       .update(validatedData)
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .select()
       .single();
 
@@ -167,7 +169,7 @@ export async function PATCH(
       const { error: historyError } = await supabase
         .from('community_settings_history')
         .insert({
-          community_id: params.id,
+          community_id: resolvedParams.id,
           changed_by: user.id,
           old_values: oldValues,
           new_values: newValues,

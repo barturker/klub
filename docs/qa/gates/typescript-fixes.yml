@@ -1,0 +1,89 @@
+schema: 1
+story: 'typescript-fixes'
+gate: FAIL
+status_reason: 'Critical TypeScript errors and type safety issues must be resolved before production deployment.'
+reviewer: 'Quinn'
+updated: '2025-01-16T20:05:00Z'
+top_issues:
+  - id: 'ARCH-001'
+    severity: high
+    finding: 'Next.js 15 route handler signatures outdated causing TypeScript compilation errors'
+    suggested_action: 'Update all route handlers to use Promise<{params}> pattern for Next.js 15 compatibility'
+  - id: 'SEC-001'
+    severity: high
+    finding: '24 uses of "any" type bypassing TypeScript type safety'
+    suggested_action: 'Replace all "any" types with proper type definitions to prevent runtime errors'
+  - id: 'MNT-001'
+    severity: medium
+    finding: '54 ESLint warnings including unused variables and imports'
+    suggested_action: 'Clean up unused code and fix ESLint warnings to improve maintainability'
+  - id: 'TEST-001'
+    severity: high
+    finding: 'Multiple test suites failing due to incorrect mock implementations'
+    suggested_action: 'Fix mock implementations in test files to restore test coverage'
+  - id: 'PERF-001'
+    severity: medium
+    finding: 'Using <img> elements instead of Next/Image causing slower LCP'
+    suggested_action: 'Replace all <img> elements with Next/Image component for automatic optimization'
+  - id: 'SEC-002'
+    severity: medium
+    finding: 'Unescaped quotes in JSX can lead to XSS vulnerabilities'
+    suggested_action: 'Use proper HTML entities for quotes in all JSX content'
+waiver: { active: false }
+
+action_plan:
+  immediate:
+    - description: 'Fix Next.js 15 route handler signatures'
+      files:
+        - 'app/api/communities/[id]/by-slug/route.ts'
+        - 'app/api/communities/[id]/cover/route.ts'
+        - 'app/api/communities/[id]/invitations/route.ts'
+        - 'app/api/communities/[id]/logo/route.ts'
+        - 'app/api/communities/[id]/settings/route.ts'
+        - 'app/api/invitations/[token]/route.ts'
+        - 'app/api/invitations/[token]/accept/route.ts'
+        - 'app/api/profile/[id]/route.ts'
+      estimated_time: '2 hours'
+    - description: 'Replace all "any" types with proper TypeScript types'
+      files:
+        - 'app/(dashboard)/communities/page.tsx'
+        - 'app/(dashboard)/dashboard/page.tsx'
+        - 'app/(dashboard)/layout.tsx'
+        - 'components/community/CommunitySettingsForm.tsx'
+        - 'lib/events/profile-events.ts'
+      estimated_time: '3 hours'
+
+  short_term:
+    - description: 'Fix failing test suites'
+      files:
+        - 'app/api/communities/[id]/settings/route.test.ts'
+        - 'app/api/communities/route.test.ts'
+      estimated_time: '2 hours'
+    - description: 'Clean up ESLint warnings'
+      command: 'npm run lint -- --fix'
+      estimated_time: '1 hour'
+    - description: 'Replace img elements with Next/Image'
+      files:
+        - 'app/(dashboard)/communities/page.tsx'
+        - 'app/(dashboard)/layout.tsx'
+        - 'app/(dashboard)/communities/[slug]/page.tsx'
+        - 'app/explore/[slug]/page.tsx'
+      estimated_time: '1 hour'
+
+  validation:
+    - 'Run: npm run lint (should have 0 errors)'
+    - 'Run: npx tsc --noEmit (should compile without errors)'
+    - 'Run: npm test (all tests should pass)'
+    - 'Verify no "any" types remain in codebase'
+
+summary: |
+  The TypeScript configuration has critical issues that prevent proper type checking
+  and create potential runtime errors. The codebase needs immediate attention to:
+
+  1. Update to Next.js 15 route handler patterns
+  2. Eliminate all "any" types for proper type safety
+  3. Fix test infrastructure
+  4. Clean up code quality issues
+
+  Total estimated fix time: 9-10 hours
+  Recommended approach: Fix in order listed above as each builds on the previous

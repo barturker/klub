@@ -13,11 +13,12 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params;
     const supabase = await createClient();
-    
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json(
@@ -30,7 +31,7 @@ export async function POST(
     const { data: community, error: fetchError } = await supabase
       .from('communities')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', resolvedParams.id)
       .single();
 
     if (fetchError || !community) {
@@ -44,7 +45,7 @@ export async function POST(
     const { data: membership } = await supabase
       .from('community_members')
       .select('role')
-      .eq('community_id', params.id)
+      .eq('community_id', resolvedParams.id)
       .eq('user_id', user.id)
       .single();
 
@@ -107,7 +108,7 @@ export async function POST(
       .toBuffer();
 
     // Upload main logo to Supabase Storage
-    const logoFileName = `${params.id}/logo-${Date.now()}.jpg`;
+    const logoFileName = `${resolvedParams.id}/logo-${Date.now()}.jpg`;
     const { error: logoError } = await supabase.storage
       .from('community-logos')
       .upload(logoFileName, processedLogo, {
@@ -124,7 +125,7 @@ export async function POST(
     }
 
     // Upload thumbnail
-    const thumbnailFileName = `${params.id}/logo-thumbnail-${Date.now()}.jpg`;
+    const thumbnailFileName = `${resolvedParams.id}/logo-thumbnail-${Date.now()}.jpg`;
     const { error: thumbnailError } = await supabase.storage
       .from('community-logos')
       .upload(thumbnailFileName, thumbnail, {
@@ -152,7 +153,7 @@ export async function POST(
         if (oldLogoPath) {
           await supabase.storage
             .from('community-logos')
-            .remove([`${params.id}/${oldLogoPath}`]);
+            .remove([`${resolvedParams.id}/${oldLogoPath}`]);
         }
       } catch (error) {
         console.error('Error deleting old logo:', error);
@@ -166,7 +167,7 @@ export async function POST(
         logo_url: logoUrlData.publicUrl,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', params.id);
+      .eq('id', resolvedParams.id);
 
     if (updateError) {
       console.error('Error updating community logo:', updateError);
@@ -180,7 +181,7 @@ export async function POST(
     await supabase
       .from('community_settings_history')
       .insert({
-        community_id: params.id,
+        community_id: resolvedParams.id,
         changed_by: user.id,
         changes: {
           logo_url: {

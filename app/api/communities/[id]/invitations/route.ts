@@ -5,11 +5,12 @@ import { nanoid } from 'nanoid';
 // Create new invitation
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params;
     console.log('[POST /api/communities/[id]/invitations] Starting...');
-    console.log('[POST] Community ID:', params.id);
+    console.log('[POST] Community ID:', resolvedParams.id);
 
     const supabase = await createClient();
 
@@ -26,11 +27,11 @@ export async function POST(
     }
 
     // Check if user is admin or moderator of the community
-    console.log('[POST] Checking member role for:', { communityId: params.id, userId: user.id });
+    console.log('[POST] Checking member role for:', { communityId: resolvedParams.id, userId: user.id });
     const { data: memberData, error: memberError } = await supabase
       .from('community_members')
       .select('role')
-      .eq('community_id', params.id)
+      .eq('community_id', resolvedParams.id)
       .eq('user_id', user.id)
       .single();
 
@@ -66,7 +67,7 @@ export async function POST(
 
     // Create invitation
     console.log('[POST] Creating invitation with:', {
-      community_id: params.id,
+      community_id: resolvedParams.id,
       token,
       created_by: user.id,
       created_by_role: memberData.role,
@@ -77,7 +78,7 @@ export async function POST(
     const { data: invitation, error: invitationError } = await supabase
       .from('invitations')
       .insert({
-        community_id: params.id,
+        community_id: resolvedParams.id,
         token,
         created_by: user.id,
         created_by_role: memberData.role,
@@ -121,11 +122,12 @@ export async function POST(
 // Get all invitations for a community
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params;
     console.log('[GET /api/communities/[id]/invitations] Starting...');
-    console.log('[GET] Community ID:', params.id);
+    console.log('[GET] Community ID:', resolvedParams.id);
 
     const supabase = await createClient();
 
@@ -142,11 +144,11 @@ export async function GET(
     }
 
     // Check if user is admin or moderator of the community
-    console.log('[GET] Checking member role for:', { communityId: params.id, userId: user.id });
+    console.log('[GET] Checking member role for:', { communityId: resolvedParams.id, userId: user.id });
     const { data: memberData, error: memberError } = await supabase
       .from('community_members')
       .select('role')
-      .eq('community_id', params.id)
+      .eq('community_id', resolvedParams.id)
       .eq('user_id', user.id)
       .single();
 
@@ -169,11 +171,11 @@ export async function GET(
     }
 
     // Get invitations (simplified query without joins for now)
-    console.log('[GET] Fetching invitations for community:', params.id);
+    console.log('[GET] Fetching invitations for community:', resolvedParams.id);
     const { data: invitations, error: invitationsError } = await supabase
       .from('invitations')
       .select('*')
-      .eq('community_id', params.id)
+      .eq('community_id', resolvedParams.id)
       .order('created_at', { ascending: false });
 
     console.log('[GET] Invitations query result:', {

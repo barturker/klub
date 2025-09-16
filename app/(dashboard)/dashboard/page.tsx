@@ -35,14 +35,33 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import type { User } from '@supabase/supabase-js';
+
+interface Activity {
+  type: 'member_joined' | 'ticket_purchased' | 'event_created';
+  timestamp: string;
+  user: string;
+  community?: string;
+  event?: string;
+  amount?: number;
+}
+
+interface UpcomingEvent {
+  id: string;
+  title?: string;
+  name?: string;
+  date: string;
+  max_attendees?: number;
+  status?: string;
+}
 
 interface DashboardStats {
   communities: number;
   events: number;
   tickets: number;
   revenue: number;
-  recentActivities: any[];
-  upcomingEvents: any[];
+  recentActivities: Activity[];
+  upcomingEvents: UpcomingEvent[];
 }
 
 interface AnalyticsData {
@@ -66,7 +85,7 @@ export default function DashboardPage() {
     communityGrowth: [],
     eventCategories: []
   });
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     fetchDashboardData();
@@ -126,7 +145,7 @@ export default function DashboardPage() {
     title: string; 
     value: string | number; 
     change: string; 
-    icon: any; 
+    icon: React.ComponentType<{ className?: string }>; 
     trend: 'up' | 'down' 
   }) => (
     <Card>
@@ -154,7 +173,7 @@ export default function DashboardPage() {
   );
 
   // Format recent activities for display
-  const formatActivity = (activity: any) => {
+  const formatActivity = (activity: Activity) => {
     const timeAgo = getTimeAgo(activity.timestamp);
     
     if (activity.type === 'member_joined') {
@@ -197,7 +216,7 @@ export default function DashboardPage() {
     .slice(0, 5);
 
   // Format upcoming events
-  const upcomingEvents = stats.upcomingEvents.map((event: any) => ({
+  const upcomingEvents = stats.upcomingEvents.map((event: UpcomingEvent) => ({
     id: event.id,
     name: event.title || event.name,
     date: new Date(event.date).toLocaleDateString('en-US', { 
@@ -409,7 +428,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {upcomingEvents.length > 0 ? upcomingEvents.map((event: any) => (
+                {upcomingEvents.length > 0 ? upcomingEvents.map((event) => (
                   <div key={event.id} className="flex items-center justify-between">
                     <div className="flex-1">
                       <p className="font-medium">{event.name}</p>

@@ -3,11 +3,12 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // In this case, 'id' parameter is actually the slug
-    const slug = params.id;
+    const resolvedParams = await params;
+    const slug = resolvedParams.id;
     const supabase = await createClient();
     
     const { data, error } = await supabase
