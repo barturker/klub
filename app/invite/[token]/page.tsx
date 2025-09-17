@@ -178,7 +178,7 @@ export default function InvitePage({ params }: InvitePageProps) {
           </CardHeader>
           <CardContent className="text-center">
             <Button asChild className="w-full">
-              <Link href={`/explore/${community.slug}`}>Go to Community</Link>
+              <Link href={`/communities/${community.slug}`}>Go to Community</Link>
             </Button>
           </CardContent>
         </Card>

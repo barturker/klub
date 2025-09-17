@@ -76,7 +76,8 @@ export async function POST(
         .single();
 
       if (community) {
-        redirect_url = `/explore/${community.slug}`;
+        // Redirect to communities page (app) instead of explore (public)
+        redirect_url = `/communities/${community.slug}`;
       }
     }
 
