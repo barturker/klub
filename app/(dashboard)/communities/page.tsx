@@ -40,7 +40,8 @@ interface Community {
   location: string;
   logo_url: string | null;
   cover_image_url: string | null;
-  is_private: boolean;
+  privacy_level: string | null;  // 'public', 'private', 'invite_only'
+  is_public?: boolean;  // For backward compatibility
   created_at: string;
   updated_at: string;
   member_count?: number;
@@ -78,8 +79,11 @@ export default function CommunitiesPage() {
   const fetchCommunities = async () => {
     try {
       setLoading(true);
-      
-      // Fetch all communities (both public and private)
+
+      // Get current user first
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+
+      // Fetch all communities
       const { data: communitiesData, error } = await supabase
         .from('communities')
         .select('*')
@@ -89,7 +93,7 @@ export default function CommunitiesPage() {
         console.error('Error fetching communities:', error);
         throw error;
       }
-      
+
       console.log('Fetched communities:', communitiesData);
 
       // Get member counts for each community
@@ -109,15 +113,34 @@ export default function CommunitiesPage() {
 
           // Check if current user is a member
           let isMember = false;
-          if (user) {
-            const { data: membership } = await supabase
+          if (currentUser) {
+            const { data: membership, error: memberError } = await supabase
               .from('community_members')
               .select('id')
               .eq('community_id', community.id)
-              .eq('user_id', user.id)
-              .single();
-            
-            isMember = !!membership;
+              .eq('user_id', currentUser.id)
+              .maybeSingle(); // Use maybeSingle instead of single to avoid errors
+
+            if (!memberError) {
+              isMember = !!membership;
+            }
+          }
+
+          // Filter out private/invite_only communities if user is not a member
+          const isPublic = community.privacy_level === 'public' ||
+                          community.privacy_level === null;
+          // REMOVED: community.is_public check - it's conflicting with privacy_level
+
+          const isOwner = currentUser && community.organizer_id === currentUser.id;
+
+          // Log for debugging
+          console.log(`Community: ${community.name}, privacy_level: ${community.privacy_level}, is_public: ${community.is_public}, isMember: ${isMember}, isOwner: ${isOwner}`);
+
+          const shouldInclude = isPublic || isMember || isOwner;
+
+          if (!shouldInclude) {
+            console.log(`Filtering out ${community.name} - private and user is not a member`);
+            return null; // will be filtered out
           }
 
           return {
@@ -130,7 +153,10 @@ export default function CommunitiesPage() {
         })
       );
 
-      setCommunities(communitiesWithStats);
+      // Filter out null values (private communities user can't see)
+      const visibleCommunities = communitiesWithStats.filter(c => c !== null);
+
+      setCommunities(visibleCommunities);
     } catch (error) {
       console.error('Error fetching communities:', error);
     } finally {
@@ -189,23 +215,49 @@ export default function CommunitiesPage() {
     }
 
     try {
-      const { error } = await supabase
-        .from('community_members')
-        .insert({
-          community_id: communityId,
-          user_id: user.id,
-          role: 'member',
-          joined_at: new Date().toISOString()
-        });
+      // Find the community to check if it's private
+      const community = communities.find(c => c.id === communityId);
 
-      if (error) throw error;
+      if (community?.privacy_level === 'private' || community?.privacy_level === 'invite_only') {
+        // For private/invite_only communities, create a join request instead
+        const { error } = await supabase
+          .from('community_join_requests')
+          .insert({
+            community_id: communityId,
+            user_id: user.id,
+            request_message: '',
+            status: 'pending'
+          });
 
-      // Update local state
-      setCommunities(prev => prev.map(c => 
-        c.id === communityId 
-          ? { ...c, is_member: true, member_count: (c.member_count || 0) + 1 }
-          : c
-      ));
+        if (error) {
+          console.error('Error creating join request:', error);
+          // If it's a duplicate request error, still show success
+          if (!error.message.includes('duplicate')) {
+            throw error;
+          }
+        }
+
+        alert('Join request sent! You will be notified when approved.');
+      } else {
+        // For public communities, join directly
+        const { error } = await supabase
+          .from('community_members')
+          .insert({
+            community_id: communityId,
+            user_id: user.id,
+            role: 'member',
+            joined_at: new Date().toISOString()
+          });
+
+        if (error) throw error;
+
+        // Update local state
+        setCommunities(prev => prev.map(c =>
+          c.id === communityId
+            ? { ...c, is_member: true, member_count: (c.member_count || 0) + 1 }
+            : c
+        ));
+      }
     } catch (error) {
       console.error('Error joining community:', error);
     }
@@ -417,8 +469,11 @@ export default function CommunitiesPage() {
                 {/* Category Badge */}
                 <div className="flex items-center gap-2 mb-4">
                   <Badge variant="secondary">{community.category || 'General'}</Badge>
-                  {community.is_private && (
+                  {community.privacy_level === 'private' && (
                     <Badge variant="outline">Private</Badge>
+                  )}
+                  {community.privacy_level === 'invite_only' && (
+                    <Badge variant="outline">Invite Only</Badge>
                   )}
                   {(community.member_count || 0) > 100 && (
                     <Badge variant="default">
@@ -437,17 +492,19 @@ export default function CommunitiesPage() {
                   </Link>
                   {user && (
                     community.is_member ? (
-                      <Button 
+                      <Button
                         variant="secondary"
                         onClick={() => handleLeaveCommunity(community.id)}
                       >
                         Leave
                       </Button>
                     ) : (
-                      <Button 
+                      <Button
                         onClick={() => handleJoinCommunity(community.id)}
                       >
-                        Join
+                        {community.privacy_level === 'private' || community.privacy_level === 'invite_only'
+                          ? 'Request to Join'
+                          : 'Join'}
                       </Button>
                     )
                   )}
