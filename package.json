@@ -30,6 +30,7 @@
     "db:restore-data": "node scripts/db-backup.js restore"
   },
   "dependencies": {
+    "@dinero.js/currencies": "^2.0.0-alpha.14",
     "@fullcalendar/daygrid": "^6.1.19",
     "@fullcalendar/interaction": "^6.1.19",
     "@fullcalendar/list": "^6.1.19",
@@ -76,6 +77,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
+    "dinero.js": "^2.0.0-alpha.14",
     "framer-motion": "^12.23.12",
     "lucide-react": "^0.544.0",
     "luxon": "^3.7.2",

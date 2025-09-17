@@ -344,7 +344,7 @@ technical_specification:
     - name: "PriceCalculator"
       type: "component"
       path: "/components/tickets/PriceCalculator.tsx"
-      purpose: "Interactive price calculator with Dinero.js"
+      purpose: "Interactive price calculator using Dinero.js for immutable monetary operations"
     - name: "CurrencySelector"
       type: "component"
       path: "/components/tickets/CurrencySelector.tsx"
@@ -368,21 +368,24 @@ technical_specification:
     - name: "useCurrency"
       type: "hook"
       path: "/hooks/useCurrency.ts"
-      purpose: "Currency formatting and conversion with Dinero.js"
+      purpose: "Currency operations with Dinero.js - formatting, conversion, ISO 4217 compliance"
 
   libraries_required:
     - name: "luxon"
       version: "^3.4.4"
-      purpose: "Date/timezone handling with built-in i18n support"
+      purpose: "Date/timezone handling with built-in i18n support (already installed)"
     - name: "dinero.js"
       version: "^2.0.0-alpha.14"
-      purpose: "Precise monetary calculations and currency handling"
+      purpose: "Enterprise-grade monetary calculations with multi-currency support, ISO 4217 compliance, and immutable operations"
+    - name: "@dinero.js/currencies"
+      version: "^2.0.0-alpha.14"
+      purpose: "Currency definitions with proper minor units for TRY, USD, EUR, JPY, etc."
     - name: "zustand"
-      version: "^4.5.2"
-      purpose: "Client-side state for pricing calculations"
+      version: "^5.0.8"
+      purpose: "Client-side state for pricing calculations (already installed)"
     - name: "@tanstack/react-query"
-      version: "^5.28.4"
-      purpose: "Data fetching and caching for ticket tiers"
+      version: "^5.89.0"
+      purpose: "Data fetching and caching for ticket tiers (already installed)"
     - name: "react-hook-form"
       version: "^7.62.0"
       purpose: "Form handling (already installed)"
@@ -409,15 +412,15 @@ implementation_plan:
     - phase: "Discount System"
       tasks:
         - [ ] Create discount code form with Zod validation
-        - [ ] Build validation endpoint with Dinero.js calculations
+        - [ ] Build validation endpoint with Dinero.js immutable calculations
         - [ ] Implement usage tracking with Zustand state
         - [ ] Add expiration handling with Luxon date comparisons
     - phase: "Pricing Display"
       tasks:
-        - [ ] Build price calculator with Dinero.js precision
-        - [ ] Show fee breakdown with transparent calculations
-        - [ ] Implement currency handling with locale-aware formatting
-        - [ ] Add group pricing UI with bulk discount preview
+        - [ ] Build price calculator with Dinero.js for precision and multi-currency
+        - [ ] Show fee breakdown with Dinero.js banker's rounding
+        - [ ] Implement currency handling with ISO 4217 compliance via @dinero.js/currencies
+        - [ ] Add group pricing UI with bulk discount preview using Dinero.js operations
     - phase: "Integration"
       tasks:
         - [ ] Add to event creation wizard
@@ -545,7 +548,12 @@ dev_notes:
     - "Implement optimistic UI for tier management"
     - "Cache discount code validation results briefly"
     - "Use React Hook Form for all forms"
-    - "Store all prices in cents to avoid floating point issues"
+    - "Store all prices in minor units (cents/kuruş) matching Dinero.js pattern"
+    - "Use Dinero.js for ALL monetary calculations to prevent floating-point errors"
+    - "Leverage Dinero.js immutability for audit trail and state management"
+    - "Use @dinero.js/currencies for proper ISO 4217 currency definitions (TRY, USD, EUR, JPY)"
+    - "Apply banker's rounding for financial accuracy using Dinero.js built-in methods"
+    - "Handle multi-currency with proper minor unit conversion (e.g., JPY has 0 decimals)"
   tech_stack_references:
     - "Supabase 2.40.7 for database and RLS [Source: architecture/tech-stack.md]"
     - "React Hook Form 7.62.0 for forms [Source: architecture/tech-stack.md]"
@@ -560,11 +568,60 @@ dev_notes:
     - "Event creation workflow completed in STORY-008"
     - "Events table structure established with slug generation"
     - "Community admin/moderator role checking implemented"
+  dinero_usage_examples: |
+    // Initialize Dinero.js with currencies
+    import { dinero, add, subtract, multiply, divide, toUnit } from 'dinero.js';
+    import { TRY, USD, EUR, JPY } from '@dinero.js/currencies';
+
+    // Create money objects (amounts in minor units - kuruş/cents)
+    const ticketPrice = dinero({ amount: 10000, currency: TRY }); // 100.00 TRY
+    const usdPrice = dinero({ amount: 5000, currency: USD }); // 50.00 USD
+    const jpyPrice = dinero({ amount: 5000, currency: JPY }); // 5000 JPY (no decimals)
+
+    // Platform fee calculation (3%)
+    const platformFee = multiply(ticketPrice, { amount: 3, scale: 2 }); // 3.00 TRY
+
+    // Stripe fee (2.9% + 30 kuruş)
+    const stripeFeePercentage = multiply(ticketPrice, { amount: 29, scale: 3 }); // 2.90 TRY
+    const stripeFeeFixed = dinero({ amount: 30, currency: TRY }); // 0.30 TRY
+    const totalStripeFee = add(stripeFeePercentage, stripeFeeFixed); // 3.20 TRY
+
+    // Group discount (10% off for 5+ tickets)
+    const groupDiscount = multiply(ticketPrice, { amount: 10, scale: 2 }); // 10.00 TRY
+    const discountedPrice = subtract(ticketPrice, groupDiscount); // 90.00 TRY
+
+    // VAT calculation (18% KDV)
+    const vat = multiply(ticketPrice, { amount: 18, scale: 2 }); // 18.00 TRY
+    const priceWithVat = add(ticketPrice, vat); // 118.00 TRY
+
+    // Proration for refunds (5 days of 30-day event)
+    const dailyRate = divide(ticketPrice, 30); // 3.33 TRY per day
+    const refundAmount = multiply(dailyRate, 5); // 16.65 TRY
+
+    // Format for display
+    const displayPrice = toUnit(ticketPrice); // 100
+    const formattedPrice = toUnit(ticketPrice).toFixed(2); // "100.00"
+
+    // Multi-currency conversion (example rate: 1 USD = 32 TRY)
+    const convertToTRY = (usdAmount) => {
+      return multiply(usdAmount, { amount: 3200, scale: 2 });
+    };
+
+    // Immutable operations (original unchanged)
+    const original = dinero({ amount: 10000, currency: TRY });
+    const increased = add(original, dinero({ amount: 2000, currency: TRY }));
+    console.log(toUnit(original)); // Still 100.00
+    console.log(toUnit(increased)); // 120.00
+
+    // Banker's rounding for financial accuracy
+    import { up, down, halfUp, halfEven } from 'dinero.js';
+    const rounded = halfEven(ticketPrice); // Banker's rounding
   potential_issues:
-    - "Currency conversion - consider using fixed rates or external API"
-    - "Concurrent ticket purchases - use database locks"
+    - "Currency conversion - use Dinero.js with fixed rates or external API integration"
+    - "Concurrent ticket purchases - use database locks with Dinero.js for consistency"
     - "Discount code abuse - implement rate limiting"
-    - "Fee calculation - ensure transparency and accuracy"
+    - "Fee calculation - ensure transparency using Dinero.js immutable operations"
+    - "Minor unit conversion - ensure proper handling per currency (TRY=2, JPY=0, KWD=3)"
   references:
     - "Epic 3.2 requirements for ticket pricing"
     - "Stripe fee structure for calculations"
