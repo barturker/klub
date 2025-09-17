@@ -7,15 +7,12 @@ export async function POST(
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
-    console.log('🔵 Accept invitation endpoint called');
     const supabase = await createClient();
     const resolvedParams = await params;
     const { token } = resolvedParams;
-    console.log('🎫 Token:', token);
 
     // Check if user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    console.log('👤 User:', user?.id, 'Auth error:', authError);
 
     if (authError || !user) {
       return NextResponse.json(
@@ -25,11 +22,6 @@ export async function POST(
     }
 
     // Call the accept_invitation function
-    console.log('🚀 Calling accept_invitation RPC with:', {
-      p_token: token,
-      p_user_id: user.id
-    });
-
     const { data, error } = await supabase
       .rpc('accept_invitation', {
         p_token: token,
@@ -37,24 +29,10 @@ export async function POST(
       })
       .single();
 
-    console.log('📦 RPC Response:', { data, error });
-
     if (error) {
-      console.error('❌ Error accepting invitation:', error);
-      console.error('Error details:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      });
-
-      // Return more specific error message
+      console.error('Error accepting invitation:', error);
       return NextResponse.json(
-        {
-          error: error.message || 'Failed to accept invitation',
-          details: error.details,
-          code: error.code
-        },
+        { error: 'Failed to accept invitation' },
         { status: 500 }
       );
     }

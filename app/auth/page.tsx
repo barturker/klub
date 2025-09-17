@@ -23,13 +23,8 @@ export default function AuthPage() {
   const supabase = createClient();
 
   const handleSignUp = async () => {
-    console.log('🔵 Starting signup process...');
-    console.log('📧 Email:', email);
-    console.log('🔒 Password length:', password.length);
-
     setLoading(true);
     try {
-      console.log('🚀 Calling supabase.auth.signUp...');
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -38,16 +33,7 @@ export default function AuthPage() {
         },
       });
 
-      console.log('📦 Signup response:', { data, error });
-
       if (error) {
-        console.error('❌ Signup error:', error);
-        console.error('Error details:', {
-          message: error.message,
-          status: error.status,
-          name: error.name,
-          code: error.code
-        });
 
         // Check if it's a trigger error and handle gracefully
         if (error.message.includes('Database error') || error.status === 500) {
