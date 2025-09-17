@@ -131,9 +131,24 @@ export default function EventCreateWizard({
       const submitData = {
         ...eventData,
         community_id: communityId,
-        // Ensure dates are in ISO format
-        start_at: eventData.start_at || DateTime.now().plus({ days: 7 }).toISO(),
-        end_at: eventData.end_at || DateTime.now().plus({ days: 7, hours: 2 }).toISO(),
+        // Ensure dates are in ISO format - check for empty strings
+        start_at: eventData.start_at && eventData.start_at.trim() !== ""
+          ? eventData.start_at
+          : DateTime.now().plus({ days: 7 }).toISO(),
+        end_at: eventData.end_at && eventData.end_at.trim() !== ""
+          ? eventData.end_at
+          : DateTime.now().plus({ days: 7, hours: 2 }).toISO(),
+        // Clean up empty fields - send empty strings as is (they'll be handled by the API)
+        description: eventData.description || "",
+        venue_name: eventData.venue_name || "",
+        venue_address: eventData.venue_address || "",
+        venue_city: eventData.venue_city || "",
+        venue_country: eventData.venue_country || "",
+        online_url: eventData.online_url || "",
+        recurring_rule: eventData.recurring_rule || "",
+        recurring_end_date: eventData.recurring_end_date || "",
+        tags: eventData.tags || [],
+        metadata: eventData.metadata || {},
       };
 
       let result;

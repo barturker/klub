@@ -164,6 +164,8 @@ export const useCreateEvent = () => {
 
   return useMutation({
     mutationFn: async (data: EventFormData & { community_id: string }) => {
+      console.log("📤 [useCreateEvent] Sending request with data:", data);
+
       const response = await fetch("/api/events", {
         method: "POST",
         headers: {
@@ -172,12 +174,40 @@ export const useCreateEvent = () => {
         body: JSON.stringify(data),
       });
 
+      console.log("📥 [useCreateEvent] Response status:", response.status);
+      console.log("📥 [useCreateEvent] Response ok:", response.ok);
+
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Failed to create event");
+        console.error("❌ [useCreateEvent] Error response:", error);
+        console.error("❌ [useCreateEvent] Error details:", {
+          status: response.status,
+          statusText: response.statusText,
+          error: error,
+          details: error.details,
+          issues: error.issues
+        });
+
+        // Format error message for user
+        let userMessage = error.error || "Failed to create event";
+
+        // Check for specific field errors
+        if (error.details && Object.keys(error.details).length > 0) {
+          const fieldErrors = Object.entries(error.details)
+            .map(([field, errors]) => {
+              const fieldName = field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+              return `${fieldName}: ${Array.isArray(errors) ? errors.join(', ') : errors}`;
+            })
+            .join('\n');
+          userMessage = `Please fix the following errors:\n${fieldErrors}`;
+        }
+
+        throw new Error(userMessage);
       }
 
-      return response.json();
+      const result = await response.json();
+      console.log("✅ [useCreateEvent] Success response:", result);
+      return result;
     },
     onSuccess: (data) => {
       // Invalidate events list

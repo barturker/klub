@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       checkins: {
@@ -1056,6 +1031,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      ensure_profile_exists: {
+        Args: { user_email: string; user_id: string }
+        Returns: undefined
+      }
       equals: {
         Args: { geom1: unknown; geom2: unknown }
         Returns: boolean
@@ -1370,8 +1349,6 @@ export type Database = {
           community_id: string
           community_name: string
           expires_at: string
-          invitation_id: string
-          uses_remaining: number
           valid: boolean
         }[]
       }
@@ -2856,9 +2833,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       event_status: ["draft", "published", "cancelled", "completed"],

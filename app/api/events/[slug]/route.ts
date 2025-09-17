@@ -23,7 +23,7 @@ const updateEventSchema = z.object({
 });
 
 interface RouteParams {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }
 
 // Get event by id or slug
@@ -31,32 +31,31 @@ export async function GET(request: Request, props: RouteParams) {
   const params = await props.params;
 
   try {
-    console.log("[GET /api/events/[id]] Starting...");
-    console.log("[GET] Event id/slug:", params.id);
+    console.log("[GET /api/events/[slug]] Starting...");
+    console.log("[GET] Event slug:", params.slug);
 
     const supabase = await createClient();
 
-    // Fetch event with community details
-    const { data: event, error } = await supabase
+    // Check if params.slug is a UUID or a slug
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.slug);
+    console.log("[GET] Is UUID?", isUUID);
+    console.log("[GET] Query type:", isUUID ? "by ID" : "by slug");
+
+    // Build query based on whether it's UUID or slug
+    let query = supabase
       .from("events")
-      .select(`
-        *,
-        community:communities (
-          id,
-          name,
-          slug,
-          description,
-          image_url
-        ),
-        creator:profiles!events_created_by_fkey (
-          id,
-          username,
-          full_name,
-          avatar_url
-        )
-      `)
-      .or(`id.eq.${params.id},slug.eq.${params.id}`)
-      .single();
+      .select("*");
+
+    if (isUUID) {
+      console.log("[GET] Querying by ID:", params.slug);
+      query = query.eq("id", params.slug);
+    } else {
+      console.log("[GET] Querying by slug:", params.slug);
+      query = query.eq("slug", params.slug);
+    }
+
+    // Fetch event with community details
+    const { data: event, error } = await query.single();
 
     if (error) {
       console.log("[GET] Error fetching event:", error);
@@ -73,12 +72,26 @@ export async function GET(request: Request, props: RouteParams) {
       return Response.json(
         {
           error: "Failed to fetch event",
+          details: error.message,
         },
         { status: 500 }
       );
     }
 
-    console.log("[GET] Event found:", event.id);
+    console.log("[GET] Event found:", event ? event.id : "No event found");
+    console.log("[GET] Event status:", event?.status);
+
+    // Fetch creator info separately if needed
+    let creator = null;
+    if (event.created_by) {
+      const { data: creatorData } = await supabase
+        .from("profiles")
+        .select("id, username, full_name, avatar_url")
+        .eq("id", event.created_by)
+        .single();
+
+      creator = creatorData;
+    }
 
     // Check if event is published or if user has access
     if (event.status !== "published") {
@@ -129,11 +142,12 @@ export async function GET(request: Request, props: RouteParams) {
     return Response.json({
       event: {
         ...event,
+        creator: creator,
         recurring_instances: childEvents,
       },
     });
   } catch (error) {
-    console.error("[GET /api/events/[id]] Error:", error);
+    console.error("[GET /api/events/[slug]] Error:", error);
     return Response.json(
       {
         error: "Internal server error",
@@ -148,8 +162,8 @@ export async function PATCH(request: Request, props: RouteParams) {
   const params = await props.params;
 
   try {
-    console.log("[PATCH /api/events/[id]] Starting...");
-    console.log("[PATCH] Event id:", params.id);
+    console.log("[PATCH /api/events/[slug]] Starting...");
+    console.log("[PATCH] Event slug:", params.slug);
 
     const supabase = await createClient();
 
@@ -211,12 +225,22 @@ export async function PATCH(request: Request, props: RouteParams) {
       }
     }
 
-    // Get the event first to check permissions
-    const { data: event, error: fetchError } = await supabase
+    // Check if params.slug is a UUID or a slug
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.slug);
+
+    // Build query to get the event
+    let fetchQuery = supabase
       .from("events")
-      .select("id, community_id, created_by")
-      .or(`id.eq.${params.id},slug.eq.${params.id}`)
-      .single();
+      .select("id, community_id, created_by");
+
+    if (isUUID) {
+      fetchQuery = fetchQuery.eq("id", params.slug);
+    } else {
+      fetchQuery = fetchQuery.eq("slug", params.slug);
+    }
+
+    // Get the event first to check permissions
+    const { data: event, error: fetchError } = await fetchQuery.single();
 
     if (fetchError || !event) {
       return Response.json(
@@ -274,7 +298,7 @@ export async function PATCH(request: Request, props: RouteParams) {
       event: updatedEvent,
     });
   } catch (error) {
-    console.error("[PATCH /api/events/[id]] Error:", error);
+    console.error("[PATCH /api/events/[slug]] Error:", error);
     return Response.json(
       {
         error: "Internal server error",
@@ -289,8 +313,8 @@ export async function DELETE(request: Request, props: RouteParams) {
   const params = await props.params;
 
   try {
-    console.log("[DELETE /api/events/[id]] Starting...");
-    console.log("[DELETE] Event id:", params.id);
+    console.log("[DELETE /api/events/[slug]] Starting...");
+    console.log("[DELETE] Event slug:", params.slug);
 
     const supabase = await createClient();
 
@@ -309,12 +333,22 @@ export async function DELETE(request: Request, props: RouteParams) {
       );
     }
 
-    // Get the event first to check permissions
-    const { data: event, error: fetchError } = await supabase
+    // Check if params.slug is a UUID or a slug
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.slug);
+
+    // Build query to get the event
+    let fetchQuery = supabase
       .from("events")
-      .select("id, community_id")
-      .or(`id.eq.${params.id},slug.eq.${params.id}`)
-      .single();
+      .select("id, community_id");
+
+    if (isUUID) {
+      fetchQuery = fetchQuery.eq("id", params.slug);
+    } else {
+      fetchQuery = fetchQuery.eq("slug", params.slug);
+    }
+
+    // Get the event first to check permissions
+    const { data: event, error: fetchError } = await fetchQuery.single();
 
     if (fetchError || !event) {
       return Response.json(
@@ -366,7 +400,7 @@ export async function DELETE(request: Request, props: RouteParams) {
       message: "Event deleted successfully",
     });
   } catch (error) {
-    console.error("[DELETE /api/events/[id]] Error:", error);
+    console.error("[DELETE /api/events/[slug]] Error:", error);
     return Response.json(
       {
         error: "Internal server error",

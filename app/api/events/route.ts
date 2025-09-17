@@ -12,24 +12,29 @@ const createEventSchema = z.object({
   start_at: z.string().datetime({ offset: true }),
   end_at: z.string().datetime({ offset: true }),
   timezone: z.string().default("UTC"),
-  venue_name: z.string().optional(),
-  venue_address: z.string().optional(),
-  venue_city: z.string().optional(),
-  venue_country: z.string().optional(),
-  online_url: z.string().url().optional(),
+  venue_name: z.string().optional().transform(val => val === "" ? undefined : val),
+  venue_address: z.string().optional().transform(val => val === "" ? undefined : val),
+  venue_city: z.string().optional().transform(val => val === "" ? undefined : val),
+  venue_country: z.string().optional().transform(val => val === "" ? undefined : val),
+  online_url: z.union([z.string().url(), z.literal("")]).optional().transform(val => val === "" ? undefined : val),
   capacity: z.number().min(0).default(0),
-  image_url: z.string().url().optional(),
-  recurring_rule: z.string().optional(),
-  recurring_end_date: z.string().datetime({ offset: true }).optional(),
+  image_url: z.union([z.string().url(), z.literal("")]).optional().transform(val => val === "" ? undefined : val),
+  recurring_rule: z.string().optional().transform(val => val === "" ? undefined : val),
+  recurring_end_date: z.union([
+    z.string().datetime({ offset: true }),
+    z.literal(""),
+    z.null()
+  ]).optional().transform(val => val === "" ? null : val),
   tags: z.array(z.string()).optional(),
   metadata: z.record(z.any()).optional(),
 });
 
 export async function POST(request: Request) {
-  try {
-    console.log("[POST /api/events] Starting...");
+  console.log("[POST /api/events] Starting...");
 
+  try {
     const supabase = await createClient();
+    console.log("[POST] Supabase client created");
 
     // Check authentication
     const {
@@ -51,21 +56,45 @@ export async function POST(request: Request) {
 
     // Parse request body
     const body = await request.json();
-    console.log("[POST] Request body:", body);
+    console.log("[POST] Request body received:");
+    console.log("  - title:", body.title);
+    console.log("  - community_id:", body.community_id);
+    console.log("  - event_type:", body.event_type);
+    console.log("  - start_at:", body.start_at);
+    console.log("  - end_at:", body.end_at);
+    console.log("  - timezone:", body.timezone);
+    console.log("  - venue_name:", body.venue_name);
+    console.log("  - online_url:", body.online_url);
+    console.log("  - capacity:", body.capacity);
+    console.log("  - tags:", body.tags);
+    console.log("  - Full body:", JSON.stringify(body, null, 2));
 
     // Validate request data
     const validationResult = createEventSchema.safeParse(body);
 
     if (!validationResult.success) {
-      console.log("[POST] Validation failed:", validationResult.error.errors);
+      console.log("[POST] ❌ Validation FAILED");
+      console.log("[POST] Validation errors:");
+      validationResult.error.issues.forEach((issue, idx) => {
+        console.log(`  ${idx + 1}. Field: ${issue.path.join('.')}`);
+        console.log(`     Message: ${issue.message}`);
+        console.log(`     Code: ${issue.code}`);
+      });
+
+      const flattenedErrors = validationResult.error.flatten();
+      console.log("[POST] Flattened errors:", JSON.stringify(flattenedErrors, null, 2));
+
       return Response.json(
         {
           error: "Invalid request data",
-          details: validationResult.error.errors,
+          details: flattenedErrors?.fieldErrors || {},
+          issues: validationResult.error.issues || [],
         },
         { status: 400 }
       );
     }
+
+    console.log("[POST] ✅ Validation PASSED");
 
     const data = validationResult.data;
 
@@ -108,6 +137,7 @@ export async function POST(request: Request) {
     }
 
     // Check if user has permission to create events in this community
+    console.log("[POST] Checking user permissions in community:", data.community_id);
     const { data: memberData, error: memberError } = await supabase
       .from("community_members")
       .select("role")
@@ -115,8 +145,10 @@ export async function POST(request: Request) {
       .eq("user_id", user.id)
       .single();
 
+    console.log("[POST] Member check result:", { memberData, memberError });
+
     if (memberError || !memberData) {
-      console.log("[POST] Member check failed:", memberError);
+      console.log("[POST] ❌ Member check failed:", memberError);
       return Response.json(
         {
           error: "You are not a member of this community",
@@ -126,7 +158,7 @@ export async function POST(request: Request) {
     }
 
     if (!["admin", "moderator"].includes(memberData.role)) {
-      console.log("[POST] Permission denied. User role:", memberData.role);
+      console.log("[POST] ❌ Permission denied. User role:", memberData.role);
       return Response.json(
         {
           error: "Only admins and moderators can create events",
@@ -135,28 +167,48 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log("[POST] User has permission. Role:", memberData.role);
+    console.log("[POST] ✅ User has permission. Role:", memberData.role);
 
-    // Generate slug using the database function
-    const { data: slugData, error: slugError } = await supabase.rpc(
-      "generate_event_slug",
-      {
-        p_title: data.title,
-        p_community_id: data.community_id,
+    // Generate slug locally (since database function might not exist)
+    console.log("[POST] Generating slug for title:", data.title);
+
+    // Create base slug from title
+    let baseSlug = data.title
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '') // Remove non-alphanumeric
+      .replace(/\s+/g, '-')      // Replace spaces with hyphens
+      .replace(/-+/g, '-')       // Replace multiple hyphens with single
+      .replace(/^-+|-+$/g, '');  // Remove leading/trailing hyphens
+
+    if (!baseSlug) baseSlug = 'event';
+
+    // Check for uniqueness and add counter if needed
+    let slugData = baseSlug;
+    let counter = 0;
+    let isUnique = false;
+
+    while (!isUnique) {
+      const { count, error: checkError } = await supabase
+        .from("events")
+        .select("id", { count: 'exact', head: true })
+        .eq("slug", slugData)
+        .eq("community_id", data.community_id);
+
+      if (checkError) {
+        console.log("[POST] ❌ Error checking slug uniqueness:", checkError);
+        // Continue anyway with the current slug
+        break;
       }
-    );
 
-    if (slugError) {
-      console.log("[POST] Slug generation failed:", slugError);
-      return Response.json(
-        {
-          error: "Failed to generate event slug",
-        },
-        { status: 500 }
-      );
+      if (count === 0) {
+        isUnique = true;
+      } else {
+        counter++;
+        slugData = `${baseSlug}-${counter}`;
+      }
     }
 
-    console.log("[POST] Generated slug:", slugData);
+    console.log("[POST] ✅ Generated slug:", slugData);
 
     // Create the event
     const eventData = {
@@ -166,7 +218,7 @@ export async function POST(request: Request) {
       slug: slugData,
       description: data.description,
       event_type: data.event_type,
-      status: "draft",
+      status: "published",
       start_at: data.start_at,
       end_at: data.end_at,
       timezone: data.timezone,
@@ -192,20 +244,28 @@ export async function POST(request: Request) {
       .single();
 
     if (eventError) {
-      console.log("[POST] Event creation failed:", eventError);
+      console.log("[POST] ❌ Event creation FAILED:");
+      console.log("  - Error code:", eventError.code);
+      console.log("  - Error message:", eventError.message);
+      console.log("  - Error details:", eventError.details);
+      console.log("  - Full error:", eventError);
       return Response.json(
         {
           error: "Failed to create event",
           details: eventError.message,
+          code: eventError.code,
         },
         { status: 500 }
       );
     }
 
-    console.log("[POST] Event created successfully:", event);
+    console.log("[POST] ✅ Event created successfully!");
+    console.log("  - Event ID:", event.id);
+    console.log("  - Event slug:", event.slug);
+    console.log("  - Event status:", event.status);
 
     // Generate recurring event instances if this is a recurring event
-    if (data.recurring_rule && data.recurring_end_date) {
+    if (data.recurring_rule && data.recurring_rule !== "" && data.recurring_end_date && data.recurring_end_date !== null) {
       try {
         const rule = RRule.fromString(data.recurring_rule);
         const recurringEndDate = DateTime.fromISO(data.recurring_end_date);

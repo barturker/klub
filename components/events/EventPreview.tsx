@@ -31,6 +31,18 @@ export default function EventPreview({
   communityName,
   onEdit,
 }: EventPreviewProps) {
+  // Guard against undefined eventData
+  if (!eventData) {
+    return (
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          No event data available. Please go back and fill in the event details.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   const formatDateTime = (isoString: string | undefined) => {
     if (!isoString) return "Not set";
     return DateTime.fromISO(isoString).toLocaleString(
@@ -39,7 +51,7 @@ export default function EventPreview({
   };
 
   const getEventTypeIcon = () => {
-    switch (eventData.event_type) {
+    switch (eventData?.event_type) {
       case "physical":
         return <MapPin className="h-5 w-5" />;
       case "virtual":
@@ -52,7 +64,7 @@ export default function EventPreview({
   };
 
   const getEventTypeBadge = () => {
-    switch (eventData.event_type) {
+    switch (eventData?.event_type) {
       case "physical":
         return <Badge variant="default">In-Person</Badge>;
       case "virtual":
@@ -66,13 +78,13 @@ export default function EventPreview({
 
   // Check for missing required fields
   const missingFields = [];
-  if (!eventData.title) missingFields.push("Title");
-  if (!eventData.start_at) missingFields.push("Start date/time");
-  if (!eventData.end_at) missingFields.push("End date/time");
-  if ((eventData.event_type === "physical" || eventData.event_type === "hybrid") && !eventData.venue_name) {
+  if (!eventData?.title) missingFields.push("Title");
+  if (!eventData?.start_at) missingFields.push("Start date/time");
+  if (!eventData?.end_at) missingFields.push("End date/time");
+  if ((eventData?.event_type === "physical" || eventData?.event_type === "hybrid") && !eventData?.venue_name) {
     missingFields.push("Venue name");
   }
-  if ((eventData.event_type === "virtual" || eventData.event_type === "hybrid") && !eventData.online_url) {
+  if ((eventData?.event_type === "virtual" || eventData?.event_type === "hybrid") && !eventData?.online_url) {
     missingFields.push("Online URL");
   }
 
