@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from '@/components/providers/theme-provider';
+import { Providers } from '@/components/providers';
 import './globals.css';
 import './globals-modal-fix.css';
 
@@ -82,10 +83,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
-          <Toaster 
-            richColors 
-            position="top-center" 
+          <Providers>
+            {children}
+          </Providers>
+          <Toaster
+            richColors
+            position="top-center"
             expand={true}
             closeButton
             duration={4000}
