@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       checkins: {
@@ -262,79 +287,82 @@ export type Database = {
         Row: {
           capacity: number | null
           community_id: string
-          cover_image_url: string | null
-          created_at: string
+          created_at: string | null
           created_by: string
-          currency: string
           description: string | null
           end_at: string
+          event_type: string | null
           id: string
-          is_online: boolean
+          image_url: string | null
+          metadata: Json | null
           online_url: string | null
-          price: number
-          search_tsv: unknown | null
+          parent_event_id: string | null
+          recurring_end_date: string | null
+          recurring_rule: string | null
           slug: string
           start_at: string
-          status: Database["public"]["Enums"]["event_status"]
-          tickets_sold: number
+          status: string | null
+          tags: string[] | null
+          timezone: string
           title: string
-          updated_at: string
+          updated_at: string | null
           venue_address: string | null
-          venue_geo: unknown | null
-          venue_lat: number | null
-          venue_lng: number | null
+          venue_city: string | null
+          venue_country: string | null
           venue_name: string | null
         }
         Insert: {
           capacity?: number | null
           community_id: string
-          cover_image_url?: string | null
-          created_at?: string
+          created_at?: string | null
           created_by: string
-          currency?: string
           description?: string | null
           end_at: string
+          event_type?: string | null
           id?: string
-          is_online?: boolean
+          image_url?: string | null
+          metadata?: Json | null
           online_url?: string | null
-          price?: number
-          search_tsv?: unknown | null
+          parent_event_id?: string | null
+          recurring_end_date?: string | null
+          recurring_rule?: string | null
           slug: string
           start_at: string
-          status?: Database["public"]["Enums"]["event_status"]
-          tickets_sold?: number
+          status?: string | null
+          tags?: string[] | null
+          timezone?: string
           title: string
-          updated_at?: string
+          updated_at?: string | null
           venue_address?: string | null
-          venue_geo?: unknown | null
-          venue_lat?: number | null
-          venue_lng?: number | null
+          venue_city?: string | null
+          venue_country?: string | null
           venue_name?: string | null
         }
         Update: {
           capacity?: number | null
           community_id?: string
-          cover_image_url?: string | null
-          created_at?: string
+          created_at?: string | null
           created_by?: string
-          currency?: string
           description?: string | null
           end_at?: string
+          event_type?: string | null
           id?: string
-          is_online?: boolean
+          image_url?: string | null
+          metadata?: Json | null
           online_url?: string | null
-          price?: number
-          search_tsv?: unknown | null
+          parent_event_id?: string | null
+          recurring_end_date?: string | null
+          recurring_rule?: string | null
           slug?: string
           start_at?: string
-          status?: Database["public"]["Enums"]["event_status"]
-          tickets_sold?: number
+          status?: string | null
+          tags?: string[] | null
+          timezone?: string
           title?: string
-          updated_at?: string
+          updated_at?: string | null
           venue_address?: string | null
-          venue_geo?: unknown | null
-          venue_lat?: number | null
-          venue_lng?: number | null
+          venue_city?: string | null
+          venue_country?: string | null
           venue_name?: string | null
         }
         Relationships: [
@@ -346,10 +374,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "events_created_by_fk"
-            columns: ["created_by"]
+            foreignKeyName: "events_parent_event_id_fkey"
+            columns: ["parent_event_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
@@ -476,13 +504,6 @@ export type Database = {
             columns: ["buyer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "orders_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
@@ -716,13 +737,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "tickets_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "tickets_order_id_fkey"
             columns: ["order_id"]
@@ -2833,6 +2847,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       event_status: ["draft", "published", "cancelled", "completed"],

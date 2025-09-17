@@ -4,6 +4,8 @@
 
 The Klub project follows a modern Next.js 15 application structure with TypeScript, utilizing Turbopack for optimized builds and Supabase for backend services.
 
+**Last Updated: January 17, 2025**
+
 ## Root Directory Structure
 
 ```
@@ -54,208 +56,245 @@ klub/
 
 The main application directory following Next.js 15 App Router conventions:
 
-- `layout.tsx` - Root layout component
-- `page.tsx` - Home page component
-- `globals.css` - Global styles
-- `favicon.ico` - Site favicon
+```
+app/
+├── (dashboard)/         # Dashboard routes (authenticated)
+│   ├── communities/     # Community management
+│   │   ├── new/        # Create new community
+│   │   └── [slug]/     # Community-specific pages
+│   │       ├── events/ # Event management
+│   │       │   ├── create/     # Create event
+│   │       │   └── [eventSlug]/ # Event details
+│   │       └── settings/       # Community settings
+│   ├── dashboard/       # Main dashboard
+│   ├── events/         # All events view
+│   ├── profile/        # User profile
+│   │   └── [id]/      # Public profile view
+│   ├── settings/       # User settings
+│   └── tickets/        # User tickets
+├── api/                # API routes
+│   ├── communities/    # Community API endpoints
+│   │   ├── check-slug/ # Slug availability
+│   │   └── [id]/      # Community-specific APIs
+│   │       ├── by-slug/      # Get by slug
+│   │       ├── cover/        # Cover image upload
+│   │       ├── events/       # Community events
+│   │       ├── invitations/  # Invitations
+│   │       ├── logo/         # Logo upload
+│   │       └── settings/     # Settings API
+│   ├── dashboard/      # Dashboard APIs
+│   │   └── analytics/ # Analytics endpoints
+│   ├── events/        # Events API
+│   ├── profile/       # Profile API
+│   ├── storage/       # Storage operations
+│   └── tickets/       # Ticketing API
+├── auth/              # Authentication pages
+│   ├── callback/      # Auth callback handler
+│   ├── login/        # Login page
+│   └── signup/       # Signup page
+├── dashboard/         # Old dashboard (deprecated)
+├── explore/          # Public explore page
+├── invite/           # Invitation handling
+├── layout.tsx        # Root layout
+├── page.tsx          # Home page
+├── globals.css       # Global styles
+└── favicon.ico       # Site favicon
+```
 
 ### `/components` - Component Library
 
 Organized component structure:
 
-- `/ui` - UI components (buttons, forms, etc.)
-- `/shared` - Shared/common components
+```
+components/
+├── ui/               # shadcn/ui components
+│   ├── button.tsx
+│   ├── card.tsx
+│   ├── dialog.tsx
+│   ├── form.tsx
+│   ├── input.tsx
+│   ├── label.tsx
+│   ├── select.tsx
+│   ├── tabs.tsx
+│   ├── textarea.tsx
+│   └── ...more UI components
+├── auth/            # Authentication components
+│   ├── auth-button.tsx
+│   ├── auth-form.tsx
+│   └── user-nav.tsx
+├── communities/     # Community components
+│   ├── community-card.tsx
+│   ├── community-form.tsx
+│   ├── community-grid.tsx
+│   └── member-list.tsx
+├── events/          # Event components
+│   ├── event-card.tsx
+│   ├── event-form.tsx
+│   ├── event-list.tsx
+│   └── event-wizard.tsx
+├── profile/         # Profile components
+│   ├── profile-form.tsx
+│   └── profile-header.tsx
+├── shared/          # Shared components
+│   ├── avatar-upload.tsx
+│   ├── image-upload.tsx
+│   ├── loading.tsx
+│   └── navigation.tsx
+└── tickets/         # Ticketing components
+    ├── ticket-card.tsx
+    └── qr-scanner.tsx
+```
 
 ### `/hooks` - Custom React Hooks
 
 Reusable React hooks for application logic:
 
-- Authentication hooks
-- Data fetching hooks
-- UI state management hooks
-- Utility hooks
+```
+hooks/
+├── use-auth.ts              # Authentication state
+├── use-communities.ts       # Community operations
+├── use-events.ts           # Event operations
+├── use-profile.ts          # Profile management
+├── use-supabase.ts         # Supabase client
+├── use-tickets.ts          # Ticketing operations
+├── use-upload.ts           # File upload handling
+└── use-debounce.ts         # Utility hooks
+```
 
 ### `/lib` - Core Libraries
 
 Application core utilities and integrations:
 
-- `/supabase` - Supabase client configuration
-  - `client.ts` - Browser client
-  - `server.ts` - Server-side client
-  - `types.ts` - Database types
-- `/stripe` - Stripe payment integration
-- `utils.ts` - Utility functions
+```
+lib/
+├── supabase/              # Supabase integration
+│   ├── client.ts         # Browser client
+│   ├── server.ts         # Server-side client
+│   ├── middleware.ts     # Auth middleware
+│   ├── database.types.ts # Generated types (current)
+│   └── helpers.ts        # Helper functions
+├── stripe/               # Stripe payment integration
+│   ├── client.ts        # Stripe client
+│   └── webhook.ts       # Webhook handlers
+├── constants.ts         # App constants
+├── types.ts            # TypeScript types
+├── utils.ts            # Utility functions
+└── validators.ts       # Validation schemas
+```
 
 ### `/supabase` - Database Layer
 
 Database configuration and migrations:
 
-- `/migrations` - Database migration files
-- `config.toml` - Supabase configuration
-- `seed.sql` - Database seed data
-
-### `/scripts` - Automation Scripts
-
-Development and maintenance scripts:
-
-- `db-backup.js` - Database backup utility
-- `db-restore.js` - Database restoration
-- `time-travel.sh` - Database rollback utility
+```
+supabase/
+├── migrations/           # Database migrations
+│   ├── 00001_initial_schema.sql
+│   ├── 00002_complete_schema.sql
+│   ├── ...
+│   ├── 00028_events_table.sql
+│   ├── 00029_fix_events_table.sql
+│   ├── 00030_update_event_status.sql
+│   └── 00032_fix_privacy_and_rls.sql
+├── functions/           # Edge functions
+├── seed.sql            # Database seed data
+├── config.toml         # Supabase configuration
+└── CLAUDE.md           # Migration guidelines
+```
 
 ### `/docs` - Documentation
 
 Project documentation:
 
-- `/architecture` - Architecture documentation
-- `/prd` - Product requirement documents
-- `/stories` - User stories and tasks
-- `/qa` - Quality assurance documentation
-
-### `/public` - Static Assets
-
-Publicly accessible static files:
-
-- Images
-- SVG icons
-- Static resources
-
-### Testing Directories
-
-#### `/__tests__` - Unit Tests
-
-Unit and integration test files:
-
-- Component tests
-- Hook tests
-- Utility function tests
-- Test utilities and helpers
-
-#### `/e2e` - End-to-End Tests
-
-Playwright E2E test specifications:
-
-- User flow tests
-- Authentication tests
-- Critical path tests
-- Test fixtures and helpers
-
-## File Naming Conventions
-
-### TypeScript/JavaScript Files
-
-- **Components**: PascalCase (e.g., `UserProfile.tsx`)
-- **Utilities**: camelCase (e.g., `formatDate.ts`)
-- **Configs**: kebab-case (e.g., `eslint.config.mjs`)
-- **Types**: PascalCase with `.types.ts` suffix
-
-### Directories
-
-- **Features**: kebab-case (e.g., `user-management`)
-- **Components**: PascalCase or kebab-case
-
-## Import Aliases
-
-The project uses the `@/*` alias for root imports:
-
-```typescript
-import { Component } from '@/components/ui/Component';
-import { utils } from '@/lib/utils';
+```
+docs/
+├── architecture/        # Architecture documentation
+│   ├── index.md
+│   ├── coding-standards.md
+│   ├── source-tree.md (this file)
+│   ├── supabase-database-schema.md
+│   ├── tech-stack.md
+│   └── ui-components.md
+├── prd/                # Product requirements
+│   └── ...PRD documents
+├── stories/            # Development stories
+│   ├── sprint-1/
+│   ├── sprint-2/
+│   └── sprint-3/
+├── qa/                 # QA documentation
+├── brief.md           # Project brief
+└── DATABASE-ARCHITECTURE.md
 ```
 
-## Build Outputs
+### `/scripts` - Automation Scripts
 
-- `.next/` - Next.js build artifacts
-- `node_modules/` - NPM dependencies
+Development and maintenance scripts:
 
-## Environment Files
+```
+scripts/
+├── generate-types.sh    # Generate TypeScript types
+├── setup-local.sh      # Local environment setup
+└── migrate.sh          # Database migration runner
+```
 
-- `.env.example` - Template for environment variables
-- `.env.local` - Local development environment (not committed)
-- `.env.production` - Production environment (managed separately)
+## Key Files
 
-## Key Configuration Files
+### Configuration Files
 
-### `tsconfig.json`
+- `next.config.ts` - Next.js configuration with image domains, redirects
+- `middleware.ts` - Auth middleware for protected routes
+- `tailwind.config.ts` - Tailwind CSS with custom theme
+- `components.json` - shadcn/ui component configuration
+- `tsconfig.json` - TypeScript strict mode configuration
 
-- Target: ES2017
-- Strict mode enabled
-- Path aliases configured
-- Next.js plugin integrated
+### Development Files
 
-### `package.json`
+- `CLAUDE.md` - AI assistant guidelines
+- `.env.example` - Environment variables template
+- `supabase/CLAUDE.md` - Database migration rules
 
-- Scripts for development, building, testing, and database management
-- Dependencies managed with npm
-- Turbopack enabled for faster builds
-- Test scripts for unit and E2E testing
+## Environment Variables
 
-### `next.config.ts`
+Required in `.env.local`:
 
-- Next.js 15 configuration
-- Turbopack optimization
-- Environment variable handling
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_key
 
-### `tailwind.config.ts`
+# App
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-- Tailwind CSS v4 configuration
-- Custom theme extensions
-- Plugin configurations
+# Stripe (optional)
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_key
+STRIPE_SECRET_KEY=your_stripe_secret
+STRIPE_WEBHOOK_SECRET=your_webhook_secret
+```
 
-### Testing Configuration
+## Build Output
 
-#### `jest.config.js`
-- Jest test runner configuration
-- Test environment setup
-- Coverage reporting
+Generated directories (gitignored):
 
-#### `jest.setup.js`
-- Testing Library matchers
-- Test environment setup
-- Global test utilities
+- `.next/` - Next.js build output
+- `.swc/` - SWC compiler cache
+- `node_modules/` - NPM packages
+- `test-results/` - Test execution results
+- `playwright-report/` - E2E test reports
 
-#### `playwright.config.ts`
-- E2E test configuration
-- Browser settings
-- Test report configuration
+## Development Workflow
 
-### Code Quality
+1. **Feature Development**: Work in feature branches
+2. **Database Changes**: Through migrations in `/supabase/migrations/`
+3. **Type Generation**: Run `npm run generate:types`
+4. **Testing**: Unit tests in `__tests__/`, E2E in `e2e/`
+5. **Documentation**: Update relevant docs in `/docs/`
 
-#### `.prettierrc`
-- Code formatting rules
-- Tailwind class sorting
+## Notable Patterns
 
-#### `eslint.config.mjs`
-- Linting rules
-- Next.js specific rules
-- TypeScript integration
-
-#### `components.json`
-- shadcn/ui configuration
-- Component import paths
-- Style preferences
-
-## Development Workflow Files
-
-- `.gitignore` - Version control exclusions
-- `eslint.config.mjs` - Code quality rules
-- `postcss.config.mjs` - CSS processing
-
-## Database Structure
-
-The project uses Supabase with:
-
-- Migration-based schema management
-- Type generation from database
-- Backup and restore capabilities
-- Time-travel functionality for rollbacks
-
-## Best Practices
-
-1. Keep components modular and reusable
-2. Separate business logic into `/lib`
-3. Use TypeScript types consistently
-4. Follow Next.js App Router conventions
-5. Maintain clear separation between client and server code
-6. Store sensitive configuration in environment variables
-7. Document API contracts and data models
-8. Use migrations for all database changes
+- **Route Groups**: `(dashboard)` for authenticated routes
+- **Dynamic Routes**: `[slug]`, `[id]` for dynamic content
+- **API Routes**: RESTful endpoints in `/app/api/`
+- **Parallel Routes**: Dashboard layout with nested routing
+- **Server Components**: Default for all pages
+- **Client Components**: Marked with `'use client'`
