@@ -170,7 +170,7 @@ export async function GET(
       );
     }
 
-    // Get invitations (simplified query without joins for now)
+    // Get invitations
     console.log('[GET] Fetching invitations for community:', resolvedParams.id);
     const { data: invitations, error: invitationsError } = await supabase
       .from('invitations')
@@ -189,6 +189,37 @@ export async function GET(
         { error: 'Failed to fetch invitations', details: invitationsError },
         { status: 500 }
       );
+    }
+
+    // Fetch creator profiles for display
+    if (invitations && invitations.length > 0) {
+      const creatorIds = [...new Set(invitations.map(inv => inv.created_by))];
+      console.log('[GET] Fetching profiles for creator IDs:', creatorIds);
+
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, display_name, email, avatar_url')
+        .in('id', creatorIds);
+
+      console.log('[GET] Profiles query result:', {
+        profiles,
+        profilesError,
+        profileCount: profiles?.length
+      });
+
+      if (!profilesError && profiles) {
+        const profileMap = new Map(profiles.map(p => [p.id, p]));
+        invitations.forEach(inv => {
+          inv.creator = profileMap.get(inv.created_by) || null;
+        });
+        console.log('[GET] Enhanced invitations with creator info:',
+          invitations.map(inv => ({
+            token: inv.token,
+            created_by: inv.created_by,
+            creator: inv.creator
+          }))
+        );
+      }
     }
 
     // Calculate stats

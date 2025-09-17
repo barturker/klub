@@ -47,11 +47,14 @@ interface Invitation {
   expires_at: string;
   uses_count: number;
   max_uses: number;
+  created_by: string;
   created_by_role: string;
-  creator: {
+  creator?: {
     id: string;
     username: string | null;
     full_name: string | null;
+    display_name: string | null;
+    email: string | null;
     avatar_url: string | null;
   };
   invitation_uses: Array<{
@@ -307,7 +310,11 @@ export function InvitationSection({ communityId, isAdmin, isModerator }: Invitat
                         <div className="flex items-center gap-2">
                           <div>
                             <div className="text-sm">
-                              {invitation.created_by || 'Unknown'}
+                              {invitation.creator?.display_name ||
+                               invitation.creator?.full_name ||
+                               invitation.creator?.username ||
+                               invitation.creator?.email?.split('@')[0] ||
+                               'Unknown'}
                             </div>
                             <Badge variant="outline" className="text-xs">
                               {invitation.created_by_role}
