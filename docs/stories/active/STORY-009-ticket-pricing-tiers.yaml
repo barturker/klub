@@ -344,7 +344,7 @@ technical_specification:
     - name: "PriceCalculator"
       type: "component"
       path: "/components/tickets/PriceCalculator.tsx"
-      purpose: "Interactive price calculator"
+      purpose: "Interactive price calculator with Dinero.js"
     - name: "CurrencySelector"
       type: "component"
       path: "/components/tickets/CurrencySelector.tsx"
@@ -357,17 +357,38 @@ technical_specification:
       type: "page"
       path: "/app/(dashboard)/communities/[slug]/events/[eventSlug]/tickets/page.tsx"
       purpose: "Ticket management page"
+    - name: "usePricingStore"
+      type: "hook"
+      path: "/hooks/usePricingStore.ts"
+      purpose: "Zustand store for pricing state and calculations"
+    - name: "useTicketTiers"
+      type: "hook"
+      path: "/hooks/useTicketTiers.ts"
+      purpose: "TanStack Query hooks for tier data management"
+    - name: "useCurrency"
+      type: "hook"
+      path: "/hooks/useCurrency.ts"
+      purpose: "Currency formatting and conversion with Dinero.js"
 
   libraries_required:
+    - name: "luxon"
+      version: "^3.4.4"
+      purpose: "Date/timezone handling with built-in i18n support"
+    - name: "dinero.js"
+      version: "^2.0.0-alpha.14"
+      purpose: "Precise monetary calculations and currency handling"
+    - name: "zustand"
+      version: "^4.5.2"
+      purpose: "Client-side state for pricing calculations"
+    - name: "@tanstack/react-query"
+      version: "^5.28.4"
+      purpose: "Data fetching and caching for ticket tiers"
     - name: "react-hook-form"
       version: "^7.62.0"
       purpose: "Form handling (already installed)"
     - name: "zod"
       version: "^4.1.7"
       purpose: "Schema validation (already installed)"
-    - name: "date-fns"
-      version: "^3.3.1"
-      purpose: "Date handling (from Story 8)"
 
 implementation_plan:
   estimated_hours: 5
@@ -381,22 +402,22 @@ implementation_plan:
         - [ ] Create price calculation function
     - phase: "Ticket Tier Management"
       tasks:
-        - [ ] Build ticket tier form component
-        - [ ] Create tier list component
-        - [ ] Implement CRUD operations
-        - [ ] Add drag-and-drop sorting
+        - [ ] Build ticket tier form with React Hook Form and Zod
+        - [ ] Create tier list with sortable functionality
+        - [ ] Implement CRUD operations with TanStack Query
+        - [ ] Add drag-and-drop sorting with availability validation using Luxon
     - phase: "Discount System"
       tasks:
-        - [ ] Create discount code form
-        - [ ] Build validation endpoint
-        - [ ] Implement usage tracking
-        - [ ] Add expiration handling
+        - [ ] Create discount code form with Zod validation
+        - [ ] Build validation endpoint with Dinero.js calculations
+        - [ ] Implement usage tracking with Zustand state
+        - [ ] Add expiration handling with Luxon date comparisons
     - phase: "Pricing Display"
       tasks:
-        - [ ] Build price calculator
-        - [ ] Show fee breakdown
-        - [ ] Implement currency handling
-        - [ ] Add group pricing UI
+        - [ ] Build price calculator with Dinero.js precision
+        - [ ] Show fee breakdown with transparent calculations
+        - [ ] Implement currency handling with locale-aware formatting
+        - [ ] Add group pricing UI with bulk discount preview
     - phase: "Integration"
       tasks:
         - [ ] Add to event creation wizard

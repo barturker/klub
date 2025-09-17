@@ -328,6 +328,18 @@ technical_specification:
       type: "lib"
       path: "/lib/stripe/server.ts"
       purpose: "Server-side Stripe utilities"
+    - name: "usePaymentStore"
+      type: "hook"
+      path: "/hooks/usePaymentStore.ts"
+      purpose: "Zustand store for payment flow state"
+    - name: "usePaymentStatus"
+      type: "hook"
+      path: "/hooks/usePaymentStatus.ts"
+      purpose: "TanStack Query hook for payment polling"
+    - name: "useFeeCalculation"
+      type: "hook"
+      path: "/hooks/useFeeCalculation.ts"
+      purpose: "Fee calculations with Dinero.js"
 
   libraries_required:
     - name: "stripe"
@@ -339,6 +351,15 @@ technical_specification:
     - name: "@stripe/react-stripe-js"
       version: "^2.4.0"
       purpose: "React Stripe components"
+    - name: "@tanstack/react-query"
+      version: "^5.28.4"
+      purpose: "Payment status polling and caching"
+    - name: "zustand"
+      version: "^4.5.2"
+      purpose: "Payment flow state management"
+    - name: "dinero.js"
+      version: "^2.0.0-alpha.14"
+      purpose: "Precise fee calculations"
 
   environment_variables:
     - name: "STRIPE_PUBLISHABLE_KEY"
@@ -367,22 +388,22 @@ implementation_plan:
         - [ ] Handle return from Stripe
     - phase: "Payment Intent Creation"
       tasks:
-        - [ ] Create checkout API endpoint
-        - [ ] Calculate fees and totals
-        - [ ] Generate payment intent
-        - [ ] Handle metadata
+        - [ ] Create checkout API endpoint with validation
+        - [ ] Calculate fees and totals using Dinero.js
+        - [ ] Generate payment intent with Stripe SDK
+        - [ ] Handle metadata and tracking
     - phase: "Checkout UI"
       tasks:
-        - [ ] Integrate Payment Element
-        - [ ] Build checkout form
-        - [ ] Add address collection
-        - [ ] Implement 3D Secure handling
+        - [ ] Integrate Payment Element with React Stripe.js
+        - [ ] Build checkout form with Zustand state management
+        - [ ] Add address collection with validation
+        - [ ] Implement 3D Secure handling with status polling
     - phase: "Payment Processing"
       tasks:
-        - [ ] Handle webhook events
-        - [ ] Update order status
-        - [ ] Generate tickets
-        - [ ] Send confirmation emails
+        - [ ] Handle webhook events with signature validation
+        - [ ] Update order status with TanStack Query mutations
+        - [ ] Generate tickets with QR codes
+        - [ ] Send confirmation emails with receipts
     - phase: "Payout Management"
       tasks:
         - [ ] Build balance display

@@ -65,7 +65,9 @@ technical_specification:
           online_url TEXT,
           capacity INTEGER DEFAULT 0,
           image_url TEXT,
-          recurring_pattern JSONB DEFAULT NULL,
+          recurring_rule TEXT DEFAULT NULL, -- RRULE format for recurring patterns
+          recurring_end_date TIMESTAMPTZ DEFAULT NULL,
+          parent_event_id UUID REFERENCES events(id) ON DELETE CASCADE DEFAULT NULL, -- For recurring event instances
           tags TEXT[] DEFAULT '{}',
           metadata JSONB DEFAULT '{}',
           created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -170,7 +172,8 @@ technical_specification:
         online_url: "string?"
         capacity: "number?"
         image_url: "string?"
-        recurring_pattern: "object?"
+        recurring_rule: "string?" # RRULE format
+        recurring_end_date: "timestamp?"
         tags: "array?"
       response:
         event_id: "uuid"
@@ -259,6 +262,10 @@ technical_specification:
       type: "component"
       path: "/components/events/EventCard.tsx"
       purpose: "Event display card for lists"
+    - name: "EventCalendar"
+      type: "component"
+      path: "/components/events/EventCalendar.tsx"
+      purpose: "FullCalendar integration for event display"
     - name: "EventDetails"
       type: "component"
       path: "/components/events/EventDetails.tsx"
@@ -266,7 +273,15 @@ technical_specification:
     - name: "RecurringPatternSelector"
       type: "component"
       path: "/components/events/RecurringPatternSelector.tsx"
-      purpose: "UI for selecting recurring patterns"
+      purpose: "RRULE-based recurring pattern selector with preview"
+    - name: "useEventStore"
+      type: "hook"
+      path: "/hooks/useEventStore.ts"
+      purpose: "Zustand store for event state management"
+    - name: "useEvents"
+      type: "hook"
+      path: "/hooks/useEvents.ts"
+      purpose: "TanStack Query hooks for event data fetching"
     - name: "EventsPage"
       type: "page"
       path: "/app/(dashboard)/communities/[slug]/events/page.tsx"
@@ -285,18 +300,39 @@ technical_specification:
       purpose: "Event editing page"
 
   libraries_required:
-    - name: "date-fns"
-      version: "^3.3.1"
-      purpose: "Date manipulation and formatting"
-    - name: "date-fns-tz"
-      version: "^2.0.0"
-      purpose: "Timezone handling"
+    - name: "luxon"
+      version: "^3.4.4"
+      purpose: "Date manipulation with built-in timezone support and i18n"
+    - name: "@fullcalendar/react"
+      version: "^6.1.11"
+      purpose: "Professional calendar component with event management"
+    - name: "@fullcalendar/daygrid"
+      version: "^6.1.11"
+      purpose: "Month view for calendar"
+    - name: "@fullcalendar/timegrid"
+      version: "^6.1.11"
+      purpose: "Week/day view for calendar"
+    - name: "@fullcalendar/list"
+      version: "^6.1.11"
+      purpose: "List view for calendar events"
+    - name: "@fullcalendar/interaction"
+      version: "^6.1.11"
+      purpose: "User interactions with calendar"
+    - name: "rrule"
+      version: "^2.8.1"
+      purpose: "RFC compliant recurring event patterns"
     - name: "@tiptap/react"
       version: "^2.1.13"
       purpose: "Rich text editor for descriptions"
     - name: "@tiptap/starter-kit"
       version: "^2.1.13"
       purpose: "Tiptap editor starter kit"
+    - name: "zustand"
+      version: "^4.5.2"
+      purpose: "Lightweight client-side state management"
+    - name: "@tanstack/react-query"
+      version: "^5.28.4"
+      purpose: "Data fetching, caching, and synchronization"
     - name: "react-hook-form"
       version: "^7.62.0"
       purpose: "Form handling (already installed)"
@@ -305,38 +341,43 @@ technical_specification:
       purpose: "Schema validation (already installed)"
 
 implementation_plan:
-  estimated_hours: 6
+  estimated_hours: 8
   phases:
     - phase: "Database Setup"
       tasks:
-        - [ ] Create events table migration
+        - [ ] Create events table migration with RRULE support
         - [ ] Set up RLS policies
         - [ ] Create slug generation function
+        - [ ] Add indexes for calendar queries
         - [ ] Test database constraints
     - phase: "API Routes"
       tasks:
-        - [ ] Create event CRUD endpoints
+        - [ ] Create event CRUD endpoints with TanStack Query integration
         - [ ] Implement slug generation
-        - [ ] Add validation middleware
+        - [ ] Add validation middleware with Luxon date handling
         - [ ] Handle draft/publish states
+        - [ ] Create calendar feed endpoint for FullCalendar
     - phase: "Form Components"
       tasks:
-        - [ ] Build multi-step wizard
+        - [ ] Build multi-step wizard with React Hook Form
         - [ ] Create individual step components
-        - [ ] Implement form validation
-        - [ ] Add save draft functionality
+        - [ ] Integrate Tiptap rich text editor
+        - [ ] Implement form validation with Zod
+        - [ ] Add save draft to Zustand store
     - phase: "Event Display"
       tasks:
-        - [ ] Create event card component
+        - [ ] Integrate FullCalendar with custom event cards
         - [ ] Build event details page
-        - [ ] Implement event list view
+        - [ ] Implement calendar views (month/week/day/list)
         - [ ] Add SEO metadata
+        - [ ] Configure calendar event interactions
     - phase: "Recurring Events"
       tasks:
-        - [ ] Design recurring pattern UI
-        - [ ] Implement pattern logic
-        - [ ] Create event instances
-        - [ ] Handle pattern updates
+        - [ ] Integrate RRULE library for pattern generation
+        - [ ] Build recurring pattern selector UI
+        - [ ] Generate event instances from RRULE
+        - [ ] Handle recurring event exceptions
+        - [ ] Preview recurring dates with Luxon
     - phase: "Testing"
       tasks:
         - [ ] Unit test components
@@ -454,10 +495,13 @@ monitoring:
 dev_notes:
   implementation_tips:
     - "Use React Hook Form for multi-step wizard"
-    - "Store draft in localStorage for recovery"
+    - "Store draft in Zustand store for recovery"
     - "Use Zod schemas for validation"
-    - "Implement optimistic UI updates"
+    - "Implement optimistic UI updates with TanStack Query"
     - "Use Supabase storage for event images"
+    - "Use Luxon for all date/timezone operations"
+    - "Leverage FullCalendar's built-in event management"
+    - "Store recurring patterns in RRULE format (RFC 5545 standard)"
   tech_stack_references:
     - "Next.js 15.5.3 with App Router [Source: architecture/tech-stack.md]"
     - "TypeScript 5.x for type safety [Source: architecture/tech-stack.md]"
@@ -466,6 +510,11 @@ dev_notes:
     - "Zod 4.1.7 for validation [Source: architecture/tech-stack.md]"
     - "Tailwind CSS 4.x for styling [Source: architecture/tech-stack.md]"
     - "shadcn/ui components library [Source: architecture/tech-stack.md]"
+    - "Luxon for date/timezone handling [Modern best practice 2025]"
+    - "FullCalendar for calendar UI [Industry standard]"
+    - "RRULE for recurring events [RFC 5545 compliant]"
+    - "Zustand for client state [Lightweight alternative to Redux]"
+    - "TanStack Query for server state [Modern data fetching]"
   database_references:
     - "Events table with enum types [Source: architecture/supabase-database-schema.md]"
     - "Row Level Security policies required [Source: architecture/supabase-database-schema.md]"
@@ -477,10 +526,12 @@ dev_notes:
     - "API routes in /app/api/events/ [Source: architecture/source-tree.md]"
     - "Database types in /lib/supabase/types.ts [Source: architecture/source-tree.md]"
   potential_issues:
-    - "Timezone handling - store in UTC, display in local"
+    - "Timezone handling - Luxon handles this elegantly with Intl API"
     - "Image upload size limits - optimize with sharp"
     - "Slug collision handling - use counter suffix"
-    - "Recurring events complexity - consider future story"
+    - "FullCalendar licensing - MIT license, free for commercial use"
+    - "RRULE complexity - provide good UI presets for common patterns"
+    - "Calendar performance - implement virtual scrolling for many events"
   references:
     - "Previous story (STORY-007) implemented invitation system"
     - "Community creation (STORY-004) established base structure"
