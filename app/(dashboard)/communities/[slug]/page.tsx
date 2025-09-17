@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, Calendar, Settings } from 'lucide-react';
+import { Users, Calendar, Settings, CalendarDays, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { InvitationSection } from '@/components/invitations/InvitationSection';
 import { FixAdminAccess } from '@/components/community/FixAdminAccess';
@@ -117,7 +117,20 @@ export default async function CommunityPage({ params }: PageProps) {
                 <Link href="/auth">Sign in to Join</Link>
               </Button>
             )}
-            <Button variant="outline">View Events</Button>
+            <Button variant="outline" asChild>
+              <Link href={`/communities/${community.slug}/events`}>
+                <CalendarDays className="mr-2 h-4 w-4" />
+                View Events
+              </Link>
+            </Button>
+            {(isAdmin || isModerator) && (
+              <Button asChild>
+                <Link href={`/communities/${community.slug}/events/create`}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Event
+                </Link>
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
