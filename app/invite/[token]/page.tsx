@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 
 interface InvitePageProps {
-  params: { token: string };
+  params: Promise<{ token: string }>;
 }
 
 interface CommunityInfo {
@@ -28,6 +28,8 @@ interface CommunityInfo {
 
 export default function InvitePage({ params }: InvitePageProps) {
   const router = useRouter();
+  const resolvedParams = use(params);
+  const { token } = resolvedParams;
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState(false);
   const [isValid, setIsValid] = useState(false);
@@ -51,7 +53,7 @@ export default function InvitePage({ params }: InvitePageProps) {
   useEffect(() => {
     const validateInvitation = async () => {
       try {
-        const response = await fetch(`/api/invitations/${params.token}`);
+        const response = await fetch(`/api/invitations/${token}`);
         const data = await response.json();
 
         if (response.ok && data.valid) {
@@ -70,19 +72,19 @@ export default function InvitePage({ params }: InvitePageProps) {
     };
 
     validateInvitation();
-  }, [params.token]);
+  }, [token]);
 
   // Accept invitation
   const acceptInvitation = async () => {
     if (!user) {
       // Redirect to auth with return URL
-      router.push(`/auth?next=/invite/${params.token}`);
+      router.push(`/auth?next=/invite/${token}`);
       return;
     }
 
     setAccepting(true);
     try {
-      const response = await fetch(`/api/invitations/${params.token}/accept`, {
+      const response = await fetch(`/api/invitations/${token}/accept`, {
         method: 'POST'
       });
       const data = await response.json();
@@ -271,7 +273,7 @@ export default function InvitePage({ params }: InvitePageProps) {
                     </AlertDescription>
                   </Alert>
                   <Button
-                    onClick={() => router.push(`/auth?next=/invite/${params.token}`)}
+                    onClick={() => router.push(`/auth?next=/invite/${token}`)}
                     className="w-full"
                     size="lg"
                   >
@@ -279,7 +281,7 @@ export default function InvitePage({ params }: InvitePageProps) {
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={() => router.push(`/auth?mode=signup&next=/invite/${params.token}`)}
+                    onClick={() => router.push(`/auth?mode=signup&next=/invite/${token}`)}
                     className="w-full"
                     size="lg"
                   >

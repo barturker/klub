@@ -18,12 +18,18 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirectTo') || '/dashboard';
+  const redirectTo = searchParams.get('redirectTo') || searchParams.get('next') || '/dashboard';
+  const mode = searchParams.get('mode') || 'signin';
   const supabase = createClient();
 
   const handleSignUp = async () => {
+    console.log('🔵 Starting signup process...');
+    console.log('📧 Email:', email);
+    console.log('🔒 Password length:', password.length);
+
     setLoading(true);
     try {
+      console.log('🚀 Calling supabase.auth.signUp...');
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -32,9 +38,61 @@ export default function AuthPage() {
         },
       });
 
+      console.log('📦 Signup response:', { data, error });
+
       if (error) {
-        toast.error(error.message);
+        console.error('❌ Signup error:', error);
+        console.error('Error details:', {
+          message: error.message,
+          status: error.status,
+          name: error.name,
+          code: error.code
+        });
+
+        // Check if it's a trigger error and handle gracefully
+        if (error.message.includes('Database error') || error.status === 500) {
+          // Try to create account anyway, profile might be created later
+          toast.info('Creating your account... Please wait');
+
+          // Give it a moment and try to sign in
+          setTimeout(async () => {
+            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+              email,
+              password,
+            });
+
+            if (signInData?.user) {
+              // Ensure profile exists
+              const { error: profileError } = await supabase
+                .from('profiles')
+                .upsert({
+                  id: signInData.user.id,
+                  email: signInData.user.email
+                }, {
+                  onConflict: 'id'
+                });
+
+              toast.success('Account created successfully!');
+              router.push(redirectTo);
+            } else {
+              toast.error('Account created but sign in failed. Please try signing in manually.');
+            }
+          }, 1000);
+        } else {
+          toast.error(error.message);
+        }
       } else if (data?.user) {
+        // Ensure profile exists even if trigger fails
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: data.user.id,
+            email: data.user.email,
+            full_name: '',
+          }, {
+            onConflict: 'id'
+          });
+
         toast.success('Account created! Check your email to verify your account.');
         // If email confirmation is not required, redirect immediately
         if (data.user.confirmed_at) {
@@ -123,7 +181,7 @@ export default function AuthPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="signin" className="w-full">
+          <Tabs defaultValue={mode === 'signup' ? 'signup' : 'signin'} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
