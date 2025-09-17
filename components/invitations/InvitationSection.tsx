@@ -334,7 +334,33 @@ export function InvitationSection({ communityId, isAdmin, isModerator }: Invitat
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <span className="text-muted-foreground">-</span>
+                        {invitation.invitation_uses && invitation.invitation_uses.length > 0 ? (
+                          <div className="space-y-1">
+                            {invitation.invitation_uses.map((use) => (
+                              <div key={use.id} className="flex items-center gap-2">
+                                <Avatar className="h-6 w-6">
+                                  <AvatarImage src={use.user?.avatar_url || ''} />
+                                  <AvatarFallback className="text-xs">
+                                    {(use.user?.display_name ||
+                                     use.user?.full_name ||
+                                     use.user?.username ||
+                                     use.user?.email?.split('@')[0] ||
+                                     'U')[0].toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="text-sm">
+                                  {use.user?.display_name ||
+                                   use.user?.full_name ||
+                                   use.user?.username ||
+                                   use.user?.email?.split('@')[0] ||
+                                   'Unknown'}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">

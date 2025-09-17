@@ -191,15 +191,62 @@ export async function GET(
       );
     }
 
-    // Fetch creator profiles for display
+    // Fetch invitation_uses for all invitations
     if (invitations && invitations.length > 0) {
+      const invitationIds = invitations.map(inv => inv.id);
+      console.log('[GET] Fetching invitation_uses for invitation IDs:', invitationIds);
+
+      const { data: invitationUses, error: usesError } = await supabase
+        .from('invitation_uses')
+        .select('*')
+        .in('invitation_id', invitationIds);
+
+      console.log('[GET] Invitation uses query result:', {
+        invitationUses,
+        usesError,
+        count: invitationUses?.length
+      });
+
+      // Group invitation_uses by invitation_id
+      if (!usesError && invitationUses) {
+        const usesMap = new Map();
+        invitationUses.forEach(use => {
+          if (!usesMap.has(use.invitation_id)) {
+            usesMap.set(use.invitation_id, []);
+          }
+          usesMap.get(use.invitation_id).push(use);
+        });
+
+        // Attach invitation_uses to invitations
+        invitations.forEach(inv => {
+          inv.invitation_uses = usesMap.get(inv.id) || [];
+        });
+      }
+    }
+
+    // Fetch creator profiles and user profiles for invitation_uses
+    if (invitations && invitations.length > 0) {
+      // Get all unique creator IDs
       const creatorIds = [...new Set(invitations.map(inv => inv.created_by))];
       console.log('[GET] Fetching profiles for creator IDs:', creatorIds);
 
+      // Get all unique user IDs from invitation_uses
+      const userIds = [...new Set(
+        invitations.flatMap(inv =>
+          inv.invitation_uses ? inv.invitation_uses.map(use => use.user_id) : []
+        )
+      )];
+      console.log('[GET] Fetching profiles for user IDs who used invitations:', userIds);
+
+      // Combine all unique IDs
+      const allUserIds = [...new Set([...creatorIds, ...userIds])];
+      console.log('[GET] Fetching profiles for all user IDs:', allUserIds);
+
+      // Fetch all profiles at once
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, username, full_name, display_name, email, avatar_url')
-        .in('id', creatorIds);
+        .in('id', allUserIds);
 
       console.log('[GET] Profiles query result:', {
         profiles,
@@ -209,14 +256,26 @@ export async function GET(
 
       if (!profilesError && profiles) {
         const profileMap = new Map(profiles.map(p => [p.id, p]));
+
+        // Enhance invitations with creator info
         invitations.forEach(inv => {
           inv.creator = profileMap.get(inv.created_by) || null;
+
+          // Enhance invitation_uses with user profile info
+          if (inv.invitation_uses && inv.invitation_uses.length > 0) {
+            inv.invitation_uses = inv.invitation_uses.map(use => ({
+              ...use,
+              user: profileMap.get(use.user_id) || null
+            }));
+          }
         });
-        console.log('[GET] Enhanced invitations with creator info:',
+
+        console.log('[GET] Enhanced invitations with creator and user info:',
           invitations.map(inv => ({
             token: inv.token,
             created_by: inv.created_by,
-            creator: inv.creator
+            creator: inv.creator,
+            invitation_uses: inv.invitation_uses
           }))
         );
       }
@@ -229,7 +288,9 @@ export async function GET(
         inv.uses_count < inv.max_uses &&
         new Date(inv.expires_at) > new Date()
       ).length || 0,
-      used: invitations?.filter(inv => inv.uses_count > 0).length || 0,
+      used: invitations?.filter(inv =>
+        inv.invitation_uses && inv.invitation_uses.length > 0
+      ).length || 0,
       expired: invitations?.filter(inv => new Date(inv.expires_at) <= new Date()).length || 0
     };
 
