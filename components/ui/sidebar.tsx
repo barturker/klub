@@ -2,7 +2,7 @@
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import React, { useState, createContext, useContext } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion } from "framer-motion";
 import { IconMenu2, IconX } from "@tabler/icons-react";
 
 interface Links {
@@ -166,14 +166,21 @@ export const SidebarLink = ({
   onClick?: () => void;
 }) => {
   const { open, animate } = useSidebar();
+  const [isClicked, setIsClicked] = React.useState(false);
   
   // If onClick is provided (for logout), use button instead of Link
   if (onClick) {
     return (
       <button
-        onClick={onClick}
+        onClick={() => {
+          setIsClicked(true);
+          onClick();
+          setTimeout(() => setIsClicked(false), 200);
+        }}
         className={cn(
           "flex items-center justify-start gap-2  group/sidebar py-2 w-full",
+          "transition-all duration-150 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-md px-2",
+          isClicked && "bg-neutral-300 dark:bg-neutral-600 scale-95",
           className
         )}
         {...props}
@@ -185,7 +192,7 @@ export const SidebarLink = ({
             display: animate ? (open ? "inline-block" : "none") : "inline-block",
             opacity: animate ? (open ? 1 : 0) : 1,
           }}
-          className="text-neutral-700 dark:text-neutral-200 text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block !p-0 !m-0"
+          className="text-neutral-700 dark:text-neutral-200 text-sm group-hover/sidebar:translate-x-1 transition-transform duration-150 whitespace-pre inline-block !p-0 !m-0"
         >
           {link.label}
         </motion.span>
@@ -196,10 +203,17 @@ export const SidebarLink = ({
   return (
     <Link
       href={link.href}
+      onClick={() => {
+        setIsClicked(true);
+        setTimeout(() => setIsClicked(false), 200);
+      }}
       className={cn(
         "flex items-center justify-start gap-2  group/sidebar py-2",
+        "transition-all duration-150 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-md px-2",
+        isClicked && "bg-neutral-300 dark:bg-neutral-600 scale-95",
         className
       )}
+      prefetch={true}
       {...props}
     >
       {link.icon}
@@ -209,7 +223,7 @@ export const SidebarLink = ({
           display: animate ? (open ? "inline-block" : "none") : "inline-block",
           opacity: animate ? (open ? 1 : 0) : 1,
         }}
-        className="text-neutral-700 dark:text-neutral-200 text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block !p-0 !m-0"
+        className="text-neutral-700 dark:text-neutral-200 text-sm group-hover/sidebar:translate-x-1 transition-transform duration-150 whitespace-pre inline-block !p-0 !m-0"
       >
         {link.label}
       </motion.span>

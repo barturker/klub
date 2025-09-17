@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useEvents } from "@/hooks/useEvents";
 import EventCard from "@/components/events/EventCard";
-import EventCalendar from "@/components/events/EventCalendar";
+import LazyEventCalendar from "@/components/events/LazyEventCalendar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -259,7 +259,7 @@ export default function CommunityEventsPage() {
               )}
 
               {viewMode === "calendar" && filteredEvents && (
-                <EventCalendar
+                <LazyEventCalendar
                   events={filteredEvents}
                   communitySlug={communitySlug}
                   height="700px"

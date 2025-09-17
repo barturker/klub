@@ -38,6 +38,7 @@ export default function DashboardLayout({
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Database['public']['Tables']['profiles']['Row'] | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -94,8 +95,15 @@ export default function DashboardLayout({
   }, [user, supabase]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push('/auth');
+    if (isSigningOut) return; // Prevent multiple clicks
+    setIsSigningOut(true);
+    try {
+      await supabase.auth.signOut();
+      router.push('/auth');
+    } catch (error) {
+      console.error('Sign out error:', error);
+      setIsSigningOut(false);
+    }
   };
 
   const handleThemeToggle = () => {
@@ -185,9 +193,11 @@ export default function DashboardLayout({
               />
               <SidebarLink
                 link={{
-                  label: 'Logout',
+                  label: isSigningOut ? 'Signing out...' : 'Logout',
                   href: '#',
-                  icon: (
+                  icon: isSigningOut ? (
+                    <div className="h-5 w-5 flex-shrink-0 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-700 dark:border-neutral-600 dark:border-t-neutral-200" />
+                  ) : (
                     <IconLogout2 className="h-5 w-5 flex-shrink-0 text-neutral-700 dark:text-neutral-200" />
                   ),
                 }}
