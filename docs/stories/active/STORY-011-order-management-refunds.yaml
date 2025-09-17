@@ -1,0 +1,573 @@
+story:
+  id: "STORY-011"
+  title: "Order Management & Refunds"
+  epic: "3 - Events & Ticketing System"
+  priority: "P1-High"
+  points: 4
+  sprint: "3"
+  status: "ready"
+  assigned_to: "ai-developer"
+  created_date: "2025-01-17"
+  start_date: ""
+  completion_date: ""
+
+user_story:
+  as_a: "community organizer"
+  i_want: "to manage ticket orders and process refunds"
+  so_that: "I can handle customer service issues"
+
+acceptance_criteria:
+  - given: "I am an event organizer"
+    when: "I access order management"
+    then: "I see order dashboard with filter and search capabilities"
+  - given: "I view an order"
+    when: "I open order details"
+    then: "I see purchaser info, tickets, and payment status"
+  - given: "A customer requests refund"
+    when: "I process refund"
+    then: "I can issue full or partial refund with reason"
+  - given: "Refund policy exists"
+    when: "Processing refund"
+    then: "Policy is enforced (deadline, fees)"
+  - given: "An order needs modification"
+    when: "Customer requests change"
+    then: "I can upgrade, downgrade, or transfer tickets"
+  - given: "An event is cancelled"
+    when: "Cancellation triggered"
+    then: "All orders are automatically refunded"
+  - given: "I need financial records"
+    when: "I export orders"
+    then: "I can export order history for accounting"
+  - given: "Order changes occur"
+    when: "Any modification happens"
+    then: "Email notifications are sent to customers"
+
+technical_specification:
+  database_changes:
+    - table: "refunds"
+      changes: |
+        CREATE TABLE refunds (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          order_id UUID REFERENCES orders(id) ON DELETE CASCADE NOT NULL,
+          stripe_refund_id TEXT UNIQUE,
+          amount_cents INTEGER NOT NULL,
+          reason TEXT CHECK (reason IN ('requested_by_customer', 'duplicate', 'fraudulent', 'event_cancelled', 'other')),
+          reason_details TEXT,
+          status TEXT CHECK (status IN ('pending', 'processing', 'succeeded', 'failed', 'cancelled')) DEFAULT 'pending',
+          processed_by UUID REFERENCES auth.users,
+          metadata JSONB DEFAULT '{}',
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          processed_at TIMESTAMPTZ,
+          updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX idx_refunds_order ON refunds(order_id);
+        CREATE INDEX idx_refunds_stripe ON refunds(stripe_refund_id);
+        CREATE INDEX idx_refunds_status ON refunds(status);
+
+    - table: "order_modifications"
+      changes: |
+        CREATE TABLE order_modifications (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          order_id UUID REFERENCES orders(id) ON DELETE CASCADE NOT NULL,
+          type TEXT CHECK (type IN ('upgrade', 'downgrade', 'transfer', 'cancel', 'modify')) NOT NULL,
+          old_values JSONB NOT NULL,
+          new_values JSONB NOT NULL,
+          price_difference_cents INTEGER DEFAULT 0,
+          reason TEXT,
+          modified_by UUID REFERENCES auth.users NOT NULL,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX idx_order_mods_order ON order_modifications(order_id);
+
+    - table: "refund_policies"
+      changes: |
+        CREATE TABLE refund_policies (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          event_id UUID REFERENCES events(id) ON DELETE CASCADE UNIQUE NOT NULL,
+          deadline_hours INTEGER DEFAULT 24, -- hours before event
+          refund_percentage INTEGER DEFAULT 100, -- percentage refundable
+          no_refund_after TIMESTAMPTZ,
+          allow_transfers BOOLEAN DEFAULT TRUE,
+          transfer_deadline_hours INTEGER DEFAULT 6,
+          cancellation_policy TEXT,
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX idx_refund_policies_event ON refund_policies(event_id);
+
+    - table: "order_exports"
+      changes: |
+        CREATE TABLE order_exports (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          community_id UUID REFERENCES communities(id) ON DELETE CASCADE NOT NULL,
+          event_id UUID REFERENCES events(id) ON DELETE CASCADE,
+          export_type TEXT CHECK (export_type IN ('csv', 'excel', 'pdf')) DEFAULT 'csv',
+          date_range_start TIMESTAMPTZ,
+          date_range_end TIMESTAMPTZ,
+          file_url TEXT,
+          status TEXT CHECK (status IN ('pending', 'processing', 'completed', 'failed')) DEFAULT 'pending',
+          requested_by UUID REFERENCES auth.users NOT NULL,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX idx_exports_community ON order_exports(community_id);
+
+        -- RLS Policies
+        ALTER TABLE refunds ENABLE ROW LEVEL SECURITY;
+        ALTER TABLE order_modifications ENABLE ROW LEVEL SECURITY;
+        ALTER TABLE refund_policies ENABLE ROW LEVEL SECURITY;
+        ALTER TABLE order_exports ENABLE ROW LEVEL SECURITY;
+
+        -- Refund policies
+        CREATE POLICY "Event managers can manage refunds"
+        ON refunds FOR ALL
+        USING (
+          EXISTS (
+            SELECT 1 FROM orders o
+            JOIN events e ON e.id = o.event_id
+            JOIN community_members cm ON cm.community_id = e.community_id
+            WHERE o.id = refunds.order_id
+            AND cm.user_id = auth.uid()
+            AND cm.role IN ('admin', 'moderator')
+          )
+        );
+
+        -- Order modification policies
+        CREATE POLICY "Event managers can modify orders"
+        ON order_modifications FOR ALL
+        USING (
+          EXISTS (
+            SELECT 1 FROM orders o
+            JOIN events e ON e.id = o.event_id
+            JOIN community_members cm ON cm.community_id = e.community_id
+            WHERE o.id = order_modifications.order_id
+            AND cm.user_id = auth.uid()
+            AND cm.role IN ('admin', 'moderator')
+          )
+        );
+
+        -- Function to process refund
+        CREATE OR REPLACE FUNCTION process_refund(
+          p_order_id UUID,
+          p_amount_cents INTEGER,
+          p_reason TEXT,
+          p_reason_details TEXT DEFAULT NULL
+        ) RETURNS UUID AS $$
+        DECLARE
+          v_refund_id UUID;
+          v_ticket_ids UUID[];
+        BEGIN
+          -- Create refund record
+          INSERT INTO refunds (
+            order_id,
+            amount_cents,
+            reason,
+            reason_details,
+            processed_by
+          ) VALUES (
+            p_order_id,
+            p_amount_cents,
+            p_reason,
+            p_reason_details,
+            auth.uid()
+          ) RETURNING id INTO v_refund_id;
+
+          -- Update order status
+          UPDATE orders
+          SET status = CASE
+            WHEN p_amount_cents >= amount_cents THEN 'refunded'
+            ELSE 'partially_refunded'
+          END,
+          refunded_at = NOW()
+          WHERE id = p_order_id;
+
+          -- Cancel associated tickets
+          UPDATE tickets
+          SET status = 'refunded'
+          WHERE order_id = p_order_id
+          AND status = 'valid';
+
+          RETURN v_refund_id;
+        END;
+        $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+        -- Function to bulk refund for cancelled event
+        CREATE OR REPLACE FUNCTION refund_cancelled_event(p_event_id UUID)
+        RETURNS INTEGER AS $$
+        DECLARE
+          v_refund_count INTEGER := 0;
+          v_order RECORD;
+        BEGIN
+          FOR v_order IN
+            SELECT id, amount_cents
+            FROM orders
+            WHERE event_id = p_event_id
+            AND status IN ('completed', 'pending')
+          LOOP
+            PERFORM process_refund(
+              v_order.id,
+              v_order.amount_cents,
+              'event_cancelled',
+              'Event was cancelled by organizer'
+            );
+            v_refund_count := v_refund_count + 1;
+          END LOOP;
+
+          RETURN v_refund_count;
+        END;
+        $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+  api_endpoints:
+    - method: "GET"
+      path: "/api/orders"
+      purpose: "List orders with filters"
+      query_params:
+        event_id: "uuid?"
+        community_id: "uuid?"
+        status: "string?"
+        search: "string?"
+        date_from: "timestamp?"
+        date_to: "timestamp?"
+        limit: "number?"
+        offset: "number?"
+      response:
+        orders: "array"
+        total: "number"
+        stats: "object"
+    - method: "GET"
+      path: "/api/orders/[id]"
+      purpose: "Get order details"
+      response:
+        order: "object"
+        tickets: "array"
+        refunds: "array"
+        modifications: "array"
+    - method: "POST"
+      path: "/api/orders/[id]/refund"
+      purpose: "Process refund"
+      request_body:
+        amount_cents: "number?"
+        reason: "string"
+        reason_details: "string?"
+        notify_customer: "boolean"
+      response:
+        refund_id: "uuid"
+        stripe_refund_id: "string"
+        status: "string"
+    - method: "POST"
+      path: "/api/orders/[id]/modify"
+      purpose: "Modify order"
+      request_body:
+        type: "string"
+        new_ticket_tier_id: "uuid?"
+        new_quantity: "number?"
+        transfer_to_email: "string?"
+      response:
+        success: "boolean"
+        order: "object"
+        price_difference: "number?"
+    - method: "POST"
+      path: "/api/events/[id]/cancel"
+      purpose: "Cancel event and refund all"
+      request_body:
+        reason: "string"
+        notify_attendees: "boolean"
+      response:
+        refunds_processed: "number"
+        total_refunded_cents: "number"
+    - method: "POST"
+      path: "/api/orders/export"
+      purpose: "Export orders"
+      request_body:
+        event_id: "uuid?"
+        community_id: "uuid?"
+        date_from: "timestamp?"
+        date_to: "timestamp?"
+        format: "string"
+        columns: "array?"
+      response:
+        export_id: "uuid"
+        status: "string"
+    - method: "GET"
+      path: "/api/exports/[id]/download"
+      purpose: "Download export file"
+      response: "File download"
+    - method: "GET"
+      path: "/api/orders/[id]/invoice"
+      purpose: "Generate invoice PDF"
+      response:
+        invoice_url: "string"
+    - method: "POST"
+      path: "/api/refund-policies"
+      purpose: "Set refund policy"
+      request_body:
+        event_id: "uuid"
+        deadline_hours: "number"
+        refund_percentage: "number"
+        no_refund_after: "timestamp?"
+        allow_transfers: "boolean"
+        cancellation_policy: "string?"
+      response:
+        policy: "object"
+
+  components:
+    - name: "OrderList"
+      type: "component"
+      path: "/components/orders/OrderList.tsx"
+      purpose: "Display and filter orders"
+    - name: "OrderDetails"
+      type: "component"
+      path: "/components/orders/OrderDetails.tsx"
+      purpose: "Show detailed order information"
+    - name: "RefundModal"
+      type: "component"
+      path: "/components/orders/RefundModal.tsx"
+      purpose: "Process refund with reason"
+    - name: "OrderModificationForm"
+      type: "component"
+      path: "/components/orders/OrderModificationForm.tsx"
+      purpose: "Modify order details"
+    - name: "BulkRefundConfirmation"
+      type: "component"
+      path: "/components/orders/BulkRefundConfirmation.tsx"
+      purpose: "Confirm event cancellation refunds"
+    - name: "OrderExportDialog"
+      type: "component"
+      path: "/components/orders/OrderExportDialog.tsx"
+      purpose: "Configure export parameters"
+    - name: "RefundPolicyForm"
+      type: "component"
+      path: "/components/orders/RefundPolicyForm.tsx"
+      purpose: "Set event refund policy"
+    - name: "OrderStats"
+      type: "component"
+      path: "/components/orders/OrderStats.tsx"
+      purpose: "Display order statistics"
+    - name: "InvoiceGenerator"
+      type: "component"
+      path: "/components/orders/InvoiceGenerator.tsx"
+      purpose: "Generate invoice PDFs"
+    - name: "OrderTimeline"
+      type: "component"
+      path: "/components/orders/OrderTimeline.tsx"
+      purpose: "Show order history timeline"
+    - name: "OrdersPage"
+      type: "page"
+      path: "/app/(dashboard)/communities/[slug]/orders/page.tsx"
+      purpose: "Order management dashboard"
+    - name: "OrderDetailsPage"
+      type: "page"
+      path: "/app/(dashboard)/orders/[id]/page.tsx"
+      purpose: "Individual order details page"
+    - name: "RefundPoliciesPage"
+      type: "page"
+      path: "/app/(dashboard)/communities/[slug]/events/[eventSlug]/policies/page.tsx"
+      purpose: "Manage event policies"
+
+  libraries_required:
+    - name: "react-hook-form"
+      version: "^7.62.0"
+      purpose: "Form handling (already installed)"
+    - name: "papaparse"
+      version: "^5.4.1"
+      purpose: "CSV export generation"
+    - name: "jspdf"
+      version: "^2.5.1"
+      purpose: "PDF invoice generation"
+    - name: "exceljs"
+      version: "^4.4.0"
+      purpose: "Excel export generation"
+
+implementation_plan:
+  estimated_hours: 6
+  phases:
+    - phase: "Database Setup"
+      tasks:
+        - [ ] Create refunds table
+        - [ ] Create order_modifications table
+        - [ ] Create refund_policies table
+        - [ ] Create order_exports table
+        - [ ] Set up RLS policies
+        - [ ] Create refund functions
+    - phase: "Order Management UI"
+      tasks:
+        - [ ] Build order list with filters
+        - [ ] Create order details view
+        - [ ] Add search functionality
+        - [ ] Implement pagination
+    - phase: "Refund Processing"
+      tasks:
+        - [ ] Create refund modal
+        - [ ] Integrate with Stripe refunds
+        - [ ] Handle partial refunds
+        - [ ] Update ticket status
+    - phase: "Order Modifications"
+      tasks:
+        - [ ] Build modification form
+        - [ ] Handle upgrades/downgrades
+        - [ ] Implement ticket transfers
+        - [ ] Calculate price differences
+    - phase: "Bulk Operations"
+      tasks:
+        - [ ] Event cancellation flow
+        - [ ] Bulk refund processing
+        - [ ] Progress tracking
+        - [ ] Email notifications
+    - phase: "Export & Reporting"
+      tasks:
+        - [ ] Create export dialog
+        - [ ] Generate CSV exports
+        - [ ] Generate Excel exports
+        - [ ] Create invoice PDFs
+    - phase: "Testing"
+      tasks:
+        - [ ] Test refund flows
+        - [ ] Test order modifications
+        - [ ] Test export generation
+        - [ ] Test bulk operations
+
+dependencies:
+  blocking: ["STORY-010"]
+  blocked_by: []
+  external: ["Stripe Refund API"]
+
+test_scenarios:
+  unit_tests:
+    - component: "RefundCalculator"
+      test: "Apply refund policy"
+      expected: "Correct refund amount based on policy"
+    - component: "ExportGenerator"
+      test: "Generate CSV with filters"
+      expected: "Correct data in proper format"
+  integration_tests:
+    - scenario: "Process full refund"
+      steps:
+        - "Select order"
+        - "Initiate refund"
+        - "Provide reason"
+        - "Confirm refund"
+      expected: "Refund processed, tickets cancelled"
+    - scenario: "Bulk refund for cancelled event"
+      steps:
+        - "Cancel event"
+        - "Confirm bulk refund"
+        - "Monitor progress"
+      expected: "All orders refunded, notifications sent"
+  edge_cases:
+    - scenario: "Refund after policy deadline"
+      steps:
+        - "Attempt refund past deadline"
+      expected: "Refund blocked or reduced per policy"
+    - scenario: "Modify sold-out tier"
+      steps:
+        - "Try to upgrade to sold-out tier"
+      expected: "Modification blocked with appropriate message"
+
+performance_requirements:
+  - metric: "Order list loading"
+    target: "<500ms for 100 orders"
+  - metric: "Refund processing"
+    target: "<2s including Stripe"
+  - metric: "Export generation"
+    target: "<5s for 1000 orders"
+
+security_considerations:
+  - aspect: "Authorization"
+    requirement: "Only event managers can process refunds"
+  - aspect: "Audit trail"
+    requirement: "Log all modifications and refunds"
+  - aspect: "Double refund prevention"
+    requirement: "Prevent duplicate refund requests"
+  - aspect: "Export access"
+    requirement: "Secure download links with expiration"
+
+definition_of_done:
+  development:
+    - [ ] Code complete and follows standards
+    - [ ] TypeScript types defined
+    - [ ] Error handling implemented
+    - [ ] Loading states implemented
+    - [ ] Mobile responsive
+  testing:
+    - [ ] Unit tests written and passing
+    - [ ] Integration tests passing
+    - [ ] Manual testing completed
+    - [ ] Cross-browser testing done
+  documentation:
+    - [ ] Code comments added
+    - [ ] API documentation updated
+    - [ ] Refund policy guide created
+  review:
+    - [ ] Code reviewed and approved
+    - [ ] Design reviewed (UI/UX)
+    - [ ] Security review passed
+  deployment:
+    - [ ] Deployed to staging
+    - [ ] QA tested and approved
+    - [ ] Product Owner accepted
+    - [ ] No P0 or P1 bugs
+
+rollback_plan:
+  - step: "Disable refund UI"
+  - step: "Stop refund processing"
+  - step: "Revert database changes"
+  - step: "Notify support team"
+
+monitoring:
+  metrics_to_track:
+    - "Refund rate by event"
+    - "Average refund processing time"
+    - "Order modification frequency"
+    - "Export generation success rate"
+  alerts_to_setup:
+    - "Refund failures > 5%"
+    - "Bulk refund job stuck > 10min"
+    - "Export generation failures > 10%"
+  logs_to_implement:
+    - "All refund attempts and results"
+    - "Order modifications with reasons"
+    - "Export generation requests"
+    - "Policy enforcement decisions"
+
+dev_notes:
+  implementation_tips:
+    - "Use database transactions for refunds to ensure consistency"
+    - "Implement queue for bulk refund processing"
+    - "Cache order data for performance"
+    - "Stream large exports to avoid memory issues"
+    - "Use Stripe webhooks to confirm refund completion"
+  tech_stack_references:
+    - "Stripe refund API [Source: Stripe docs]"
+    - "Next.js API routes [Source: architecture/tech-stack.md]"
+    - "Supabase RLS policies [Source: architecture/supabase-database-schema.md]"
+    - "React Hook Form for forms [Source: architecture/tech-stack.md]"
+  database_references:
+    - "Orders table from STORY-010"
+    - "Events and tickets tables from previous stories"
+    - "Atomic operations with transactions [Source: architecture/supabase-database-schema.md]"
+  previous_story_context:
+    - "Stripe integration (STORY-010) provides payment infrastructure"
+    - "Order creation flow established"
+    - "Ticket generation process defined"
+  refund_policy_notes:
+    - "Default: 100% refund up to 24 hours before event"
+    - "Support partial refunds for flexibility"
+    - "Automatic refunds for cancelled events"
+    - "Transfer option as alternative to refund"
+  potential_issues:
+    - "Stripe refund delays - handle async updates"
+    - "Large export memory usage - use streaming"
+    - "Concurrent modifications - use optimistic locking"
+    - "Email delivery - implement retry queue"
+  references:
+    - "Stripe Refund API documentation"
+    - "Epic 3.4 requirements for order management"
+    - "Customer service best practices"
+
+dev_agent_record:
+  agent_model_used: ""
+  debug_log_references: []
+  completion_notes: []
+  file_list: []
+  change_summary: []
+  test_results: []
+  deployment_notes: ""

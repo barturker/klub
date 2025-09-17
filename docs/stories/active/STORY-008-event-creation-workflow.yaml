@@ -1,0 +1,496 @@
+story:
+  id: "STORY-008"
+  title: "Event Creation Workflow"
+  epic: "3 - Events & Ticketing System"
+  priority: "P0-Critical"
+  points: 4
+  sprint: "3"
+  status: "ready"
+  assigned_to: "ai-developer"
+  created_date: "2025-01-17"
+  start_date: ""
+  completion_date: ""
+
+user_story:
+  as_a: "community organizer"
+  i_want: "to create events with all necessary details"
+  so_that: "members can discover and attend my events"
+
+acceptance_criteria:
+  - given: "I am a community organizer"
+    when: "I access the event creation page"
+    then: "I see a multi-step form with save draft capability"
+  - given: "I am creating an event"
+    when: "I fill in event details"
+    then: "I can specify title, description, date/time, location, capacity"
+  - given: "I am creating an event"
+    when: "I select event type"
+    then: "I can choose between physical, virtual, or hybrid"
+  - given: "I have started creating an event"
+    when: "I save as draft"
+    then: "I can return later to complete it"
+  - given: "I want to create recurring events"
+    when: "I select recurring option"
+    then: "I can set daily, weekly, or monthly patterns"
+  - given: "I have filled all required fields"
+    when: "I preview the event"
+    then: "I see how it will appear to members"
+  - given: "I publish an event"
+    when: "Members visit the community"
+    then: "They can see and access the event page with SEO-friendly URL"
+  - given: "I am creating a physical event"
+    when: "I submit for publishing"
+    then: "The system validates it's marked correctly for App Store compliance"
+
+technical_specification:
+  database_changes:
+    - table: "events"
+      changes: |
+        CREATE TABLE events (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          community_id UUID REFERENCES communities(id) ON DELETE CASCADE NOT NULL,
+          created_by UUID REFERENCES auth.users NOT NULL,
+          title TEXT NOT NULL,
+          slug TEXT NOT NULL,
+          description TEXT,
+          event_type TEXT CHECK (event_type IN ('physical', 'virtual', 'hybrid')) DEFAULT 'physical',
+          status TEXT CHECK (status IN ('draft', 'published', 'cancelled', 'completed')) DEFAULT 'draft',
+          start_at TIMESTAMPTZ NOT NULL,
+          end_at TIMESTAMPTZ NOT NULL,
+          timezone TEXT NOT NULL DEFAULT 'UTC',
+          venue_name TEXT,
+          venue_address TEXT,
+          venue_city TEXT,
+          venue_country TEXT,
+          online_url TEXT,
+          capacity INTEGER DEFAULT 0,
+          image_url TEXT,
+          recurring_pattern JSONB DEFAULT NULL,
+          tags TEXT[] DEFAULT '{}',
+          metadata JSONB DEFAULT '{}',
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          updated_at TIMESTAMPTZ DEFAULT NOW(),
+          UNIQUE(community_id, slug)
+        );
+        CREATE INDEX idx_events_community ON events(community_id);
+        CREATE INDEX idx_events_status ON events(status);
+        CREATE INDEX idx_events_start ON events(start_at);
+        CREATE INDEX idx_events_slug ON events(slug);
+
+        -- RLS Policies
+        ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+
+        -- Published events are public
+        CREATE POLICY "Published events are viewable"
+        ON events FOR SELECT
+        USING (status = 'published' OR created_by = auth.uid());
+
+        -- Community admins/moderators can manage events
+        CREATE POLICY "Community managers can create events"
+        ON events FOR INSERT
+        WITH CHECK (
+          EXISTS (
+            SELECT 1 FROM community_members
+            WHERE community_id = events.community_id
+            AND user_id = auth.uid()
+            AND role IN ('admin', 'moderator')
+          )
+        );
+
+        CREATE POLICY "Event creators can update their events"
+        ON events FOR UPDATE
+        USING (created_by = auth.uid() OR EXISTS (
+          SELECT 1 FROM community_members
+          WHERE community_id = events.community_id
+          AND user_id = auth.uid()
+          AND role = 'admin'
+        ));
+
+        CREATE POLICY "Community admins can delete events"
+        ON events FOR DELETE
+        USING (EXISTS (
+          SELECT 1 FROM community_members
+          WHERE community_id = events.community_id
+          AND user_id = auth.uid()
+          AND role = 'admin'
+        ));
+
+        -- Function to generate unique slug
+        CREATE OR REPLACE FUNCTION generate_event_slug(p_title TEXT, p_community_id UUID)
+        RETURNS TEXT AS $$
+        DECLARE
+          v_slug TEXT;
+          v_counter INTEGER := 0;
+          v_exists BOOLEAN;
+        BEGIN
+          v_slug := lower(regexp_replace(p_title, '[^a-zA-Z0-9]+', '-', 'g'));
+          v_slug := trim(both '-' from v_slug);
+
+          LOOP
+            IF v_counter > 0 THEN
+              v_exists := EXISTS (
+                SELECT 1 FROM events
+                WHERE community_id = p_community_id
+                AND slug = v_slug || '-' || v_counter
+              );
+              IF NOT v_exists THEN
+                RETURN v_slug || '-' || v_counter;
+              END IF;
+            ELSE
+              v_exists := EXISTS (
+                SELECT 1 FROM events
+                WHERE community_id = p_community_id
+                AND slug = v_slug
+              );
+              IF NOT v_exists THEN
+                RETURN v_slug;
+              END IF;
+            END IF;
+            v_counter := v_counter + 1;
+          END LOOP;
+        END;
+        $$ LANGUAGE plpgsql;
+
+  api_endpoints:
+    - method: "POST"
+      path: "/api/events"
+      purpose: "Create new event"
+      request_body:
+        community_id: "uuid"
+        title: "string"
+        description: "string"
+        event_type: "string"
+        start_at: "timestamp"
+        end_at: "timestamp"
+        timezone: "string"
+        venue_name: "string?"
+        venue_address: "string?"
+        venue_city: "string?"
+        venue_country: "string?"
+        online_url: "string?"
+        capacity: "number?"
+        image_url: "string?"
+        recurring_pattern: "object?"
+        tags: "array?"
+      response:
+        event_id: "uuid"
+        slug: "string"
+        status: "string"
+    - method: "GET"
+      path: "/api/events/[slug]"
+      purpose: "Get event details by slug"
+      request_body: {}
+      response:
+        event: "object"
+    - method: "GET"
+      path: "/api/communities/[id]/events"
+      purpose: "List community events"
+      query_params:
+        status: "string?"
+        limit: "number?"
+        offset: "number?"
+      response:
+        events: "array"
+        total: "number"
+    - method: "PATCH"
+      path: "/api/events/[id]"
+      purpose: "Update event"
+      request_body:
+        title: "string?"
+        description: "string?"
+        start_at: "timestamp?"
+        end_at: "timestamp?"
+        venue_name: "string?"
+        venue_address: "string?"
+        online_url: "string?"
+        capacity: "number?"
+        status: "string?"
+      response:
+        success: "boolean"
+        event: "object"
+    - method: "POST"
+      path: "/api/events/[id]/publish"
+      purpose: "Publish draft event"
+      request_body: {}
+      response:
+        success: "boolean"
+        event_url: "string"
+    - method: "DELETE"
+      path: "/api/events/[id]"
+      purpose: "Delete/cancel event"
+      request_body: {}
+      response:
+        success: "boolean"
+    - method: "POST"
+      path: "/api/events/[id]/duplicate"
+      purpose: "Duplicate event as draft"
+      request_body:
+        new_date: "timestamp?"
+      response:
+        event_id: "uuid"
+        slug: "string"
+
+  components:
+    - name: "EventCreateWizard"
+      type: "component"
+      path: "/components/events/EventCreateWizard.tsx"
+      purpose: "Multi-step event creation form"
+    - name: "EventBasicInfoStep"
+      type: "component"
+      path: "/components/events/EventBasicInfoStep.tsx"
+      purpose: "Step 1: Title, description, type"
+    - name: "EventDateTimeStep"
+      type: "component"
+      path: "/components/events/EventDateTimeStep.tsx"
+      purpose: "Step 2: Date, time, recurring pattern"
+    - name: "EventLocationStep"
+      type: "component"
+      path: "/components/events/EventLocationStep.tsx"
+      purpose: "Step 3: Venue or online details"
+    - name: "EventDetailsStep"
+      type: "component"
+      path: "/components/events/EventDetailsStep.tsx"
+      purpose: "Step 4: Capacity, image, tags"
+    - name: "EventPreview"
+      type: "component"
+      path: "/components/events/EventPreview.tsx"
+      purpose: "Preview event before publishing"
+    - name: "EventCard"
+      type: "component"
+      path: "/components/events/EventCard.tsx"
+      purpose: "Event display card for lists"
+    - name: "EventDetails"
+      type: "component"
+      path: "/components/events/EventDetails.tsx"
+      purpose: "Full event details page component"
+    - name: "RecurringPatternSelector"
+      type: "component"
+      path: "/components/events/RecurringPatternSelector.tsx"
+      purpose: "UI for selecting recurring patterns"
+    - name: "EventsPage"
+      type: "page"
+      path: "/app/(dashboard)/communities/[slug]/events/page.tsx"
+      purpose: "Events management page"
+    - name: "CreateEventPage"
+      type: "page"
+      path: "/app/(dashboard)/communities/[slug]/events/create/page.tsx"
+      purpose: "Event creation page"
+    - name: "EventPage"
+      type: "page"
+      path: "/app/(dashboard)/communities/[slug]/events/[eventSlug]/page.tsx"
+      purpose: "Individual event details page"
+    - name: "EditEventPage"
+      type: "page"
+      path: "/app/(dashboard)/communities/[slug]/events/[eventSlug]/edit/page.tsx"
+      purpose: "Event editing page"
+
+  libraries_required:
+    - name: "date-fns"
+      version: "^3.3.1"
+      purpose: "Date manipulation and formatting"
+    - name: "date-fns-tz"
+      version: "^2.0.0"
+      purpose: "Timezone handling"
+    - name: "@tiptap/react"
+      version: "^2.1.13"
+      purpose: "Rich text editor for descriptions"
+    - name: "@tiptap/starter-kit"
+      version: "^2.1.13"
+      purpose: "Tiptap editor starter kit"
+    - name: "react-hook-form"
+      version: "^7.62.0"
+      purpose: "Form handling (already installed)"
+    - name: "zod"
+      version: "^4.1.7"
+      purpose: "Schema validation (already installed)"
+
+implementation_plan:
+  estimated_hours: 6
+  phases:
+    - phase: "Database Setup"
+      tasks:
+        - [ ] Create events table migration
+        - [ ] Set up RLS policies
+        - [ ] Create slug generation function
+        - [ ] Test database constraints
+    - phase: "API Routes"
+      tasks:
+        - [ ] Create event CRUD endpoints
+        - [ ] Implement slug generation
+        - [ ] Add validation middleware
+        - [ ] Handle draft/publish states
+    - phase: "Form Components"
+      tasks:
+        - [ ] Build multi-step wizard
+        - [ ] Create individual step components
+        - [ ] Implement form validation
+        - [ ] Add save draft functionality
+    - phase: "Event Display"
+      tasks:
+        - [ ] Create event card component
+        - [ ] Build event details page
+        - [ ] Implement event list view
+        - [ ] Add SEO metadata
+    - phase: "Recurring Events"
+      tasks:
+        - [ ] Design recurring pattern UI
+        - [ ] Implement pattern logic
+        - [ ] Create event instances
+        - [ ] Handle pattern updates
+    - phase: "Testing"
+      tasks:
+        - [ ] Unit test components
+        - [ ] Test API endpoints
+        - [ ] Test form validation
+        - [ ] E2E event creation flow
+
+dependencies:
+  blocking: ["STORY-004", "STORY-005"]
+  blocked_by: []
+  external: []
+
+test_scenarios:
+  unit_tests:
+    - component: "EventCreateWizard"
+      test: "Form step navigation"
+      expected: "Steps progress correctly"
+    - component: "SlugGenerator"
+      test: "Generate unique slugs"
+      expected: "No duplicate slugs in community"
+  integration_tests:
+    - scenario: "Complete event creation"
+      steps:
+        - "Fill basic info"
+        - "Set date and time"
+        - "Add location details"
+        - "Preview event"
+        - "Publish event"
+      expected: "Event created and accessible"
+    - scenario: "Save draft and resume"
+      steps:
+        - "Start creating event"
+        - "Save as draft"
+        - "Leave and return"
+        - "Resume from draft"
+        - "Complete and publish"
+      expected: "Draft preserved and completed"
+  edge_cases:
+    - scenario: "Duplicate event title"
+      steps:
+        - "Create event with title 'Test Event'"
+        - "Create another with same title"
+      expected: "Second event gets slug 'test-event-1'"
+    - scenario: "Past date selection"
+      steps:
+        - "Try to set past start date"
+      expected: "Validation error shown"
+
+performance_requirements:
+  - metric: "Event creation"
+    target: "<500ms"
+  - metric: "Event list loading"
+    target: "<300ms for 50 events"
+  - metric: "Image upload"
+    target: "<3s for 5MB image"
+
+security_considerations:
+  - aspect: "Authorization"
+    requirement: "Only community admins/moderators can create events"
+  - aspect: "Input validation"
+    requirement: "Sanitize HTML in descriptions"
+  - aspect: "Rate limiting"
+    requirement: "Max 20 events per community per day"
+  - aspect: "App Store compliance"
+    requirement: "Physical events must be properly marked"
+
+definition_of_done:
+  development:
+    - [ ] Code complete and follows standards
+    - [ ] TypeScript types defined
+    - [ ] Error handling implemented
+    - [ ] Loading states implemented
+    - [ ] Mobile responsive
+  testing:
+    - [ ] Unit tests written and passing
+    - [ ] Integration tests passing
+    - [ ] Manual testing completed
+    - [ ] Cross-browser testing done
+  documentation:
+    - [ ] Code comments added
+    - [ ] API documentation updated
+    - [ ] User guide updated
+  review:
+    - [ ] Code reviewed and approved
+    - [ ] Design reviewed (UI/UX)
+    - [ ] Security review passed
+  deployment:
+    - [ ] Deployed to staging
+    - [ ] QA tested and approved
+    - [ ] Product Owner accepted
+    - [ ] No P0 or P1 bugs
+
+rollback_plan:
+  - step: "Disable event creation UI"
+  - step: "Revert database migration"
+  - step: "Clear event cache"
+  - step: "Notify affected users"
+
+monitoring:
+  metrics_to_track:
+    - "Event creation rate"
+    - "Draft to published conversion"
+    - "Event creation errors"
+    - "Average time to create event"
+  alerts_to_setup:
+    - "Event creation failures > 5%"
+    - "Database query time > 1s"
+    - "API response time > 2s"
+  logs_to_implement:
+    - "Event creation attempts"
+    - "Validation errors"
+    - "Publishing events"
+    - "Draft saves"
+
+dev_notes:
+  implementation_tips:
+    - "Use React Hook Form for multi-step wizard"
+    - "Store draft in localStorage for recovery"
+    - "Use Zod schemas for validation"
+    - "Implement optimistic UI updates"
+    - "Use Supabase storage for event images"
+  tech_stack_references:
+    - "Next.js 15.5.3 with App Router [Source: architecture/tech-stack.md]"
+    - "TypeScript 5.x for type safety [Source: architecture/tech-stack.md]"
+    - "Supabase 2.40.7 for database [Source: architecture/tech-stack.md]"
+    - "React Hook Form 7.62.0 for forms [Source: architecture/tech-stack.md]"
+    - "Zod 4.1.7 for validation [Source: architecture/tech-stack.md]"
+    - "Tailwind CSS 4.x for styling [Source: architecture/tech-stack.md]"
+    - "shadcn/ui components library [Source: architecture/tech-stack.md]"
+  database_references:
+    - "Events table with enum types [Source: architecture/supabase-database-schema.md]"
+    - "Row Level Security policies required [Source: architecture/supabase-database-schema.md]"
+    - "Community members table for role checking [Source: architecture/supabase-database-schema.md]"
+    - "UUID primary keys standard [Source: architecture/supabase-database-schema.md]"
+  file_structure:
+    - "Components in /components/events/ [Source: architecture/source-tree.md]"
+    - "Pages in /app/(dashboard)/communities/[slug]/events/ [Source: architecture/source-tree.md]"
+    - "API routes in /app/api/events/ [Source: architecture/source-tree.md]"
+    - "Database types in /lib/supabase/types.ts [Source: architecture/source-tree.md]"
+  potential_issues:
+    - "Timezone handling - store in UTC, display in local"
+    - "Image upload size limits - optimize with sharp"
+    - "Slug collision handling - use counter suffix"
+    - "Recurring events complexity - consider future story"
+  references:
+    - "Previous story (STORY-007) implemented invitation system"
+    - "Community creation (STORY-004) established base structure"
+    - "Epic 3 requirements for event management"
+
+dev_agent_record:
+  agent_model_used: ""
+  debug_log_references: []
+  completion_notes: []
+  file_list: []
+  change_summary: []
+  test_results: []
+  deployment_notes: ""

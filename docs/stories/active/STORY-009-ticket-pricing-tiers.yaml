@@ -1,0 +1,559 @@
+story:
+  id: "STORY-009"
+  title: "Ticket Pricing & Tiers"
+  epic: "3 - Events & Ticketing System"
+  priority: "P1-High"
+  points: 3
+  sprint: "3"
+  status: "ready"
+  assigned_to: "ai-developer"
+  created_date: "2025-01-17"
+  start_date: ""
+  completion_date: ""
+
+user_story:
+  as_a: "community organizer"
+  i_want: "to set different ticket prices and types"
+  so_that: "I can maximize revenue and offer options"
+
+acceptance_criteria:
+  - given: "I am creating/editing an event"
+    when: "I add ticket tiers"
+    then: "I can create multiple tiers (Early Bird, General, VIP)"
+  - given: "I am setting up a ticket tier"
+    when: "I configure the tier"
+    then: "I can set limits and availability windows"
+  - given: "I am pricing tickets"
+    when: "I set prices"
+    then: "I can offer both free and paid ticket options"
+  - given: "I want to offer discounts"
+    when: "I create discount codes"
+    then: "I can set percentage or fixed amount discounts"
+  - given: "I want bulk purchases"
+    when: "I configure group pricing"
+    then: "I can set discounts for bulk purchases"
+  - given: "Members view ticket prices"
+    when: "They see pricing"
+    then: "Fees are transparently shown"
+  - given: "I configure tickets"
+    when: "I set policies"
+    then: "I can define transfer and refund policies"
+  - given: "My community is international"
+    when: "I set pricing"
+    then: "I can select currency based on location"
+
+technical_specification:
+  database_changes:
+    - table: "ticket_tiers"
+      changes: |
+        CREATE TABLE ticket_tiers (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          event_id UUID REFERENCES events(id) ON DELETE CASCADE NOT NULL,
+          name TEXT NOT NULL,
+          description TEXT,
+          price_cents INTEGER NOT NULL,
+          currency TEXT DEFAULT 'USD',
+          quantity_available INTEGER,
+          quantity_sold INTEGER DEFAULT 0,
+          sales_start TIMESTAMPTZ,
+          sales_end TIMESTAMPTZ,
+          min_per_order INTEGER DEFAULT 1,
+          max_per_order INTEGER DEFAULT 10,
+          is_hidden BOOLEAN DEFAULT FALSE,
+          sort_order INTEGER DEFAULT 0,
+          metadata JSONB DEFAULT '{}',
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX idx_ticket_tiers_event ON ticket_tiers(event_id);
+        CREATE INDEX idx_ticket_tiers_sort ON ticket_tiers(event_id, sort_order);
+
+    - table: "discount_codes"
+      changes: |
+        CREATE TABLE discount_codes (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          event_id UUID REFERENCES events(id) ON DELETE CASCADE NOT NULL,
+          code TEXT NOT NULL,
+          description TEXT,
+          discount_type TEXT CHECK (discount_type IN ('percentage', 'fixed')) NOT NULL,
+          discount_value INTEGER NOT NULL, -- percentage (0-100) or cents
+          applicable_tiers UUID[] DEFAULT NULL, -- NULL means all tiers
+          usage_limit INTEGER,
+          usage_count INTEGER DEFAULT 0,
+          valid_from TIMESTAMPTZ DEFAULT NOW(),
+          valid_until TIMESTAMPTZ,
+          minimum_purchase_cents INTEGER,
+          metadata JSONB DEFAULT '{}',
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          UNIQUE(event_id, code)
+        );
+        CREATE INDEX idx_discount_codes_event ON discount_codes(event_id);
+        CREATE INDEX idx_discount_codes_code ON discount_codes(code);
+
+    - table: "group_pricing_rules"
+      changes: |
+        CREATE TABLE group_pricing_rules (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          ticket_tier_id UUID REFERENCES ticket_tiers(id) ON DELETE CASCADE NOT NULL,
+          min_quantity INTEGER NOT NULL,
+          discount_percentage INTEGER CHECK (discount_percentage BETWEEN 0 AND 100),
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          UNIQUE(ticket_tier_id, min_quantity)
+        );
+        CREATE INDEX idx_group_pricing_tier ON group_pricing_rules(ticket_tier_id);
+
+        -- RLS Policies for ticket_tiers
+        ALTER TABLE ticket_tiers ENABLE ROW LEVEL SECURITY;
+
+        CREATE POLICY "Ticket tiers are viewable for published events"
+        ON ticket_tiers FOR SELECT
+        USING (
+          EXISTS (
+            SELECT 1 FROM events
+            WHERE events.id = ticket_tiers.event_id
+            AND events.status = 'published'
+          ) OR EXISTS (
+            SELECT 1 FROM events e
+            JOIN community_members cm ON cm.community_id = e.community_id
+            WHERE e.id = ticket_tiers.event_id
+            AND cm.user_id = auth.uid()
+            AND cm.role IN ('admin', 'moderator')
+          )
+        );
+
+        CREATE POLICY "Event managers can manage ticket tiers"
+        ON ticket_tiers FOR ALL
+        USING (
+          EXISTS (
+            SELECT 1 FROM events e
+            JOIN community_members cm ON cm.community_id = e.community_id
+            WHERE e.id = ticket_tiers.event_id
+            AND cm.user_id = auth.uid()
+            AND cm.role IN ('admin', 'moderator')
+          )
+        );
+
+        -- RLS Policies for discount_codes
+        ALTER TABLE discount_codes ENABLE ROW LEVEL SECURITY;
+
+        CREATE POLICY "Valid discount codes are viewable"
+        ON discount_codes FOR SELECT
+        USING (
+          valid_until IS NULL OR valid_until > NOW()
+        );
+
+        CREATE POLICY "Event managers can manage discount codes"
+        ON discount_codes FOR ALL
+        USING (
+          EXISTS (
+            SELECT 1 FROM events e
+            JOIN community_members cm ON cm.community_id = e.community_id
+            WHERE e.id = discount_codes.event_id
+            AND cm.user_id = auth.uid()
+            AND cm.role IN ('admin', 'moderator')
+          )
+        );
+
+        -- Function to calculate ticket price with discounts
+        CREATE OR REPLACE FUNCTION calculate_ticket_price(
+          p_tier_id UUID,
+          p_quantity INTEGER,
+          p_discount_code TEXT DEFAULT NULL
+        ) RETURNS TABLE (
+          subtotal_cents INTEGER,
+          discount_cents INTEGER,
+          fees_cents INTEGER,
+          total_cents INTEGER
+        ) AS $$
+        DECLARE
+          v_base_price INTEGER;
+          v_discount_amount INTEGER := 0;
+          v_group_discount INTEGER := 0;
+          v_code_discount INTEGER := 0;
+          v_subtotal INTEGER;
+          v_fees INTEGER;
+        BEGIN
+          -- Get base price
+          SELECT price_cents INTO v_base_price
+          FROM ticket_tiers
+          WHERE id = p_tier_id;
+
+          v_subtotal := v_base_price * p_quantity;
+
+          -- Apply group pricing discount
+          SELECT COALESCE(MAX(discount_percentage), 0) INTO v_group_discount
+          FROM group_pricing_rules
+          WHERE ticket_tier_id = p_tier_id
+          AND min_quantity <= p_quantity;
+
+          IF v_group_discount > 0 THEN
+            v_discount_amount := (v_subtotal * v_group_discount) / 100;
+          END IF;
+
+          -- Apply discount code if provided
+          IF p_discount_code IS NOT NULL THEN
+            SELECT
+              CASE
+                WHEN dc.discount_type = 'percentage'
+                THEN (v_subtotal * dc.discount_value) / 100
+                ELSE dc.discount_value
+              END INTO v_code_discount
+            FROM discount_codes dc
+            WHERE dc.code = p_discount_code
+            AND dc.event_id = (SELECT event_id FROM ticket_tiers WHERE id = p_tier_id)
+            AND (dc.applicable_tiers IS NULL OR p_tier_id = ANY(dc.applicable_tiers))
+            AND dc.usage_count < COALESCE(dc.usage_limit, dc.usage_count + 1)
+            AND NOW() BETWEEN dc.valid_from AND COALESCE(dc.valid_until, NOW() + INTERVAL '1 day');
+          END IF;
+
+          v_discount_amount := v_discount_amount + COALESCE(v_code_discount, 0);
+
+          -- Calculate fees (3% klub fee + 2.9% + $0.30 Stripe fee)
+          v_fees := ((v_subtotal - v_discount_amount) * 59) / 1000 + 30;
+
+          RETURN QUERY SELECT
+            v_subtotal,
+            v_discount_amount,
+            v_fees,
+            v_subtotal - v_discount_amount + v_fees;
+        END;
+        $$ LANGUAGE plpgsql;
+
+  api_endpoints:
+    - method: "GET"
+      path: "/api/events/[id]/tiers"
+      purpose: "List ticket tiers for an event"
+      response:
+        tiers: "array"
+        currency: "string"
+    - method: "POST"
+      path: "/api/events/[id]/tiers"
+      purpose: "Create ticket tier"
+      request_body:
+        name: "string"
+        description: "string?"
+        price_cents: "number"
+        currency: "string"
+        quantity_available: "number?"
+        sales_start: "timestamp?"
+        sales_end: "timestamp?"
+        max_per_order: "number?"
+      response:
+        tier_id: "uuid"
+        tier: "object"
+    - method: "PATCH"
+      path: "/api/tiers/[id]"
+      purpose: "Update ticket tier"
+      request_body:
+        name: "string?"
+        description: "string?"
+        price_cents: "number?"
+        quantity_available: "number?"
+        sales_start: "timestamp?"
+        sales_end: "timestamp?"
+      response:
+        success: "boolean"
+        tier: "object"
+    - method: "DELETE"
+      path: "/api/tiers/[id]"
+      purpose: "Delete ticket tier"
+      response:
+        success: "boolean"
+    - method: "POST"
+      path: "/api/events/[id]/discount-codes"
+      purpose: "Create discount code"
+      request_body:
+        code: "string"
+        description: "string?"
+        discount_type: "string"
+        discount_value: "number"
+        applicable_tiers: "array?"
+        usage_limit: "number?"
+        valid_until: "timestamp?"
+        minimum_purchase_cents: "number?"
+      response:
+        code_id: "uuid"
+        code: "object"
+    - method: "GET"
+      path: "/api/events/[id]/discount-codes"
+      purpose: "List discount codes"
+      response:
+        codes: "array"
+    - method: "POST"
+      path: "/api/discount-codes/validate"
+      purpose: "Validate discount code"
+      request_body:
+        event_id: "uuid"
+        code: "string"
+        tier_id: "uuid?"
+        quantity: "number?"
+      response:
+        valid: "boolean"
+        discount_amount: "number?"
+        message: "string?"
+    - method: "POST"
+      path: "/api/tiers/[id]/group-pricing"
+      purpose: "Set group pricing rules"
+      request_body:
+        rules: "array"
+      response:
+        success: "boolean"
+        rules: "array"
+    - method: "POST"
+      path: "/api/calculate-price"
+      purpose: "Calculate total price with discounts"
+      request_body:
+        tier_id: "uuid"
+        quantity: "number"
+        discount_code: "string?"
+      response:
+        subtotal_cents: "number"
+        discount_cents: "number"
+        fees_cents: "number"
+        total_cents: "number"
+
+  components:
+    - name: "TicketTierForm"
+      type: "component"
+      path: "/components/tickets/TicketTierForm.tsx"
+      purpose: "Form to create/edit ticket tier"
+    - name: "TicketTierList"
+      type: "component"
+      path: "/components/tickets/TicketTierList.tsx"
+      purpose: "List and manage ticket tiers"
+    - name: "TicketPriceDisplay"
+      type: "component"
+      path: "/components/tickets/TicketPriceDisplay.tsx"
+      purpose: "Display ticket price with fees"
+    - name: "DiscountCodeForm"
+      type: "component"
+      path: "/components/tickets/DiscountCodeForm.tsx"
+      purpose: "Create discount codes"
+    - name: "DiscountCodeList"
+      type: "component"
+      path: "/components/tickets/DiscountCodeList.tsx"
+      purpose: "Manage discount codes"
+    - name: "GroupPricingSettings"
+      type: "component"
+      path: "/components/tickets/GroupPricingSettings.tsx"
+      purpose: "Configure bulk purchase discounts"
+    - name: "TicketPoliciesForm"
+      type: "component"
+      path: "/components/tickets/TicketPoliciesForm.tsx"
+      purpose: "Set refund and transfer policies"
+    - name: "PriceCalculator"
+      type: "component"
+      path: "/components/tickets/PriceCalculator.tsx"
+      purpose: "Interactive price calculator"
+    - name: "CurrencySelector"
+      type: "component"
+      path: "/components/tickets/CurrencySelector.tsx"
+      purpose: "Select event currency"
+    - name: "TicketTiersStep"
+      type: "component"
+      path: "/components/events/TicketTiersStep.tsx"
+      purpose: "Ticket configuration step in event wizard"
+    - name: "TicketsPage"
+      type: "page"
+      path: "/app/(dashboard)/communities/[slug]/events/[eventSlug]/tickets/page.tsx"
+      purpose: "Ticket management page"
+
+  libraries_required:
+    - name: "react-hook-form"
+      version: "^7.62.0"
+      purpose: "Form handling (already installed)"
+    - name: "zod"
+      version: "^4.1.7"
+      purpose: "Schema validation (already installed)"
+    - name: "date-fns"
+      version: "^3.3.1"
+      purpose: "Date handling (from Story 8)"
+
+implementation_plan:
+  estimated_hours: 5
+  phases:
+    - phase: "Database Setup"
+      tasks:
+        - [ ] Create ticket_tiers table migration
+        - [ ] Create discount_codes table migration
+        - [ ] Create group_pricing_rules table migration
+        - [ ] Set up RLS policies
+        - [ ] Create price calculation function
+    - phase: "Ticket Tier Management"
+      tasks:
+        - [ ] Build ticket tier form component
+        - [ ] Create tier list component
+        - [ ] Implement CRUD operations
+        - [ ] Add drag-and-drop sorting
+    - phase: "Discount System"
+      tasks:
+        - [ ] Create discount code form
+        - [ ] Build validation endpoint
+        - [ ] Implement usage tracking
+        - [ ] Add expiration handling
+    - phase: "Pricing Display"
+      tasks:
+        - [ ] Build price calculator
+        - [ ] Show fee breakdown
+        - [ ] Implement currency handling
+        - [ ] Add group pricing UI
+    - phase: "Integration"
+      tasks:
+        - [ ] Add to event creation wizard
+        - [ ] Link with event management
+        - [ ] Update event preview
+        - [ ] Add policy settings
+    - phase: "Testing"
+      tasks:
+        - [ ] Test tier CRUD operations
+        - [ ] Test discount calculations
+        - [ ] Test group pricing rules
+        - [ ] Test currency conversion
+
+dependencies:
+  blocking: ["STORY-008"]
+  blocked_by: []
+  external: []
+
+test_scenarios:
+  unit_tests:
+    - component: "PriceCalculator"
+      test: "Calculate with discounts"
+      expected: "Correct total with fees"
+    - component: "DiscountValidator"
+      test: "Validate expired codes"
+      expected: "Returns invalid for expired"
+  integration_tests:
+    - scenario: "Create tiered pricing"
+      steps:
+        - "Add Early Bird tier"
+        - "Add General tier"
+        - "Add VIP tier"
+        - "Set availability windows"
+        - "Save configuration"
+      expected: "Tiers created with correct order"
+    - scenario: "Apply discount code"
+      steps:
+        - "Create 20% discount code"
+        - "User enters code at checkout"
+        - "System validates code"
+        - "Price updates with discount"
+      expected: "Discount correctly applied"
+  edge_cases:
+    - scenario: "Oversold tier"
+      steps:
+        - "Set tier limit to 10"
+        - "Sell 10 tickets"
+        - "Try to purchase 11th"
+      expected: "Purchase blocked, tier shown as sold out"
+    - scenario: "Multiple discounts"
+      steps:
+        - "Apply group pricing (10% off 5+)"
+        - "Apply discount code (20% off)"
+      expected: "Only best discount applies or stack per policy"
+
+performance_requirements:
+  - metric: "Tier list loading"
+    target: "<200ms"
+  - metric: "Price calculation"
+    target: "<100ms"
+  - metric: "Discount validation"
+    target: "<150ms"
+
+security_considerations:
+  - aspect: "Discount code generation"
+    requirement: "Use secure random strings"
+  - aspect: "Price manipulation"
+    requirement: "Server-side price validation"
+  - aspect: "Usage limits"
+    requirement: "Atomic increment of usage counter"
+  - aspect: "Currency handling"
+    requirement: "Validate supported currencies"
+
+definition_of_done:
+  development:
+    - [ ] Code complete and follows standards
+    - [ ] TypeScript types defined
+    - [ ] Error handling implemented
+    - [ ] Loading states implemented
+    - [ ] Mobile responsive
+  testing:
+    - [ ] Unit tests written and passing
+    - [ ] Integration tests passing
+    - [ ] Manual testing completed
+    - [ ] Cross-browser testing done
+  documentation:
+    - [ ] Code comments added
+    - [ ] API documentation updated
+    - [ ] Pricing guide created
+  review:
+    - [ ] Code reviewed and approved
+    - [ ] Design reviewed (UI/UX)
+    - [ ] Security review passed
+  deployment:
+    - [ ] Deployed to staging
+    - [ ] QA tested and approved
+    - [ ] Product Owner accepted
+    - [ ] No P0 or P1 bugs
+
+rollback_plan:
+  - step: "Disable ticket tier UI"
+  - step: "Revert database migrations"
+  - step: "Clear pricing cache"
+  - step: "Notify event organizers"
+
+monitoring:
+  metrics_to_track:
+    - "Ticket tier creation rate"
+    - "Discount code usage"
+    - "Average discount percentage"
+    - "Price calculation errors"
+  alerts_to_setup:
+    - "Price calculation failures > 1%"
+    - "Discount validation errors > 5/min"
+    - "Database query time > 500ms"
+  logs_to_implement:
+    - "Tier creation/updates"
+    - "Discount code usage"
+    - "Price calculations"
+    - "Validation failures"
+
+dev_notes:
+  implementation_tips:
+    - "Use database function for price calculation to ensure consistency"
+    - "Implement optimistic UI for tier management"
+    - "Cache discount code validation results briefly"
+    - "Use React Hook Form for all forms"
+    - "Store all prices in cents to avoid floating point issues"
+  tech_stack_references:
+    - "Supabase 2.40.7 for database and RLS [Source: architecture/tech-stack.md]"
+    - "React Hook Form 7.62.0 for forms [Source: architecture/tech-stack.md]"
+    - "Zod 4.1.7 for validation [Source: architecture/tech-stack.md]"
+    - "shadcn/ui components for UI [Source: architecture/tech-stack.md]"
+  database_references:
+    - "Events table from STORY-008 [Source: STORY-008]"
+    - "UUID primary keys standard [Source: architecture/supabase-database-schema.md]"
+    - "JSONB for flexible metadata [Source: architecture/supabase-database-schema.md]"
+    - "Row Level Security on all tables [Source: architecture/supabase-database-schema.md]"
+  previous_story_context:
+    - "Event creation workflow completed in STORY-008"
+    - "Events table structure established with slug generation"
+    - "Community admin/moderator role checking implemented"
+  potential_issues:
+    - "Currency conversion - consider using fixed rates or external API"
+    - "Concurrent ticket purchases - use database locks"
+    - "Discount code abuse - implement rate limiting"
+    - "Fee calculation - ensure transparency and accuracy"
+  references:
+    - "Epic 3.2 requirements for ticket pricing"
+    - "Stripe fee structure for calculations"
+    - "App Store guidelines for in-app purchases"
+
+dev_agent_record:
+  agent_model_used: ""
+  debug_log_references: []
+  completion_notes: []
+  file_list: []
+  change_summary: []
+  test_results: []
+  deployment_notes: ""
