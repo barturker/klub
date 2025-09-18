@@ -219,14 +219,30 @@ export function TicketTierForm({
                       inputMode="decimal"
                       placeholder="0.00"
                       className="pl-8"
-                      {...field}
-                      value={field.value || ''}
+                      value={field.value !== undefined && field.value !== null ? field.value.toString() : ''}
                       onChange={(e) => {
                         // Replace comma with dot for Turkish locale
-                        const value = e.target.value.replace(',', '.');
+                        const inputValue = e.target.value.replace(',', '.');
+
+                        // Allow empty string
+                        if (inputValue === '') {
+                          field.onChange(0);
+                          return;
+                        }
+
                         // Only allow numbers and single decimal point
-                        if (/^\d*\.?\d*$/.test(value) || value === '') {
-                          field.onChange(parseFloat(value) || 0);
+                        if (/^\d*\.?\d*$/.test(inputValue)) {
+                          const parsedValue = parseFloat(inputValue);
+                          // Check if parsing resulted in a valid number
+                          if (!isNaN(parsedValue)) {
+                            field.onChange(parsedValue);
+                          }
+                        }
+                      }}
+                      onBlur={() => {
+                        // Ensure field has a valid number on blur
+                        if (field.value === undefined || field.value === null || isNaN(field.value)) {
+                          field.onChange(0);
                         }
                       }}
                     />
