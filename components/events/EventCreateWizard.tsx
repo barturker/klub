@@ -49,6 +49,8 @@ export default function EventCreateWizard({
   const createEvent = useCreateEvent();
   const updateEvent = useUpdateEvent();
   const [isPreview, setIsPreview] = useState(false);
+  const [draftEventId, setDraftEventId] = useState<string | null>(existingEvent?.id || null);
+  const [draftEventSlug, setDraftEventSlug] = useState<string | null>(existingEvent?.slug || null);
 
   const {
     currentStep,
@@ -106,7 +108,7 @@ export default function EventCreateWizard({
   };
 
   // Navigate to next step
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep === 5) {
       // Submit the event from preview
       handleSubmit();
@@ -115,7 +117,52 @@ export default function EventCreateWizard({
 
     if (validateCurrentStep()) {
       markStepCompleted(currentStep);
+
+      // Create draft event after Details step (step 3) if in create mode
+      if (currentStep === 3 && mode === "create" && !draftEventId) {
+        await createDraftEvent();
+      }
+
       setCurrentStep(currentStep + 1);
+    }
+  };
+
+  // Create draft event
+  const createDraftEvent = async () => {
+    try {
+      const draftData = {
+        ...eventData,
+        community_id: communityId,
+        status: 'draft',
+        // Ensure dates are in ISO format - check for empty strings
+        start_at: eventData.start_at && eventData.start_at.trim() !== ""
+          ? eventData.start_at
+          : DateTime.now().plus({ days: 7 }).toISO(),
+        end_at: eventData.end_at && eventData.end_at.trim() !== ""
+          ? eventData.end_at
+          : DateTime.now().plus({ days: 7, hours: 2 }).toISO(),
+        // Clean up empty fields
+        description: eventData.description || "",
+        venue_name: eventData.venue_name || "",
+        venue_address: eventData.venue_address || "",
+        venue_city: eventData.venue_city || "",
+        venue_country: eventData.venue_country || "",
+        online_url: eventData.online_url || "",
+        recurring_rule: eventData.recurring_rule || "",
+        recurring_end_date: eventData.recurring_end_date || "",
+        tags: eventData.tags || [],
+        metadata: eventData.metadata || {},
+      };
+
+      const result = await createEvent.mutateAsync(draftData);
+      console.log("[EventCreateWizard] Draft event created:", result);
+      setDraftEventId(result.event_id);
+      setDraftEventSlug(result.slug);
+      toast.success("Draft saved. Now let's configure tickets!");
+    } catch (error) {
+      console.error('Failed to create draft event:', error);
+      toast.error("Failed to save draft. Please try again.");
+      throw error;
     }
   };
 
@@ -129,37 +176,69 @@ export default function EventCreateWizard({
   // Submit the event
   const handleSubmit = async () => {
     try {
-      // Prepare event data for submission
-      const submitData = {
-        ...eventData,
-        community_id: communityId,
-        // Ensure dates are in ISO format - check for empty strings
-        start_at: eventData.start_at && eventData.start_at.trim() !== ""
-          ? eventData.start_at
-          : DateTime.now().plus({ days: 7 }).toISO(),
-        end_at: eventData.end_at && eventData.end_at.trim() !== ""
-          ? eventData.end_at
-          : DateTime.now().plus({ days: 7, hours: 2 }).toISO(),
-        // Clean up empty fields - send empty strings as is (they'll be handled by the API)
-        description: eventData.description || "",
-        venue_name: eventData.venue_name || "",
-        venue_address: eventData.venue_address || "",
-        venue_city: eventData.venue_city || "",
-        venue_country: eventData.venue_country || "",
-        online_url: eventData.online_url || "",
-        recurring_rule: eventData.recurring_rule || "",
-        recurring_end_date: eventData.recurring_end_date || "",
-        tags: eventData.tags || [],
-        metadata: eventData.metadata || {},
-      };
-
       let result;
-      if (mode === "edit" && existingEvent) {
-        result = await updateEvent.mutateAsync({ id: existingEvent.id, data: submitData });
-        toast.success("Event updated successfully!");
+
+      if (mode === "create") {
+        // For create mode, we already have a draft event, just publish it
+        if (!draftEventId) {
+          toast.error("No draft event found. Please go back and complete all steps.");
+          return;
+        }
+
+        // Update the draft event to published status
+        const publishData = {
+          ...eventData,
+          status: 'published',
+          community_id: communityId,
+          // Ensure dates are in ISO format
+          start_at: eventData.start_at && eventData.start_at.trim() !== ""
+            ? eventData.start_at
+            : DateTime.now().plus({ days: 7 }).toISO(),
+          end_at: eventData.end_at && eventData.end_at.trim() !== ""
+            ? eventData.end_at
+            : DateTime.now().plus({ days: 7, hours: 2 }).toISO(),
+          // Clean up empty fields
+          description: eventData.description || "",
+          venue_name: eventData.venue_name || "",
+          venue_address: eventData.venue_address || "",
+          venue_city: eventData.venue_city || "",
+          venue_country: eventData.venue_country || "",
+          online_url: eventData.online_url || "",
+          recurring_rule: eventData.recurring_rule || "",
+          recurring_end_date: eventData.recurring_end_date || "",
+          tags: eventData.tags || [],
+          metadata: eventData.metadata || {},
+        };
+
+        result = await updateEvent.mutateAsync({ id: draftEventId, data: publishData });
+        toast.success("Event published successfully!");
       } else {
-        result = await createEvent.mutateAsync(submitData);
-        toast.success("Event created successfully!");
+        // For edit mode, update the existing event
+        const submitData = {
+          ...eventData,
+          community_id: communityId,
+          // Ensure dates are in ISO format
+          start_at: eventData.start_at && eventData.start_at.trim() !== ""
+            ? eventData.start_at
+            : DateTime.now().plus({ days: 7 }).toISO(),
+          end_at: eventData.end_at && eventData.end_at.trim() !== ""
+            ? eventData.end_at
+            : DateTime.now().plus({ days: 7, hours: 2 }).toISO(),
+          // Clean up empty fields
+          description: eventData.description || "",
+          venue_name: eventData.venue_name || "",
+          venue_address: eventData.venue_address || "",
+          venue_city: eventData.venue_city || "",
+          venue_country: eventData.venue_country || "",
+          online_url: eventData.online_url || "",
+          recurring_rule: eventData.recurring_rule || "",
+          recurring_end_date: eventData.recurring_end_date || "",
+          tags: eventData.tags || [],
+          metadata: eventData.metadata || {},
+        };
+
+        result = await updateEvent.mutateAsync({ id: existingEvent!.id, data: submitData });
+        toast.success("Event updated successfully!");
       }
 
       // Clear the store
@@ -167,13 +246,13 @@ export default function EventCreateWizard({
 
       // Call success callback or redirect
       if (onSuccess) {
-        onSuccess(result.slug);
+        onSuccess(result.slug || draftEventSlug!);
       } else {
-        router.push(`/communities/${communitySlug}/events/${result.slug}`);
+        router.push(`/communities/${communitySlug}/events/${result.slug || draftEventSlug}`);
       }
     } catch (error) {
-      console.error(`Failed to ${mode} event:`, error);
-      const errorMessage = error instanceof Error ? error.message : `Failed to ${mode} event`;
+      console.error(`Failed to ${mode === 'create' ? 'publish' : 'update'} event:`, error);
+      const errorMessage = error instanceof Error ? error.message : `Failed to ${mode === 'create' ? 'publish' : 'update'} event`;
       toast.error(errorMessage);
     }
   };
@@ -247,6 +326,13 @@ export default function EventCreateWizard({
             communityName={communityName}
             onEdit={() => setCurrentStep(3)}
           />
+        ) : currentStep === 4 ? (
+          <CurrentStepComponent
+            eventId={draftEventId}
+            data={eventData}
+            errors={validationErrors}
+            onChange={updateEventData}
+          />
         ) : (
           <CurrentStepComponent
             data={eventData}
@@ -282,8 +368,8 @@ export default function EventCreateWizard({
               disabled={createEvent.isPending || updateEvent.isPending}
             >
               {(createEvent.isPending || updateEvent.isPending) ?
-                (mode === "edit" ? "Updating..." : "Creating...") :
-                (mode === "edit" ? "Update Event" : "Create Event")
+                (mode === "edit" ? "Updating..." : "Publishing...") :
+                (mode === "edit" ? "Update Event" : "Publish Event")
               }
             </Button>
           ) : currentStep === 4 ? (
