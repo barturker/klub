@@ -100,6 +100,7 @@ export type Database = {
           features: Json | null
           has_events: boolean | null
           id: string
+          is_private: boolean | null
           is_public: boolean
           last_settings_changed_at: string | null
           last_settings_changed_by: string | null
@@ -121,6 +122,7 @@ export type Database = {
           features?: Json | null
           has_events?: boolean | null
           id?: string
+          is_private?: boolean | null
           is_public?: boolean
           last_settings_changed_at?: string | null
           last_settings_changed_by?: string | null
@@ -142,6 +144,7 @@ export type Database = {
           features?: Json | null
           has_events?: boolean | null
           id?: string
+          is_private?: boolean | null
           is_public?: boolean
           last_settings_changed_at?: string | null
           last_settings_changed_by?: string | null
@@ -283,6 +286,68 @@ export type Database = {
           },
         ]
       }
+      discount_codes: {
+        Row: {
+          applicable_tiers: string[] | null
+          code: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          discount_type: string
+          discount_value: number
+          event_id: string
+          id: string
+          metadata: Json | null
+          minimum_purchase_cents: number | null
+          usage_count: number | null
+          usage_limit: number | null
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          applicable_tiers?: string[] | null
+          code: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          discount_type: string
+          discount_value: number
+          event_id: string
+          id?: string
+          metadata?: Json | null
+          minimum_purchase_cents?: number | null
+          usage_count?: number | null
+          usage_limit?: number | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          applicable_tiers?: string[] | null
+          code?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          event_id?: string
+          id?: string
+          metadata?: Json | null
+          minimum_purchase_cents?: number | null
+          usage_count?: number | null
+          usage_limit?: number | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discount_codes_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           capacity: number | null
@@ -378,6 +443,38 @@ export type Database = {
             columns: ["parent_event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_pricing_rules: {
+        Row: {
+          created_at: string | null
+          discount_percentage: number | null
+          id: string
+          min_quantity: number
+          ticket_tier_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          discount_percentage?: number | null
+          id?: string
+          min_quantity: number
+          ticket_tier_id: string
+        }
+        Update: {
+          created_at?: string | null
+          discount_percentage?: number | null
+          id?: string
+          min_quantity?: number
+          ticket_tier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_pricing_rules_ticket_tier_id_fkey"
+            columns: ["ticket_tier_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_tiers"
             referencedColumns: ["id"]
           },
         ]
@@ -696,6 +793,74 @@ export type Database = {
         }
         Relationships: []
       }
+      ticket_tiers: {
+        Row: {
+          created_at: string | null
+          currency: string | null
+          description: string | null
+          event_id: string
+          id: string
+          is_hidden: boolean | null
+          max_per_order: number | null
+          metadata: Json | null
+          min_per_order: number | null
+          name: string
+          price_cents: number
+          quantity_available: number | null
+          quantity_sold: number | null
+          sales_end: string | null
+          sales_start: string | null
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          event_id: string
+          id?: string
+          is_hidden?: boolean | null
+          max_per_order?: number | null
+          metadata?: Json | null
+          min_per_order?: number | null
+          name: string
+          price_cents: number
+          quantity_available?: number | null
+          quantity_sold?: number | null
+          sales_end?: string | null
+          sales_start?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          event_id?: string
+          id?: string
+          is_hidden?: boolean | null
+          max_per_order?: number | null
+          metadata?: Json | null
+          min_per_order?: number | null
+          name?: string
+          price_cents?: number
+          quantity_available?: number | null
+          quantity_sold?: number | null
+          sales_end?: string | null
+          sales_start?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_tiers_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tickets: {
         Row: {
           amount: number
@@ -1001,6 +1166,20 @@ export type Database = {
         Args: { profile_id: string }
         Returns: number
       }
+      calculate_ticket_price: {
+        Args: {
+          p_discount_code?: string
+          p_quantity: number
+          p_tier_id: string
+        }
+        Returns: {
+          currency: string
+          discount_cents: number
+          fees_cents: number
+          subtotal_cents: number
+          total_cents: number
+        }[]
+      }
       check_rate_limit: {
         Args: {
           p_action: string
@@ -1303,6 +1482,7 @@ export type Database = {
           features: Json | null
           has_events: boolean | null
           id: string
+          is_private: boolean | null
           is_public: boolean
           last_settings_changed_at: string | null
           last_settings_changed_by: string | null
@@ -1348,6 +1528,10 @@ export type Database = {
       gtrgm_out: {
         Args: { "": unknown }
         Returns: unknown
+      }
+      increment_discount_usage: {
+        Args: { p_code_id: string }
+        Returns: boolean
       }
       increment_rate_limit: {
         Args: { p_action: string; p_user_id: string; p_window_hours?: number }
@@ -2694,6 +2878,15 @@ export type Database = {
           table_name: string
         }
         Returns: string
+      }
+      validate_discount_code: {
+        Args: { p_code: string; p_event_id: string; p_tier_id?: string }
+        Returns: {
+          discount_type: string
+          discount_value: number
+          is_valid: boolean
+          message: string
+        }[]
       }
     }
     Enums: {
