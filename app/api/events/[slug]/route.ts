@@ -372,10 +372,7 @@ export async function PATCH(request: Request, props: RouteParams) {
     console.log("[PATCH] Updated event metadata:", updatedEvent?.metadata);
     console.log("[PATCH] Updated event full data:", JSON.stringify(updatedEvent, null, 2));
 
-    return Response.json({
-      success: true,
-      event: updatedEvent,
-    });
+    return Response.json(updatedEvent);
   } catch (error) {
     console.error("[PATCH /api/events/[slug]] Caught error:", error);
     console.error("[PATCH] Error stack:", error instanceof Error ? error.stack : "No stack");
