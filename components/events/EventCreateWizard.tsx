@@ -228,25 +228,34 @@ export default function EventCreateWizard({
       <div className="mb-8">
         <Progress value={progress} className="h-2" />
         <div className="flex justify-between mt-2">
-          {WIZARD_STEPS.map((step) => (
-            <div
-              key={step.id}
-              className={`text-sm ${
-                step.id === currentStep
-                  ? "text-primary font-semibold"
-                  : step.id < currentStep
-                  ? "text-muted-foreground"
-                  : "text-muted-foreground/50"
-              }`}
-            >
-              <div className="flex items-center gap-1">
-                {isStepCompleted(step.id) && (
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                )}
-                {step.name}
+          {WIZARD_STEPS.map((step) => {
+            const isClickable = mode === "edit" && step.id !== 5 && (isStepCompleted(step.id) || step.id === 0);
+
+            return (
+              <div
+                key={step.id}
+                onClick={() => {
+                  if (isClickable) {
+                    setCurrentStep(step.id);
+                  }
+                }}
+                className={`text-sm ${
+                  step.id === currentStep
+                    ? "text-primary font-semibold"
+                    : step.id < currentStep
+                    ? "text-muted-foreground"
+                    : "text-muted-foreground/50"
+                } ${isClickable ? "cursor-pointer hover:text-primary transition-colors" : ""}`}
+              >
+                <div className="flex items-center gap-1">
+                  {isStepCompleted(step.id) && (
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                  )}
+                  {step.name}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
