@@ -34,6 +34,7 @@ export function PriceCalculator({
 }: PriceCalculatorProps) {
   const [discountCodeInput, setDiscountCodeInput] = useState("");
   const [isValidatingCode, setIsValidatingCode] = useState(false);
+  const [appliedCode, setAppliedCode] = useState<string | null>(null);
 
   const { data: tiers = [] } = useTicketTiers(eventId);
   const { formatMoney } = useCurrency();
@@ -59,35 +60,47 @@ export function PriceCalculator({
     setCurrency(eventCurrency);
   }, [tiers, eventCurrency, setAvailableTiers, setCurrency]);
 
-  // Validate discount code when input changes
+  // Only validate discount code when explicitly applied
   const { data: codeValidation } = useValidateDiscountCode(
     eventId,
-    discountCode || undefined
+    appliedCode || undefined
   );
 
   useEffect(() => {
-    if (codeValidation && discountCode) {
-      setDiscountValidation({
-        isValid: codeValidation.is_valid,
-        type: codeValidation.discount_type,
-        value: codeValidation.discount_value,
-        message: codeValidation.message,
-      });
+    if (codeValidation && appliedCode) {
+      // Handle both array and object responses for safety
+      const validationData = Array.isArray(codeValidation) ? codeValidation[0] : codeValidation;
+
+
+      if (validationData) {
+        setDiscountCode(appliedCode);
+        setDiscountValidation({
+          isValid: validationData.is_valid,
+          type: validationData.discount_type,
+          value: validationData.discount_value,
+          message: validationData.message,
+        });
+      }
     }
-  }, [codeValidation, discountCode, setDiscountValidation]);
+  }, [codeValidation, appliedCode, setDiscountCode, setDiscountValidation]);
 
   const handleApplyDiscountCode = () => {
     if (!discountCodeInput.trim()) {
+      setAppliedCode(null);
       setDiscountCode(null);
       setDiscountValidation(null);
       return;
     }
 
+    const normalizedCode = discountCodeInput.trim().toUpperCase();
+
     setIsValidatingCode(true);
-    setDiscountCode(discountCodeInput.trim().toUpperCase());
+    setAppliedCode(normalizedCode);
 
     // Validation will happen via the react-query hook
-    setTimeout(() => setIsValidatingCode(false), 500);
+    setTimeout(() => {
+      setIsValidatingCode(false);
+    }, 500);
   };
 
   const handleQuantityChange = (tierId: string, quantity: number) => {

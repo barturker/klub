@@ -307,14 +307,20 @@ export function useValidateDiscountCode(
   return useQuery({
     queryKey: queryKeys.discountValidation(eventId!, code!),
     queryFn: async () => {
+
       const { data, error } = await supabase.rpc('validate_discount_code', {
         p_event_id: eventId,
         p_code: code,
         p_tier_id: tierId || null,
       });
 
+
       if (error) throw error;
-      return data as DiscountValidation;
+
+      // RPC returns an array, we need the first element
+      const result = Array.isArray(data) ? data[0] : data;
+
+      return result as DiscountValidation;
     },
     enabled: !!eventId && !!code && code.length > 0,
   });

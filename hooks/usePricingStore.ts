@@ -177,11 +177,13 @@ export const usePricingStore = create<PricingState>()(
         if (state.discountValidation?.isValid) {
           let codeDiscount = 0;
 
+
           if (state.discountValidation.type === 'percentage') {
             codeDiscount = (subtotal * (state.discountValidation.value || 0)) / 100;
           } else if (state.discountValidation.type === 'fixed') {
             codeDiscount = state.discountValidation.value || 0;
           }
+
 
           // Use the better discount
           if (codeDiscount > discountAmount) {
