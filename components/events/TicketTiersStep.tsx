@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 
-import { BasicTicketSetup } from "@/components/events/BasicTicketSetup";
+import { TicketConfigurationTabs } from "@/components/events/TicketConfigurationTabs";
 import { TicketTierList } from "@/components/tickets/TicketTierList";
 import { DiscountCodeList } from "@/components/tickets/DiscountCodeList";
 import { PriceCalculator } from "@/components/tickets/PriceCalculator";
@@ -64,22 +64,10 @@ export default function TicketTiersStep({
         <CardHeader>
           <CardTitle>Ticket Configuration (Optional)</CardTitle>
           <CardDescription>
-            Configure ticketing for your event. You can skip this step and set up tickets later.
+            Set up ticket tiers, discount codes, and pricing for your event. You can skip this step if tickets are not required.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
-            <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            <AlertDescription className="text-blue-900 dark:text-blue-100">
-              <strong>You can set up tickets now or later.</strong> After creating the event, you&apos;ll have full access to:
-              <ul className="mt-2 ml-4 list-disc">
-                <li>Create multiple ticket tiers (Early Bird, General, VIP)</li>
-                <li>Set different prices and availability windows</li>
-                <li>Configure discount codes and group pricing</li>
-                <li>Manage refund and transfer policies</li>
-              </ul>
-            </AlertDescription>
-          </Alert>
 
           <div className="mt-6 flex items-center space-x-2">
             <Switch
@@ -112,8 +100,8 @@ export default function TicketTiersStep({
 
               <Separator />
 
-              {/* Basic Ticket Setup for new events */}
-              <BasicTicketSetup
+              {/* Full Ticket Configuration with Tabs for new events */}
+              <TicketConfigurationTabs
                 currency={selectedCurrency}
                 data={data}
                 onChange={onChange}
