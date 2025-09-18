@@ -229,7 +229,7 @@ export default function EventCreateWizard({
         <Progress value={progress} className="h-2" />
         <div className="flex justify-between mt-2">
           {WIZARD_STEPS.map((step) => {
-            const isClickable = mode === "edit" && step.id !== 5 && (isStepCompleted(step.id) || step.id === 0);
+            const isClickable = mode === "edit" && (isStepCompleted(step.id) || step.id === 0);
 
             return (
               <div
