@@ -1,1 +1,1 @@
-bu sorunu kendi kafana göre direkt oalrak implement etmek yerine ilk step by step çözmeye bakalım. sorunu kesin çözüme ulaştırmak için direkt başlama ilk beraber karar verelim sorunu nasıl çözüceğimize brainstporm yapalım en mantıklı şekilde lütfen. think hardest
+ 

@@ -107,8 +107,8 @@ export default function EventCreateWizard({
 
   // Navigate to next step
   const handleNext = () => {
-    if (currentStep === 4) {
-      // Submit the event
+    if (currentStep === 5) {
+      // Submit the event from preview
       handleSubmit();
       return;
     }
@@ -241,11 +241,11 @@ export default function EventCreateWizard({
 
       {/* Step content */}
       <Card className="p-6">
-        {currentStep === 4 && isPreview ? (
+        {currentStep === 5 ? (
           <EventPreview
             eventData={eventData}
             communityName={communityName}
-            onEdit={() => setIsPreview(false)}
+            onEdit={() => setCurrentStep(3)}
           />
         ) : (
           <CurrentStepComponent
@@ -276,7 +276,7 @@ export default function EventCreateWizard({
             </Button>
           )}
 
-          {currentStep === 4 ? (
+          {currentStep === 5 ? (
             <Button
               onClick={handleSubmit}
               disabled={createEvent.isPending || updateEvent.isPending}
@@ -286,12 +286,11 @@ export default function EventCreateWizard({
                 (mode === "edit" ? "Update Event" : "Create Event")
               }
             </Button>
-          ) : currentStep === 3 ? (
+          ) : currentStep === 4 ? (
             <Button onClick={() => {
               if (validateCurrentStep()) {
                 markStepCompleted(currentStep);
-                setCurrentStep(4);
-                setIsPreview(true);
+                setCurrentStep(5);
               }
             }}>
               <Eye className="h-4 w-4 mr-2" />

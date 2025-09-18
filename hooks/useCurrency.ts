@@ -3,7 +3,7 @@
  * Handles formatting, conversion, and ISO 4217 compliance
  */
 
-import { dinero, add, subtract, multiply, toUnit, Dinero } from 'dinero.js';
+import { dinero, add, subtract, multiply, toUnits, Dinero } from 'dinero.js';
 import { TRY, USD, EUR, GBP, JPY } from '@dinero.js/currencies';
 import type { Currency } from '@/lib/types/tickets';
 
@@ -56,7 +56,7 @@ export function useCurrency() {
    */
   const formatMoney = (amountInCents: number, currency: Currency): string => {
     const money = createMoney(amountInCents, currency);
-    const value = toUnit(money);
+    const value = toUnits(money);
     return FORMATTERS[currency].format(value);
   };
 
@@ -185,7 +185,7 @@ export function useCurrency() {
 
   const toMajorUnits = (amountInCents: number, currency: Currency): number => {
     const money = createMoney(amountInCents, currency);
-    return toUnit(money);
+    return toUnits(money);
   };
 
   /**

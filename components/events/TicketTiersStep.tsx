@@ -19,28 +19,27 @@ import type { Currency } from "@/lib/types/tickets";
 
 interface TicketTiersStepProps {
   eventId?: string; // Will be available after the event is created
-  eventData: Record<string, unknown>;
-  updateEventData: (data: Record<string, unknown>) => void;
-  validationErrors?: Record<string, string>;
-  clearValidationErrors?: () => void;
+  data: Record<string, unknown>;
+  onChange: (data: Record<string, unknown>) => void;
+  errors?: Record<string, string>;
 }
 
 export default function TicketTiersStep({
   eventId,
-  eventData,
-  updateEventData,
+  data = {},
+  onChange,
 }: TicketTiersStepProps) {
   const [enableTicketing, setEnableTicketing] = useState(
-    eventData.enable_ticketing || false
+    (data?.enable_ticketing as boolean) || false
   );
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(
-    eventData.ticket_currency || "USD"
+    (data?.ticket_currency as Currency) || "USD"
   );
 
   const handleToggleTicketing = (enabled: boolean) => {
     setEnableTicketing(enabled);
-    updateEventData({
-      ...eventData,
+    onChange({
+      ...data,
       enable_ticketing: enabled,
       ticket_currency: enabled ? selectedCurrency : null,
     });
@@ -49,8 +48,8 @@ export default function TicketTiersStep({
   const handleCurrencyChange = (currency: Currency) => {
     setSelectedCurrency(currency);
     if (enableTicketing) {
-      updateEventData({
-        ...eventData,
+      onChange({
+        ...data,
         ticket_currency: currency,
       });
     }
