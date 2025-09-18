@@ -240,6 +240,11 @@ export const validateEventStep = (step: number, data: Partial<EventFormData>): R
         errors.image_url = "Please enter a valid image URL";
       }
       break;
+
+    case 4: // Tickets & Pricing
+      // No validation required for ticket step as it's optional
+      // Tickets can be configured after event creation
+      break;
   }
 
   return errors;

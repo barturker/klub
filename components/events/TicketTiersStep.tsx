@@ -11,7 +11,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 
+import { BasicTicketSetup } from "@/components/events/BasicTicketSetup";
 import { TicketTierList } from "@/components/tickets/TicketTierList";
 import { DiscountCodeList } from "@/components/tickets/DiscountCodeList";
 import { PriceCalculator } from "@/components/tickets/PriceCalculator";
@@ -60,18 +62,22 @@ export default function TicketTiersStep({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Ticket Configuration</CardTitle>
+          <CardTitle>Ticket Configuration (Optional)</CardTitle>
           <CardDescription>
-            Ticket configuration will be available after the event is created.
-            You can configure tickets later from the event management page.
+            Configure ticketing for your event. You can skip this step and set up tickets later.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-              Complete the event creation process first. You&apos;ll be able to add ticket tiers,
-              set pricing, and create discount codes from the event management dashboard.
+          <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
+            <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <AlertDescription className="text-blue-900 dark:text-blue-100">
+              <strong>You can set up tickets now or later.</strong> After creating the event, you&apos;ll have full access to:
+              <ul className="mt-2 ml-4 list-disc">
+                <li>Create multiple ticket tiers (Early Bird, General, VIP)</li>
+                <li>Set different prices and availability windows</li>
+                <li>Configure discount codes and group pricing</li>
+                <li>Manage refund and transfer policies</li>
+              </ul>
             </AlertDescription>
           </Alert>
 
@@ -87,7 +93,7 @@ export default function TicketTiersStep({
           </div>
 
           {enableTicketing && (
-            <div className="mt-4 space-y-4">
+            <div className="mt-4 space-y-6">
               <div>
                 <Label htmlFor="currency">Event Currency</Label>
                 <select
@@ -104,18 +110,14 @@ export default function TicketTiersStep({
                 </select>
               </div>
 
-              <Alert>
-                <AlertDescription>
-                  After creating the event, you&apos;ll be able to:
-                  <ul className="mt-2 ml-4 list-disc">
-                    <li>Create multiple ticket tiers (Early Bird, General, VIP)</li>
-                    <li>Set different prices and availability for each tier</li>
-                    <li>Configure sales windows and quantity limits</li>
-                    <li>Create discount codes and group pricing</li>
-                    <li>Manage refund and transfer policies</li>
-                  </ul>
-                </AlertDescription>
-              </Alert>
+              <Separator />
+
+              {/* Basic Ticket Setup for new events */}
+              <BasicTicketSetup
+                currency={selectedCurrency}
+                data={data}
+                onChange={onChange}
+              />
             </div>
           )}
         </CardContent>

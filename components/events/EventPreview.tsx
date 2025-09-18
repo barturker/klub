@@ -50,6 +50,17 @@ export default function EventPreview({
     );
   };
 
+  const getCurrencySymbol = (currency: string): string => {
+    const symbols: Record<string, string> = {
+      USD: "$",
+      EUR: "€",
+      GBP: "£",
+      TRY: "₺",
+      JPY: "¥",
+    };
+    return symbols[currency] || "$";
+  };
+
   const getEventTypeIcon = () => {
     switch (eventData?.event_type) {
       case "physical":
@@ -274,12 +285,55 @@ export default function EventPreview({
             </>
           )}
 
+          {/* Ticketing Status */}
+          {eventData.enable_ticketing ? (
+            <div className="space-y-3">
+              <h4 className="font-semibold flex items-center gap-2">
+                <Tag className="h-4 w-4" />
+                Ticketing Configuration
+              </h4>
+              <div className="pl-6 space-y-2 text-sm">
+                <div>Currency: <strong>{eventData.ticket_currency || 'USD'}</strong></div>
+                {eventData.enable_free_tickets && (
+                  <Badge variant="outline" className="text-green-600">Free Event</Badge>
+                )}
+                {eventData.ticket_tiers && Array.isArray(eventData.ticket_tiers) && (
+                  <div className="space-y-2">
+                    <div className="font-medium">Ticket Tiers:</div>
+                    {(eventData.ticket_tiers as any[]).map((tier, index) => (
+                      <Card key={tier.id || index} className="p-3">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">{tier.name || `Tier ${index + 1}`}</span>
+                          <div className="flex gap-4 text-sm text-muted-foreground">
+                            <span>Price: {getCurrencySymbol(eventData.ticket_currency as string || 'USD')}{tier.price || 0}</span>
+                            <span>Qty: {tier.quantity || 0}</span>
+                          </div>
+                        </div>
+                        {tier.description && (
+                          <p className="text-sm text-muted-foreground mt-1">{tier.description}</p>
+                        )}
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <Alert className="border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950">
+              <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+              <AlertDescription className="text-yellow-900 dark:text-yellow-100">
+                <strong>Ticketing not configured.</strong> You can set up ticket tiers and pricing after creating the event.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <Separator />
+
           {/* Status Note */}
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              This event will be created as a <strong>draft</strong>. You can
-              publish it later from the event management page.
+              Your event will be created and <strong>published immediately</strong>. You can edit it anytime from the event management page.
             </AlertDescription>
           </Alert>
         </CardContent>

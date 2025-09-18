@@ -32,7 +32,7 @@ const WIZARD_STEPS = [
   { id: 1, name: "Date & Time", component: EventDateTimeStep },
   { id: 2, name: "Location", component: EventLocationStep },
   { id: 3, name: "Details", component: EventDetailsStep },
-  { id: 4, name: "Tickets & Pricing", component: TicketTiersStep },
+  { id: 4, name: "Tickets (Optional)", component: TicketTiersStep },
   { id: 5, name: "Preview", component: EventPreview },
 ];
 
@@ -301,15 +301,25 @@ export default function EventCreateWizard({
               }
             </Button>
           ) : currentStep === 4 ? (
-            <Button onClick={() => {
-              if (validateCurrentStep()) {
+            <>
+              <Button variant="outline" onClick={() => {
+                // Skip ticket configuration and go to preview
                 markStepCompleted(currentStep);
                 setCurrentStep(5);
-              }
-            }}>
-              <Eye className="h-4 w-4 mr-2" />
-              Preview
-            </Button>
+              }}>
+                Skip for now
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+              <Button onClick={() => {
+                if (validateCurrentStep()) {
+                  markStepCompleted(currentStep);
+                  setCurrentStep(5);
+                }
+              }}>
+                <Eye className="h-4 w-4 mr-2" />
+                Preview
+              </Button>
+            </>
           ) : (
             <Button onClick={handleNext}>
               Next
