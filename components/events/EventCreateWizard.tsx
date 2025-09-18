@@ -12,6 +12,7 @@ import EventBasicInfoStep from "./EventBasicInfoStep";
 import EventDateTimeStep from "./EventDateTimeStep";
 import EventLocationStep from "./EventLocationStep";
 import EventDetailsStep from "./EventDetailsStep";
+import TicketTiersStep from "./TicketTiersStep";
 import EventPreview from "./EventPreview";
 import { ArrowLeft, ArrowRight, Save, Eye, CheckCircle } from "lucide-react";
 import { DateTime } from "luxon";
@@ -31,7 +32,8 @@ const WIZARD_STEPS = [
   { id: 1, name: "Date & Time", component: EventDateTimeStep },
   { id: 2, name: "Location", component: EventLocationStep },
   { id: 3, name: "Details", component: EventDetailsStep },
-  { id: 4, name: "Preview", component: EventPreview },
+  { id: 4, name: "Tickets & Pricing", component: TicketTiersStep },
+  { id: 5, name: "Preview", component: EventPreview },
 ];
 
 export default function EventCreateWizard({

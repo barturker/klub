@@ -15,7 +15,7 @@ export default function EventDetailPage() {
   const params = useParams();
   const router = useRouter();
   const communitySlug = params.slug as string;
-  const eventId = params.id as string;
+  const eventSlug = params.eventSlug as string;
 
   const [isOrganizer, setIsOrganizer] = useState(false);
   const [isMember, setIsMember] = useState(false);
@@ -25,7 +25,7 @@ export default function EventDetailPage() {
     data,
     isLoading: eventLoading,
     error: eventError,
-  } = useEvent(eventId);
+  } = useEvent(eventSlug);
 
   const event = data?.event;
 
@@ -66,12 +66,12 @@ export default function EventDetailPage() {
   }, [event]);
 
   const handleEdit = () => {
-    router.push(`/communities/${communitySlug}/events/${eventId}/edit`);
+    router.push(`/communities/${communitySlug}/events/${eventSlug}/edit`);
   };
 
   const handleDelete = async () => {
     try {
-      await deleteEventMutation.mutateAsync(eventId);
+      await deleteEventMutation.mutateAsync(event?.id || eventSlug);
       toast.success("Event deleted successfully");
       router.push(`/communities/${communitySlug}/events`);
     } catch {
