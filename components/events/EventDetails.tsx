@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Event } from "@/hooks/useEvents";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -227,14 +227,38 @@ export default function EventDetails({
 
         {/* Right Column - Sidebar */}
         <div className="space-y-4">
-          {/* Ticket Tiers */}
-          <TicketTierDisplay
-            eventId={event.id}
-            eventStatus={event.status}
-            eventStartDate={event.start_at}
-            eventCurrency={event.metadata?.ticket_currency as any || "USD"}
-            canPurchase={isMember}
-          />
+          {/* Ticket/Free Event Info */}
+          {event.metadata?.is_free === true ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  Free Event
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  This event is free to attend. No tickets required.
+                </p>
+                {event.metadata?.registration_only && (
+                  <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+                    <p className="text-sm text-muted-foreground flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 mt-0.5" />
+                      Registration is required to attend this event.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <TicketTierDisplay
+              eventId={event.id}
+              eventStatus={event.status}
+              eventStartDate={event.start_at}
+              eventCurrency={event.metadata?.ticket_currency as any || "USD"}
+              canPurchase={isMember}
+            />
+          )}
 
           {/* Action Card */}
           <Card>

@@ -35,6 +35,11 @@ export default function TicketTiersStep({
 }: TicketTiersStepProps) {
   // Determine initial pricing type based on existing data
   const getInitialPricingType = (): EventPricing => {
+    // Check is_free flag first
+    if (data?.metadata?.is_free === true) {
+      return "free";
+    }
+    // Otherwise check enable_ticketing
     const hasTicketing = data?.metadata?.enable_ticketing === true ||
                         data?.enable_ticketing === true;
     return hasTicketing ? "paid" : "free";
@@ -68,6 +73,7 @@ export default function TicketTiersStep({
       metadata: {
         ...(data.metadata as object || {}),
         enable_ticketing: value === "paid",
+        is_free: value === "free",
         ticket_currency: value === "paid" ? selectedCurrency : null,
       }
     };
@@ -84,7 +90,8 @@ export default function TicketTiersStep({
         metadata: {
           ...(data.metadata as object || {}),
           ticket_currency: currency,
-          enable_ticketing: true
+          enable_ticketing: true,
+          is_free: false
         }
       });
     }
