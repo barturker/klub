@@ -1,52 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
-import { z } from "zod";
 import { DateTime } from "luxon";
 
-// Validation schema for updating an event
-const updateEventSchema = z.object({
-  title: z.string().min(1).max(200).optional(),
-  description: z.string().optional(),
-  event_type: z.enum(["physical", "virtual", "hybrid"]).optional(),
-  start_at: z.string().datetime({ offset: true }).optional(),
-  end_at: z.string().datetime({ offset: true }).optional(),
-  timezone: z.string().optional(),
-  venue_name: z.string().optional(),
-  venue_address: z.string().optional(),
-  venue_city: z.string().optional(),
-  venue_country: z.string().optional(),
-  online_url: z.string().url().or(z.literal("")).optional(),
-  capacity: z.number().min(0).optional(),
-  image_url: z.string().url().or(z.literal("")).nullable().optional(),
-  status: z.enum(["draft", "published", "cancelled"]).optional(),
-  tags: z.array(z.string()).optional(),
-  metadata: z.record(z.any()).optional(),
-  // Fields that might be sent but should be ignored/filtered
-  id: z.string().optional(),
-  community_id: z.string().optional(),
-  created_by: z.string().optional(),
-  slug: z.string().optional(),
-  recurring_rule: z.string().nullable().optional(),
-  recurring_end_date: z.string().nullable().optional(),
-  parent_event_id: z.string().nullable().optional(),
-  created_at: z.string().optional(),
-  updated_at: z.string().optional(),
-  is_recurring: z.boolean().optional(),
-  enable_ticketing: z.boolean().optional(),
-  ticket_currency: z.string().optional(),
-  // Nested objects that might be sent - these will be filtered out
-  creator: z.object({
-    id: z.string(),
-    username: z.string().nullable(),
-    full_name: z.string(),
-    avatar_url: z.string().nullable(),
-  }).optional(),
-  recurring_instances: z.array(z.object({
-    id: z.string(),
-    start_at: z.string(),
-    end_at: z.string(),
-    status: z.string(),
-  })).optional(),
-});
+// Force Node.js runtime (ChatGPT solution for Zod + Turbopack issue)
+export const runtime = "nodejs";
 
 interface RouteParams {
   params: Promise<{ slug: string }>;
@@ -224,21 +180,63 @@ export async function PATCH(request: Request, props: RouteParams) {
       console.log("[PATCH] body.data keys:", Object.keys(body.data));
     }
 
-    // Validate request data
-    const validationResult = updateEventSchema.safeParse(body);
+    // TURBOPACK BUG: Zod v4 + Turbopack incompatibility
+    // See: https://github.com/colinhacks/zod/issues
+    // Using manual validation as workaround until fixed
+    console.log("[PATCH] Using manual validation due to Turbopack + Zod v4 bug");
 
-    if (!validationResult.success) {
-      console.log("[PATCH] Validation failed:");
-      console.log("[PATCH] Validation errors:", JSON.stringify(validationResult.error.errors, null, 2));
-      console.log("[PATCH] Full validation result:", JSON.stringify(validationResult.error.format(), null, 2));
-      return Response.json(
-        {
-          error: "Invalid request data",
-          details: validationResult.error.errors,
-        },
-        { status: 400 }
-      );
+    // Manual validation to replace Zod temporarily
+    const validationResult = { success: true, data: body };
+
+    // Basic field validations
+    if (body.title !== undefined) {
+      if (typeof body.title !== 'string' || body.title.length < 1 || body.title.length > 200) {
+        return Response.json(
+          { error: "Invalid title: must be between 1-200 characters" },
+          { status: 400 }
+        );
+      }
     }
+
+    if (body.event_type !== undefined) {
+      if (!['physical', 'virtual', 'hybrid'].includes(body.event_type)) {
+        return Response.json(
+          { error: "Invalid event_type: must be 'physical', 'virtual', or 'hybrid'" },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (body.status !== undefined) {
+      if (!['draft', 'published', 'cancelled'].includes(body.status)) {
+        return Response.json(
+          { error: "Invalid status: must be 'draft', 'published', or 'cancelled'" },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (body.capacity !== undefined) {
+      if (typeof body.capacity !== 'number' || body.capacity < 0) {
+        return Response.json(
+          { error: "Invalid capacity: must be a non-negative number" },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (body.online_url !== undefined && body.online_url !== "" && body.online_url !== null) {
+      try {
+        new URL(body.online_url);
+      } catch {
+        return Response.json(
+          { error: "Invalid online_url: must be a valid URL" },
+          { status: 400 }
+        );
+      }
+    }
+
+    console.log("[PATCH] Manual validation passed");
 
     // Filter out fields that shouldn't be updated directly
     const {
@@ -253,6 +251,8 @@ export async function PATCH(request: Request, props: RouteParams) {
       enable_ticketing,
       ticket_currency,
       is_recurring,
+      is_free,
+      registration_only,
       ...updateData
     } = validationResult.data;
 
@@ -260,19 +260,6 @@ export async function PATCH(request: Request, props: RouteParams) {
     console.log("[PATCH] enable_ticketing from request:", enable_ticketing);
     console.log("[PATCH] ticket_currency from request:", ticket_currency);
     console.log("[PATCH] metadata from request:", updateData.metadata);
-
-    // Always preserve and merge metadata properly
-    // The new UX sends metadata with is_free, registration_only flags
-    updateData.metadata = {
-      ...(event.metadata || {}), // Preserve existing metadata from DB
-      ...(updateData.metadata || {}), // Apply new metadata from request
-      ...(enable_ticketing !== undefined && { enable_ticketing }),
-      ...(ticket_currency !== undefined && { ticket_currency })
-    };
-
-    // Log for debugging
-    console.log("[PATCH] Existing metadata from DB:", event.metadata);
-    console.log("[PATCH] Updated metadata after merge:", updateData.metadata);
 
     // Validate dates if provided
     if (updateData.start_at && updateData.end_at) {
@@ -345,6 +332,19 @@ export async function PATCH(request: Request, props: RouteParams) {
       }
     }
 
+    // Always preserve and merge metadata properly
+    // The new UX sends metadata with is_free, registration_only flags
+    updateData.metadata = {
+      ...(event.metadata || {}), // Preserve existing metadata from DB
+      ...(updateData.metadata || {}), // Apply new metadata from request
+      ...(enable_ticketing !== undefined && { enable_ticketing }),
+      ...(ticket_currency !== undefined && { ticket_currency })
+    };
+
+    // Log for debugging
+    console.log("[PATCH] Existing metadata from DB:", event.metadata);
+    console.log("[PATCH] Updated metadata after merge:", updateData.metadata);
+
     // Debug what we're sending to Supabase
     console.log("[PATCH] Final updateData being sent to Supabase:", JSON.stringify(updateData, null, 2));
     console.log("[PATCH] Updating event ID:", event.id);
@@ -377,10 +377,14 @@ export async function PATCH(request: Request, props: RouteParams) {
       event: updatedEvent,
     });
   } catch (error) {
-    console.error("[PATCH /api/events/[slug]] Error:", error);
+    console.error("[PATCH /api/events/[slug]] Caught error:", error);
+    console.error("[PATCH] Error stack:", error instanceof Error ? error.stack : "No stack");
+    console.error("[PATCH] Error message:", error instanceof Error ? error.message : "Unknown error");
+
     return Response.json(
       {
         error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error occurred",
       },
       { status: 500 }
     );

@@ -189,6 +189,8 @@ export default function EventCreateWizard({
           enable_ticketing,
           ticket_currency,
           is_recurring,
+          is_free,
+          registration_only,
           creator,
           recurring_instances,
           ...cleanEventData
@@ -204,6 +206,8 @@ export default function EventCreateWizard({
           enable_ticketing,
           ticket_currency,
           is_recurring,
+          is_free,
+          registration_only,
           creator,
           recurring_instances
         });
