@@ -68,8 +68,27 @@ export default function EventCreateWizard({
   // Initialize wizard
   useEffect(() => {
     if (mode === "edit" && existingEvent) {
+      console.log("[EventCreateWizard] Edit mode - existingEvent:", existingEvent);
+      console.log("[EventCreateWizard] existingEvent.metadata:", existingEvent.metadata);
+
       // Edit mode: load existing event data
-      updateEventData(existingEvent);
+      // Flatten metadata values to root level for UI components
+      const flattenedEventData = {
+        ...existingEvent,
+        // Extract ticket-related metadata to root level for easier access
+        enable_ticketing: existingEvent.metadata?.enable_ticketing === true,
+        ticket_currency: existingEvent.metadata?.ticket_currency || "USD",
+        // Keep original metadata with all fields
+        metadata: existingEvent.metadata || {},
+        // These flags help the new UX determine pricing type
+        is_free: existingEvent.metadata?.is_free,
+        registration_only: existingEvent.metadata?.registration_only
+      };
+
+      console.log("[EventCreateWizard] Flattened data being sent to store:", flattenedEventData);
+      console.log("[EventCreateWizard] enable_ticketing value:", flattenedEventData.enable_ticketing);
+
+      updateEventData(flattenedEventData);
       // Mark all steps as completed in edit mode
       for (let i = 0; i < WIZARD_STEPS.length - 1; i++) {
         markStepCompleted(i);
@@ -78,7 +97,7 @@ export default function EventCreateWizard({
       // Create mode: always start fresh
       resetStore();
     }
-  }, [mode, existingEvent]);
+  }, [mode, existingEvent, updateEventData, markStepCompleted, resetStore]);
 
   // Remove auto-save functionality
 
@@ -153,7 +172,12 @@ export default function EventCreateWizard({
           recurring_rule: cleanEventData.recurring_rule || null,
           recurring_end_date: cleanEventData.recurring_end_date || null,
           tags: cleanEventData.tags || [],
-          metadata: cleanEventData.metadata || {},
+          // Merge ticketing fields back into metadata
+          metadata: {
+            ...cleanEventData.metadata,
+            enable_ticketing: enable_ticketing || false,
+            ticket_currency: ticket_currency || "USD"
+          },
         };
 
         result = await createEvent.mutateAsync(createData);
@@ -174,6 +198,8 @@ export default function EventCreateWizard({
         console.log("[EventCreateWizard] === UPDATE MODE DEBUG START ===");
         console.log("[EventCreateWizard] Original eventData keys:", Object.keys(eventData));
         console.log("[EventCreateWizard] Original eventData:", JSON.stringify(eventData, null, 2));
+        console.log("[EventCreateWizard] enable_ticketing value:", enable_ticketing);
+        console.log("[EventCreateWizard] ticket_currency value:", ticket_currency);
         console.log("[EventCreateWizard] Fields removed:", {
           enable_ticketing,
           ticket_currency,
@@ -204,7 +230,12 @@ export default function EventCreateWizard({
           recurring_rule: cleanEventData.recurring_rule || null,
           recurring_end_date: cleanEventData.recurring_end_date || null,
           tags: cleanEventData.tags || [],
-          metadata: cleanEventData.metadata || {},
+          // Merge ticketing fields back into metadata
+          metadata: {
+            ...cleanEventData.metadata,
+            enable_ticketing: enable_ticketing || false,
+            ticket_currency: ticket_currency || "USD"
+          },
         };
 
         console.log("[EventCreateWizard] Final submitData keys:", Object.keys(submitData));

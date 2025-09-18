@@ -92,9 +92,15 @@ export const useEventStore = create<EventStore>((set, get) => ({
       // Form data
       eventData: { ...defaultEventData },
       updateEventData: (data) =>
-        set((state) => ({
-          eventData: { ...state.eventData, ...data }
-        })),
+        set((state) => {
+          console.log("[useEventStore] Current eventData:", state.eventData);
+          console.log("[useEventStore] Incoming data:", data);
+          const newEventData = { ...state.eventData, ...data };
+          console.log("[useEventStore] Merged eventData:", newEventData);
+          return {
+            eventData: newEventData
+          };
+        }),
 
       // Draft management
       draftId: null,

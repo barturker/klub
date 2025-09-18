@@ -70,7 +70,10 @@ export async function GET(request: Request, props: RouteParams) {
     // Build query based on whether it's UUID or slug
     let query = supabase
       .from("events")
-      .select("*");
+      .select(`
+        *,
+        metadata
+      `);
 
     if (isUUID) {
       console.log("[GET] Querying by ID:", params.slug);
@@ -106,6 +109,9 @@ export async function GET(request: Request, props: RouteParams) {
 
     console.log("[GET] Event found:", event ? event.id : "No event found");
     console.log("[GET] Event status:", event?.status);
+    console.log("[GET] Event metadata:", event?.metadata);
+    console.log("[GET] Event metadata type:", typeof event?.metadata);
+    console.log("[GET] Event metadata stringified:", JSON.stringify(event?.metadata));
 
     // Fetch creator info separately if needed
     let creator = null;
@@ -250,6 +256,24 @@ export async function PATCH(request: Request, props: RouteParams) {
       ...updateData
     } = validationResult.data;
 
+    // Debug incoming data
+    console.log("[PATCH] enable_ticketing from request:", enable_ticketing);
+    console.log("[PATCH] ticket_currency from request:", ticket_currency);
+    console.log("[PATCH] metadata from request:", updateData.metadata);
+
+    // Always preserve and merge metadata properly
+    // The new UX sends metadata with is_free, registration_only flags
+    updateData.metadata = {
+      ...(event.metadata || {}), // Preserve existing metadata from DB
+      ...(updateData.metadata || {}), // Apply new metadata from request
+      ...(enable_ticketing !== undefined && { enable_ticketing }),
+      ...(ticket_currency !== undefined && { ticket_currency })
+    };
+
+    // Log for debugging
+    console.log("[PATCH] Existing metadata from DB:", event.metadata);
+    console.log("[PATCH] Updated metadata after merge:", updateData.metadata);
+
     // Validate dates if provided
     if (updateData.start_at && updateData.end_at) {
       const startDate = DateTime.fromISO(updateData.start_at);
@@ -280,7 +304,7 @@ export async function PATCH(request: Request, props: RouteParams) {
     // Build query to get the event
     let fetchQuery = supabase
       .from("events")
-      .select("id, community_id, created_by");
+      .select("id, community_id, created_by, metadata");
 
     if (isUUID) {
       fetchQuery = fetchQuery.eq("id", params.slug);
@@ -321,6 +345,10 @@ export async function PATCH(request: Request, props: RouteParams) {
       }
     }
 
+    // Debug what we're sending to Supabase
+    console.log("[PATCH] Final updateData being sent to Supabase:", JSON.stringify(updateData, null, 2));
+    console.log("[PATCH] Updating event ID:", event.id);
+
     // Update the event
     const { data: updatedEvent, error: updateError } = await supabase
       .from("events")
@@ -341,6 +369,8 @@ export async function PATCH(request: Request, props: RouteParams) {
     }
 
     console.log("[PATCH] Event updated successfully");
+    console.log("[PATCH] Updated event metadata:", updatedEvent?.metadata);
+    console.log("[PATCH] Updated event full data:", JSON.stringify(updatedEvent, null, 2));
 
     return Response.json({
       success: true,
