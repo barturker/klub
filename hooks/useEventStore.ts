@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import { DateTime } from "luxon";
 
 export interface EventFormData {
@@ -85,9 +84,7 @@ const defaultEventData: Partial<EventFormData> = {
   metadata: {},
 };
 
-export const useEventStore = create<EventStore>()(
-  persist(
-    (set, get) => ({
+export const useEventStore = create<EventStore>((set, get) => ({
       // Current step
       currentStep: 0,
       setCurrentStep: (step) => set({ currentStep: step }),
@@ -189,18 +186,7 @@ export const useEventStore = create<EventStore>()(
           completedSteps: [],
         });
       },
-    }),
-    {
-      name: "event-store",
-      partialize: (state) => ({
-        eventData: state.eventData,
-        currentStep: state.currentStep,
-        completedSteps: state.completedSteps,
-        draftId: state.draftId,
-      }),
-    }
-  )
-);
+    }));
 
 // Helper functions for common operations
 export const validateEventStep = (step: number, data: Partial<EventFormData>): Record<string, string> => {

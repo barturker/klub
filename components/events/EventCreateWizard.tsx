@@ -49,8 +49,7 @@ export default function EventCreateWizard({
   const createEvent = useCreateEvent();
   const updateEvent = useUpdateEvent();
   const [isPreview, setIsPreview] = useState(false);
-  const [draftEventId, setDraftEventId] = useState<string | null>(existingEvent?.id || null);
-  const [draftEventSlug, setDraftEventSlug] = useState<string | null>(existingEvent?.slug || null);
+  // Remove draft logic - we'll create the event directly when publishing
 
   const {
     currentStep,
@@ -66,30 +65,22 @@ export default function EventCreateWizard({
     resetStore,
   } = useEventStore();
 
-  // Initialize with existing event data if in edit mode
+  // Initialize wizard
   useEffect(() => {
     if (mode === "edit" && existingEvent) {
+      // Edit mode: load existing event data
       updateEventData(existingEvent);
       // Mark all steps as completed in edit mode
       for (let i = 0; i < WIZARD_STEPS.length - 1; i++) {
         markStepCompleted(i);
       }
+    } else if (mode === "create") {
+      // Create mode: always start fresh
+      resetStore();
     }
   }, [mode, existingEvent]);
 
-  // Auto-save draft every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (eventData.title) {
-        saveDraft();
-        toast.success("Draft saved", {
-          duration: 2000,
-        });
-      }
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [eventData, saveDraft]);
+  // Remove auto-save functionality
 
   // Validate current step
   const validateCurrentStep = () => {
@@ -118,53 +109,11 @@ export default function EventCreateWizard({
     if (validateCurrentStep()) {
       markStepCompleted(currentStep);
 
-      // Create draft event after Details step (step 3) if in create mode
-      if (currentStep === 3 && mode === "create" && !draftEventId) {
-        await createDraftEvent();
-      }
-
+      // No need to create draft anymore
       setCurrentStep(currentStep + 1);
     }
   };
 
-  // Create draft event
-  const createDraftEvent = async () => {
-    try {
-      const draftData = {
-        ...eventData,
-        community_id: communityId,
-        status: 'draft',
-        // Ensure dates are in ISO format - check for empty strings
-        start_at: eventData.start_at && eventData.start_at.trim() !== ""
-          ? eventData.start_at
-          : DateTime.now().plus({ days: 7 }).toISO(),
-        end_at: eventData.end_at && eventData.end_at.trim() !== ""
-          ? eventData.end_at
-          : DateTime.now().plus({ days: 7, hours: 2 }).toISO(),
-        // Clean up empty fields
-        description: eventData.description || "",
-        venue_name: eventData.venue_name || "",
-        venue_address: eventData.venue_address || "",
-        venue_city: eventData.venue_city || "",
-        venue_country: eventData.venue_country || "",
-        online_url: eventData.online_url || "",
-        recurring_rule: eventData.recurring_rule || "",
-        recurring_end_date: eventData.recurring_end_date || "",
-        tags: eventData.tags || [],
-        metadata: eventData.metadata || {},
-      };
-
-      const result = await createEvent.mutateAsync(draftData);
-      console.log("[EventCreateWizard] Draft event created:", result);
-      setDraftEventId(result.event_id);
-      setDraftEventSlug(result.slug);
-      toast.success("Draft saved. Now let's configure tickets!");
-    } catch (error) {
-      console.error('Failed to create draft event:', error);
-      toast.error("Failed to save draft. Please try again.");
-      throw error;
-    }
-  };
 
   // Navigate to previous step
   const handlePrevious = () => {
@@ -179,14 +128,8 @@ export default function EventCreateWizard({
       let result;
 
       if (mode === "create") {
-        // For create mode, we already have a draft event, just publish it
-        if (!draftEventId) {
-          toast.error("No draft event found. Please go back and complete all steps.");
-          return;
-        }
-
-        // Update the draft event to published status
-        const publishData = {
+        // Create and publish the event directly
+        const createData = {
           ...eventData,
           status: 'published',
           community_id: communityId,
@@ -210,8 +153,8 @@ export default function EventCreateWizard({
           metadata: eventData.metadata || {},
         };
 
-        result = await updateEvent.mutateAsync({ id: draftEventId, data: publishData });
-        toast.success("Event published successfully!");
+        result = await createEvent.mutateAsync(createData);
+        toast.success("Event created successfully!");
       } else {
         // For edit mode, update the existing event
         const submitData = {
@@ -246,9 +189,9 @@ export default function EventCreateWizard({
 
       // Call success callback or redirect
       if (onSuccess) {
-        onSuccess(result.slug || draftEventSlug!);
+        onSuccess(result.slug);
       } else {
-        router.push(`/communities/${communitySlug}/events/${result.slug || draftEventSlug}`);
+        router.push(`/communities/${communitySlug}/events/${result.slug}`);
       }
     } catch (error) {
       console.error(`Failed to ${mode === 'create' ? 'publish' : 'update'} event:`, error);
@@ -257,20 +200,9 @@ export default function EventCreateWizard({
     }
   };
 
-  // Save draft and exit
-  const handleSaveDraft = () => {
-    saveDraft();
-    toast.success("Draft saved successfully");
-    if (onCancel) {
-      onCancel();
-    } else {
-      router.push(`/communities/${communitySlug}/events`);
-    }
-  };
-
-  // Cancel and clear
+  // Cancel and clear all data
   const handleCancel = () => {
-    if (confirm("Are you sure you want to cancel? Any unsaved changes will be lost.")) {
+    if (confirm("Are you sure you want to cancel? All data will be lost.")) {
       resetStore();
       if (onCancel) {
         onCancel();
@@ -328,7 +260,7 @@ export default function EventCreateWizard({
           />
         ) : currentStep === 4 ? (
           <CurrentStepComponent
-            eventId={draftEventId}
+            eventId={existingEvent?.id}
             data={eventData}
             errors={validationErrors}
             onChange={updateEventData}
@@ -347,10 +279,6 @@ export default function EventCreateWizard({
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleCancel}>
             Cancel
-          </Button>
-          <Button variant="outline" onClick={handleSaveDraft}>
-            <Save className="h-4 w-4 mr-2" />
-            Save Draft
           </Button>
         </div>
 

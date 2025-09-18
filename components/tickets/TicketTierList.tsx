@@ -195,11 +195,11 @@ export function TicketTierList({ eventId, canEdit = true }: TicketTierListProps)
                                       <div className="flex items-center gap-1">
                                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                                         <span className="font-medium">
-                                          {tier.price_cents === 0
+                                          {(!tier.price_cents || tier.price_cents === 0)
                                             ? "Free"
                                             : formatMoney(
-                                                tier.price_cents,
-                                                tier.currency
+                                                tier.price_cents || 0,
+                                                tier.currency || "USD"
                                               )}
                                         </span>
                                       </div>

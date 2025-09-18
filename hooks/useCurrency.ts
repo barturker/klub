@@ -45,8 +45,13 @@ export function useCurrency() {
    * Create a Dinero object from amount in minor units
    */
   const createMoney = (amountInCents: number, currency: Currency) => {
+    // Handle invalid amounts - default to 0
+    const safeAmount = (typeof amountInCents === 'number' && !isNaN(amountInCents))
+      ? amountInCents
+      : 0;
+
     return dinero({
-      amount: amountInCents,
+      amount: safeAmount,
       currency: CURRENCY_MAP[currency],
     });
   };
@@ -55,6 +60,11 @@ export function useCurrency() {
    * Format money for display
    */
   const formatMoney = (amountInCents: number, currency: Currency): string => {
+    // Handle invalid amounts
+    if (typeof amountInCents !== 'number' || isNaN(amountInCents)) {
+      amountInCents = 0;
+    }
+
     const money = createMoney(amountInCents, currency);
     const value = toUnits(money);
     return FORMATTERS[currency].format(value);
