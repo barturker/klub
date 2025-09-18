@@ -84,6 +84,10 @@ export const useCommunityEvents = (
   return useQuery<EventsResponse>({
     queryKey: ["events", "community", communityId, options],
     queryFn: async () => {
+      console.log("🔄 [useCommunityEvents] Starting fetch...");
+      console.log("🔄 [useCommunityEvents] Community ID:", communityId);
+      console.log("🔄 [useCommunityEvents] Options:", options);
+
       const params = new URLSearchParams();
 
       if (options?.status) params.append("status", options.status);
@@ -92,15 +96,25 @@ export const useCommunityEvents = (
       if (options?.limit) params.append("limit", String(options.limit));
       if (options?.offset) params.append("offset", String(options.offset));
 
-      const response = await fetch(
-        `/api/communities/${communityId}/events?${params.toString()}`
-      );
+      const url = `/api/communities/${communityId}/events?${params.toString()}`;
+      console.log("🔄 [useCommunityEvents] Fetching URL:", url);
+
+      const response = await fetch(url);
+      console.log("🔄 [useCommunityEvents] Response status:", response.status);
+      console.log("🔄 [useCommunityEvents] Response OK:", response.ok);
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ [useCommunityEvents] Error response:", errorText);
         throw new Error("Failed to fetch events");
       }
 
-      return response.json();
+      const data = await response.json();
+      console.log("✅ [useCommunityEvents] Data received:", data);
+      console.log("✅ [useCommunityEvents] Events count:", data.events?.length || 0);
+      console.log("✅ [useCommunityEvents] Stats:", data.stats);
+
+      return data;
     },
     enabled: !!communityId,
   });

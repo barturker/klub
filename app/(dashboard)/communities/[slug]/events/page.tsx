@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useEvents } from "@/hooks/useEvents";
+import { useCommunityEvents } from "@/hooks/useEvents";
+import { createClient } from "@/lib/supabase/client";
 import EventCard from "@/components/events/EventCard";
 import LazyEventCalendar from "@/components/events/LazyEventCalendar";
 import { Button } from "@/components/ui/button";
@@ -30,20 +31,71 @@ export default function CommunityEventsPage() {
   const communitySlug = params.slug as string;
 
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
-  const [filter, setFilter] = useState<EventFilter>("upcoming");
+  const [filter, setFilter] = useState<EventFilter>("all");
   const [eventType, setEventType] = useState<EventType>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [communityId, setCommunityId] = useState<string>("");
+
+  // Fetch community by slug to get ID
+  useEffect(() => {
+    const fetchCommunity = async () => {
+      console.log('🔍 [EventsPage] Fetching community with slug:', communitySlug);
+      const supabase = createClient();
+
+      // Check current user
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('👤 [EventsPage] Current user:', user?.id, user?.email);
+
+      const { data: community, error } = await supabase
+        .from('communities')
+        .select('id, name, privacy_level')
+        .eq('slug', communitySlug)
+        .single();
+
+      if (error) {
+        console.error('❌ [EventsPage] Error fetching community:', error);
+      } else if (community) {
+        console.log('✅ [EventsPage] Found community:', community);
+        setCommunityId(community.id);
+      } else {
+        console.log('⚠️ [EventsPage] No community found for slug:', communitySlug);
+      }
+    };
+
+    if (communitySlug) {
+      fetchCommunity();
+    }
+  }, [communitySlug]);
+
+  const queryOptions = {
+    status: filter === "draft" ? "draft" : filter === "published" ? "published" : undefined,
+    upcoming: filter === "upcoming",
+    past: filter === "past",
+  };
+
+  console.log('🎯 [EventsPage] Using communityId:', communityId);
+  console.log('🎯 [EventsPage] Query options:', queryOptions);
 
   const {
-    data: events,
+    data: eventsResponse,
     isLoading,
     error,
-  } = useEvents({
-    communityId: "", // Will need to fetch community ID from slug
-    status: filter === "draft" ? "draft" : filter === "published" ? "published" : undefined,
-    eventType: eventType === "all" ? undefined : eventType,
-  });
+  } = useCommunityEvents(communityId, queryOptions);
+
+  const events = eventsResponse?.events;
+
+  // Log the response
+  useEffect(() => {
+    if (eventsResponse) {
+      console.log('📦 [EventsPage] Events response received:', eventsResponse);
+      console.log('📦 [EventsPage] Events count:', events?.length || 0);
+      console.log('📦 [EventsPage] Stats:', eventsResponse.stats);
+    }
+    if (error) {
+      console.error('❌ [EventsPage] Error loading events:', error);
+    }
+  }, [eventsResponse, events, error]);
 
   const filteredEvents = events?.filter((event: Event) => {
     // Search filter
@@ -79,14 +131,14 @@ export default function CommunityEventsPage() {
 
 
   const clearFilters = () => {
-    setFilter("upcoming");
+    setFilter("all");
     setEventType("all");
     setSearchQuery("");
     setSelectedTags([]);
   };
 
   const hasActiveFilters =
-    filter !== "upcoming" ||
+    filter !== "all" ||
     eventType !== "all" ||
     searchQuery !== "" ||
     selectedTags.length > 0;

@@ -10,8 +10,9 @@ export async function GET(request: Request, props: RouteParams) {
   const params = await props.params;
 
   try {
-    console.log("[GET /api/communities/[id]/events] Starting...");
-    console.log("[GET] Community ID:", params.id);
+    console.log("🔍 [GET /api/communities/[id]/events] Starting...");
+    console.log("📝 [GET] Community ID:", params.id);
+    console.log("📝 [GET] Full URL:", request.url);
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status") || "published";
@@ -20,20 +21,24 @@ export async function GET(request: Request, props: RouteParams) {
     const upcoming = searchParams.get("upcoming") === "true";
     const past = searchParams.get("past") === "true";
 
+    console.log("📊 [GET] Query params:", {
+      status,
+      limit,
+      offset,
+      upcoming,
+      past
+    });
+
     const supabase = await createClient();
 
-    // Build query
+    // Check current user
+    const { data: { user } } = await supabase.auth.getUser();
+    console.log("👤 [GET] Current user:", user?.id, user?.email);
+
+    // Build query - simplified without profile join for now
     let query = supabase
       .from("events")
-      .select(`
-        *,
-        creator:profiles!events_created_by_fkey (
-          id,
-          username,
-          full_name,
-          avatar_url
-        )
-      `, { count: "exact" })
+      .select("*", { count: "exact" })
       .eq("community_id", params.id);
 
     // Apply status filter
@@ -58,10 +63,17 @@ export async function GET(request: Request, props: RouteParams) {
       .order("start_at", { ascending: upcoming || !past })
       .range(offset, offset + limit - 1);
 
+    console.log("🔍 [GET] Executing query...");
     const { data: events, error, count } = await query;
 
     if (error) {
-      console.log("[GET] Error fetching events:", error);
+      console.error("❌ [GET] Error fetching events:", error);
+      console.error("❌ [GET] Error details:", {
+        message: error.message,
+        hint: error.hint,
+        details: error.details,
+        code: error.code
+      });
       return Response.json(
         {
           error: "Failed to fetch community events",
@@ -71,7 +83,8 @@ export async function GET(request: Request, props: RouteParams) {
       );
     }
 
-    console.log(`[GET] Found ${events?.length || 0} events for community`);
+    console.log(`✅ [GET] Query successful. Found ${events?.length || 0} events`);
+    console.log("📋 [GET] Events data:", JSON.stringify(events, null, 2));
 
     // For recurring events, fetch the next occurrence
     const eventsWithNextOccurrence = await Promise.all(
@@ -97,11 +110,18 @@ export async function GET(request: Request, props: RouteParams) {
     );
 
     // Get event statistics for the community
-    const { data: statsData } = await supabase
+    console.log("📊 [GET] Fetching stats for community:", params.id);
+    const { data: statsData, error: statsError } = await supabase
       .from("events")
       .select("status")
       .eq("community_id", params.id)
       .is("parent_event_id", null);
+
+    if (statsError) {
+      console.error("❌ [GET] Error fetching stats:", statsError);
+    }
+
+    console.log("📊 [GET] Stats data:", statsData);
 
     const stats = {
       total: statsData?.length || 0,
@@ -111,13 +131,23 @@ export async function GET(request: Request, props: RouteParams) {
       completed: statsData?.filter(e => e.status === "completed").length || 0,
     };
 
-    return Response.json({
+    console.log("📊 [GET] Calculated stats:", stats);
+
+    const response = {
       events: eventsWithNextOccurrence,
       total: count || 0,
       stats,
       limit,
       offset,
+    };
+
+    console.log("📤 [GET] Sending response:", {
+      eventCount: response.events.length,
+      total: response.total,
+      stats: response.stats
     });
+
+    return Response.json(response);
   } catch (error) {
     console.error("[GET /api/communities/[id]/events] Error:", error);
     return Response.json(
