@@ -18,6 +18,7 @@ interface TicketTier {
   id: string;
   name: string;
   price: number;
+  price_cents?: number; // Price in minor units (cents/kuruş) for database
   quantity: number;
   description: string;
   salesStartDate?: string;
@@ -89,10 +90,29 @@ export function TicketConfigurationTabs({ currency, data, onChange }: TicketConf
   // Tier Management Functions
   const handleTierChange = (index: number, field: keyof TicketTier, value: any) => {
     const newTiers = [...tiers];
-    newTiers[index] = {
-      ...newTiers[index],
-      [field]: field === "price" || field === "quantity" ? Number(value) : value,
-    };
+
+    // Convert price to cents when saving (user enters dollars, we store cents)
+    if (field === "price") {
+      const priceInDollars = Number(value) || 0;
+      // Convert based on currency (JPY has no decimal places)
+      const priceInCents = currency === 'JPY' ? priceInDollars : priceInDollars * 100;
+      newTiers[index] = {
+        ...newTiers[index],
+        price_cents: Math.round(priceInCents), // Store as price_cents
+        price: priceInDollars, // Keep original for display
+      };
+    } else if (field === "quantity") {
+      newTiers[index] = {
+        ...newTiers[index],
+        [field]: Number(value),
+      };
+    } else {
+      newTiers[index] = {
+        ...newTiers[index],
+        [field]: value,
+      };
+    }
+
     setTiers(newTiers);
     onChange({ ...data, ticket_tiers: newTiers });
   };

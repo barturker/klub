@@ -305,7 +305,7 @@ export default function EventPreview({
                         <div className="flex justify-between items-center">
                           <span className="font-medium">{tier.name || `Tier ${index + 1}`}</span>
                           <div className="flex gap-4 text-sm text-muted-foreground">
-                            <span>Price: {getCurrencySymbol(eventData.ticket_currency as string || 'USD')}{tier.price || 0}</span>
+                            <span>Price: {getCurrencySymbol(eventData.ticket_currency as string || 'USD')}{tier.price || (tier.price_cents ? (tier.price_cents / 100) : 0)}</span>
                             <span>Qty: {tier.quantity || 0}</span>
                           </div>
                         </div>
