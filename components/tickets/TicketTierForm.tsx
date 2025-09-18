@@ -4,7 +4,7 @@
  * Form to create/edit ticket tier
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -95,36 +95,39 @@ export function TicketTierForm({
 
   const form = useForm<TicketTierFormData>({
     resolver: zodResolver(ticketTierSchema),
-    defaultValues: tier
-      ? {
-          name: tier.name,
-          description: tier.description || "",
-          price: toMajorUnits(tier.price_cents, tier.currency),
-          currency: tier.currency,
-          quantity_available: tier.quantity_available,
-          sales_start: tier.sales_start ? new Date(tier.sales_start) : null,
-          sales_end: tier.sales_end ? new Date(tier.sales_end) : null,
-          min_per_order: tier.min_per_order,
-          max_per_order: tier.max_per_order,
-          is_hidden: tier.is_hidden,
-        }
-      : {
-          name: "",
-          description: "",
-          price: 0,
-          currency: "USD" as Currency,
-          quantity_available: null,
-          sales_start: null,
-          sales_end: null,
-          min_per_order: 1,
-          max_per_order: 10,
-          is_hidden: false,
-        },
+    defaultValues: {
+      name: "",
+      description: "",
+      price: 0,
+      currency: "USD" as Currency,
+      quantity_available: null,
+      sales_start: null,
+      sales_end: null,
+      min_per_order: 1,
+      max_per_order: 10,
+      is_hidden: false,
+    },
   });
 
-  // Debug form state
-  console.log('[DEBUG] Form initialized with defaultValues:', form.getValues());
-  console.log('[DEBUG] Form errors:', form.formState.errors);
+  // Reset form when tier data changes (fix for edit mode NaN issue)
+  useEffect(() => {
+    if (tier) {
+      const majorUnits = toMajorUnits(tier.price_cents, tier.currency);
+
+      form.reset({
+        name: tier.name,
+        description: tier.description || "",
+        price: majorUnits,
+        currency: tier.currency,
+        quantity_available: tier.quantity_available,
+        sales_start: tier.sales_start ? new Date(tier.sales_start) : null,
+        sales_end: tier.sales_end ? new Date(tier.sales_end) : null,
+        min_per_order: tier.min_per_order,
+        max_per_order: tier.max_per_order,
+        is_hidden: tier.is_hidden,
+      });
+    }
+  }, [tier?.id]);
 
   const selectedCurrency = form.watch("currency");
 
@@ -210,12 +213,7 @@ export function TicketTierForm({
           <FormField
             control={form.control}
             name="price"
-            render={({ field }) => {
-              console.log('[DEBUG] Price field props:', field);
-              console.log('[DEBUG] Price field value type:', typeof field.value);
-              console.log('[DEBUG] Price field value:', field.value);
-
-              return (
+            render={({ field }) => (
               <FormItem>
                 <FormLabel>Price</FormLabel>
                 <FormControl>
@@ -231,69 +229,41 @@ export function TicketTierForm({
                       name={field.name}
                       ref={field.ref}
                       value={(() => {
-                        console.log('[DEBUG] Converting value for display:', field.value);
-                        console.log('[DEBUG] Type of field.value:', typeof field.value);
-
                         if (field.value === undefined || field.value === null) {
-                          console.log('[DEBUG] Value is undefined/null, returning empty string');
                           return '';
                         }
 
                         if (typeof field.value === 'number' && !isNaN(field.value)) {
-                          const stringValue = field.value.toString();
-                          console.log('[DEBUG] Converted to string:', stringValue);
-                          return stringValue;
+                          return field.value.toString();
                         }
 
-                        console.log('[DEBUG] Value is NaN or not a number, returning empty string');
                         return '';
                       })()}
                       onChange={(e) => {
-                        console.log('[DEBUG] Price Input onChange triggered');
-                        console.log('[DEBUG] Raw input value:', e.target.value);
-
                         // Replace comma with dot for Turkish locale
                         const inputValue = e.target.value.replace(',', '.');
-                        console.log('[DEBUG] After comma replacement:', inputValue);
 
                         // Allow empty string
                         if (inputValue === '') {
-                          console.log('[DEBUG] Empty string detected, setting to 0');
                           field.onChange(0);
                           return;
                         }
 
                         // Only allow numbers and single decimal point
-                        console.log('[DEBUG] Regex test result:', /^\d*\.?\d*$/.test(inputValue));
                         if (/^\d*\.?\d*$/.test(inputValue)) {
                           // Special handling for strings like "." or numbers ending with "."
                           if (inputValue === '.' || inputValue.endsWith('.')) {
-                            // Keep the input as-is for display but don't update the numeric value yet
-                            // This allows users to type decimal numbers naturally
                             const baseValue = inputValue === '.' ? 0 : parseFloat(inputValue);
                             field.onChange(!isNaN(baseValue) ? baseValue : 0);
                           } else {
                             const parsedValue = parseFloat(inputValue);
-                            console.log('[DEBUG] Parsed value:', parsedValue);
-                            console.log('[DEBUG] Is NaN?:', isNaN(parsedValue));
-
-                            // Always set a valid number, default to 0 if NaN
                             field.onChange(!isNaN(parsedValue) ? parsedValue : 0);
-                            console.log('[DEBUG] Setting field value to:', !isNaN(parsedValue) ? parsedValue : 0);
                           }
-                        } else {
-                          console.log('[DEBUG] Input does not match regex pattern');
                         }
-
-                        console.log('[DEBUG] Current field.value after onChange:', field.value);
                       }}
                       onBlur={() => {
-                        console.log('[DEBUG] onBlur triggered');
-                        console.log('[DEBUG] Field value on blur:', field.value);
-
                         // Ensure field has a valid number on blur
                         if (field.value === undefined || field.value === null || isNaN(field.value as number)) {
-                          console.log('[DEBUG] Invalid value on blur, setting to 0');
                           field.onChange(0);
                         }
 
@@ -307,7 +277,7 @@ export function TicketTierForm({
                 </FormDescription>
                 <FormMessage />
               </FormItem>
-            )}}
+            )}
           />
 
           <FormField

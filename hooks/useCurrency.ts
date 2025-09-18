@@ -50,9 +50,15 @@ export function useCurrency() {
       ? amountInCents
       : 0;
 
+    // Validate currency exists in map
+    const currencyObj = CURRENCY_MAP[currency];
+    if (!currencyObj) {
+      throw new Error(`Unsupported currency: ${currency}`);
+    }
+
     return dinero({
       amount: safeAmount,
-      currency: CURRENCY_MAP[currency],
+      currency: currencyObj,
     });
   };
 
@@ -65,8 +71,28 @@ export function useCurrency() {
       amountInCents = 0;
     }
 
+    // Validate currency
+    if (!currency || !CURRENCY_MAP[currency]) {
+      currency = 'USD';
+    }
+
     const money = createMoney(amountInCents, currency);
-    const value = toUnits(money);
+    const unitsResult = toUnits(money);
+
+    // Handle array result from Dinero.js v2
+    let value: number;
+    if (Array.isArray(unitsResult)) {
+      // Dinero v2 returns [major, minor] array
+      value = unitsResult[0] + (unitsResult[1] || 0) / Math.pow(10, CURRENCY_MAP[currency].exponent || 2);
+    } else {
+      value = Number(unitsResult);
+    }
+
+    // Final validation
+    if (isNaN(value)) {
+      value = 0;
+    }
+
     return FORMATTERS[currency].format(value);
   };
 
@@ -194,8 +220,33 @@ export function useCurrency() {
   };
 
   const toMajorUnits = (amountInCents: number, currency: Currency): number => {
+    // Validate inputs
+    if (typeof amountInCents !== 'number' || !Number.isFinite(amountInCents)) {
+      amountInCents = 0;
+    }
+
+    if (!currency || !CURRENCY_MAP[currency]) {
+      currency = 'USD';
+    }
+
     const money = createMoney(amountInCents, currency);
-    return toUnits(money);
+    const unitsResult = toUnits(money);
+
+    // Handle array result from Dinero.js v2
+    let result: number;
+    if (Array.isArray(unitsResult)) {
+      // Dinero v2 returns [major, minor] array
+      result = unitsResult[0] + (unitsResult[1] || 0) / Math.pow(10, CURRENCY_MAP[currency].exponent || 2);
+    } else {
+      result = Number(unitsResult);
+    }
+
+    // Final NaN protection
+    if (Number.isNaN(result)) {
+      return 0;
+    }
+
+    return result;
   };
 
   /**
