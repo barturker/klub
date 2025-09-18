@@ -215,15 +215,20 @@ export function TicketTierForm({
                       {getCurrencySymbol(selectedCurrency)}
                     </span>
                     <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
+                      type="text"
+                      inputMode="decimal"
                       placeholder="0.00"
                       className="pl-8"
                       {...field}
-                      onChange={(e) =>
-                        field.onChange(parseFloat(e.target.value) || 0)
-                      }
+                      value={field.value || ''}
+                      onChange={(e) => {
+                        // Replace comma with dot for Turkish locale
+                        const value = e.target.value.replace(',', '.');
+                        // Only allow numbers and single decimal point
+                        if (/^\d*\.?\d*$/.test(value) || value === '') {
+                          field.onChange(parseFloat(value) || 0);
+                        }
+                      }}
                     />
                   </div>
                 </FormControl>
