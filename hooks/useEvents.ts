@@ -221,29 +221,41 @@ export const useCreateEvent = () => {
 };
 
 // Update event mutation
-export const useUpdateEvent = (eventId: string) => {
+export const useUpdateEvent = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: Partial<EventFormData>) => {
-      const response = await fetch(`/api/events/${eventId}`, {
+    mutationFn: async ({ id, data }: { id: string; data: Partial<EventFormData> }) => {
+      console.log("[useUpdateEvent] Starting update for event:", id);
+      console.log("[useUpdateEvent] Data being sent:", JSON.stringify(data, null, 2));
+
+      // Create the request body
+      const requestBody = JSON.stringify(data);
+      console.log("[useUpdateEvent] Request body string:", requestBody);
+
+      const response = await fetch(`/api/events/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: requestBody,
       });
+
+      console.log("[useUpdateEvent] Response status:", response.status);
+      console.log("[useUpdateEvent] Response ok:", response.ok);
 
       if (!response.ok) {
         const error = await response.json();
+        console.log("[useUpdateEvent] Error response:", error);
+        console.log("[useUpdateEvent] Error details:", error.details);
         throw new Error(error.error || "Failed to update event");
       }
 
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       // Invalidate specific event and events list
-      queryClient.invalidateQueries({ queryKey: ["event", eventId] });
+      queryClient.invalidateQueries({ queryKey: ["event", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["events"] });
       console.log("[useUpdateEvent] Event updated:", data);
     },

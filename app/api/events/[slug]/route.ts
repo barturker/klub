@@ -14,12 +14,38 @@ const updateEventSchema = z.object({
   venue_address: z.string().optional(),
   venue_city: z.string().optional(),
   venue_country: z.string().optional(),
-  online_url: z.string().url().optional(),
+  online_url: z.string().url().or(z.literal("")).optional(),
   capacity: z.number().min(0).optional(),
-  image_url: z.string().url().optional(),
+  image_url: z.string().url().or(z.literal("")).nullable().optional(),
   status: z.enum(["draft", "published", "cancelled"]).optional(),
   tags: z.array(z.string()).optional(),
   metadata: z.record(z.any()).optional(),
+  // Fields that might be sent but should be ignored/filtered
+  id: z.string().optional(),
+  community_id: z.string().optional(),
+  created_by: z.string().optional(),
+  slug: z.string().optional(),
+  recurring_rule: z.string().nullable().optional(),
+  recurring_end_date: z.string().nullable().optional(),
+  parent_event_id: z.string().nullable().optional(),
+  created_at: z.string().optional(),
+  updated_at: z.string().optional(),
+  is_recurring: z.boolean().optional(),
+  enable_ticketing: z.boolean().optional(),
+  ticket_currency: z.string().optional(),
+  // Nested objects that might be sent - these will be filtered out
+  creator: z.object({
+    id: z.string(),
+    username: z.string().nullable(),
+    full_name: z.string(),
+    avatar_url: z.string().nullable(),
+  }).optional(),
+  recurring_instances: z.array(z.object({
+    id: z.string(),
+    start_at: z.string(),
+    end_at: z.string(),
+    status: z.string(),
+  })).optional(),
 });
 
 interface RouteParams {
@@ -186,10 +212,19 @@ export async function PATCH(request: Request, props: RouteParams) {
     const body = await request.json();
     console.log("[PATCH] Request body:", body);
 
+    // Debug logging
+    console.log("[PATCH] Raw body keys:", Object.keys(body));
+    if (body.data) {
+      console.log("[PATCH] body.data keys:", Object.keys(body.data));
+    }
+
     // Validate request data
     const validationResult = updateEventSchema.safeParse(body);
 
     if (!validationResult.success) {
+      console.log("[PATCH] Validation failed:");
+      console.log("[PATCH] Validation errors:", JSON.stringify(validationResult.error.errors, null, 2));
+      console.log("[PATCH] Full validation result:", JSON.stringify(validationResult.error.format(), null, 2));
       return Response.json(
         {
           error: "Invalid request data",
@@ -199,7 +234,21 @@ export async function PATCH(request: Request, props: RouteParams) {
       );
     }
 
-    const updateData = validationResult.data;
+    // Filter out fields that shouldn't be updated directly
+    const {
+      id,
+      community_id,
+      created_by,
+      slug,
+      created_at,
+      updated_at,
+      creator,
+      recurring_instances,
+      enable_ticketing,
+      ticket_currency,
+      is_recurring,
+      ...updateData
+    } = validationResult.data;
 
     // Validate dates if provided
     if (updateData.start_at && updateData.end_at) {

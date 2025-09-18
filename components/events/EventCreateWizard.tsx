@@ -129,56 +129,88 @@ export default function EventCreateWizard({
 
       if (mode === "create") {
         // Create and publish the event directly
+        // Remove fields that don't exist in the database
+        const { enable_ticketing, ticket_currency, is_recurring, ...cleanEventData } = eventData;
+
         const createData = {
-          ...eventData,
+          ...cleanEventData,
           status: 'published',
           community_id: communityId,
           // Ensure dates are in ISO format
-          start_at: eventData.start_at && eventData.start_at.trim() !== ""
-            ? eventData.start_at
+          start_at: cleanEventData.start_at && cleanEventData.start_at.trim() !== ""
+            ? cleanEventData.start_at
             : DateTime.now().plus({ days: 7 }).toISO(),
-          end_at: eventData.end_at && eventData.end_at.trim() !== ""
-            ? eventData.end_at
+          end_at: cleanEventData.end_at && cleanEventData.end_at.trim() !== ""
+            ? cleanEventData.end_at
             : DateTime.now().plus({ days: 7, hours: 2 }).toISO(),
           // Clean up empty fields
-          description: eventData.description || "",
-          venue_name: eventData.venue_name || "",
-          venue_address: eventData.venue_address || "",
-          venue_city: eventData.venue_city || "",
-          venue_country: eventData.venue_country || "",
-          online_url: eventData.online_url || "",
-          recurring_rule: eventData.recurring_rule || "",
-          recurring_end_date: eventData.recurring_end_date || "",
-          tags: eventData.tags || [],
-          metadata: eventData.metadata || {},
+          description: cleanEventData.description || "",
+          venue_name: cleanEventData.venue_name || "",
+          venue_address: cleanEventData.venue_address || "",
+          venue_city: cleanEventData.venue_city || "",
+          venue_country: cleanEventData.venue_country || "",
+          online_url: cleanEventData.online_url || "",
+          recurring_rule: cleanEventData.recurring_rule || null,
+          recurring_end_date: cleanEventData.recurring_end_date || null,
+          tags: cleanEventData.tags || [],
+          metadata: cleanEventData.metadata || {},
         };
 
         result = await createEvent.mutateAsync(createData);
         toast.success("Event created successfully!");
       } else {
         // For edit mode, update the existing event
+        // Remove fields that don't exist in the database and nested objects
+        const {
+          enable_ticketing,
+          ticket_currency,
+          is_recurring,
+          creator,
+          recurring_instances,
+          ...cleanEventData
+        } = eventData;
+
+        // Debug: Let's see what we're sending
+        console.log("[EventCreateWizard] === UPDATE MODE DEBUG START ===");
+        console.log("[EventCreateWizard] Original eventData keys:", Object.keys(eventData));
+        console.log("[EventCreateWizard] Original eventData:", JSON.stringify(eventData, null, 2));
+        console.log("[EventCreateWizard] Fields removed:", {
+          enable_ticketing,
+          ticket_currency,
+          is_recurring,
+          creator,
+          recurring_instances
+        });
+        console.log("[EventCreateWizard] Cleaned eventData keys:", Object.keys(cleanEventData));
+        console.log("[EventCreateWizard] Cleaned eventData:", JSON.stringify(cleanEventData, null, 2));
+
         const submitData = {
-          ...eventData,
+          ...cleanEventData,
           community_id: communityId,
           // Ensure dates are in ISO format
-          start_at: eventData.start_at && eventData.start_at.trim() !== ""
-            ? eventData.start_at
+          start_at: cleanEventData.start_at && cleanEventData.start_at.trim() !== ""
+            ? cleanEventData.start_at
             : DateTime.now().plus({ days: 7 }).toISO(),
-          end_at: eventData.end_at && eventData.end_at.trim() !== ""
-            ? eventData.end_at
+          end_at: cleanEventData.end_at && cleanEventData.end_at.trim() !== ""
+            ? cleanEventData.end_at
             : DateTime.now().plus({ days: 7, hours: 2 }).toISO(),
           // Clean up empty fields
-          description: eventData.description || "",
-          venue_name: eventData.venue_name || "",
-          venue_address: eventData.venue_address || "",
-          venue_city: eventData.venue_city || "",
-          venue_country: eventData.venue_country || "",
-          online_url: eventData.online_url || "",
-          recurring_rule: eventData.recurring_rule || "",
-          recurring_end_date: eventData.recurring_end_date || "",
-          tags: eventData.tags || [],
-          metadata: eventData.metadata || {},
+          description: cleanEventData.description || "",
+          venue_name: cleanEventData.venue_name || "",
+          venue_address: cleanEventData.venue_address || "",
+          venue_city: cleanEventData.venue_city || "",
+          venue_country: cleanEventData.venue_country || "",
+          online_url: cleanEventData.online_url || "",
+          recurring_rule: cleanEventData.recurring_rule || null,
+          recurring_end_date: cleanEventData.recurring_end_date || null,
+          tags: cleanEventData.tags || [],
+          metadata: cleanEventData.metadata || {},
         };
+
+        console.log("[EventCreateWizard] Final submitData keys:", Object.keys(submitData));
+        console.log("[EventCreateWizard] Final submitData being sent:", JSON.stringify(submitData, null, 2));
+        console.log("[EventCreateWizard] Sending to event ID:", existingEvent!.id);
+        console.log("[EventCreateWizard] === UPDATE MODE DEBUG END ===");
 
         result = await updateEvent.mutateAsync({ id: existingEvent!.id, data: submitData });
         toast.success("Event updated successfully!");
