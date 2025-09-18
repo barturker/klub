@@ -38,6 +38,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { TicketTierDisplay } from "@/components/tickets/TicketTierDisplay";
 
 interface EventDetailsProps {
   event: Event;
@@ -226,6 +227,15 @@ export default function EventDetails({
 
         {/* Right Column - Sidebar */}
         <div className="space-y-4">
+          {/* Ticket Tiers */}
+          <TicketTierDisplay
+            eventId={event.id}
+            eventStatus={event.status}
+            eventStartDate={event.start_at}
+            eventCurrency={event.metadata?.ticket_currency as any || "USD"}
+            canPurchase={isMember}
+          />
+
           {/* Action Card */}
           <Card>
             <CardContent className="pt-6 space-y-4">

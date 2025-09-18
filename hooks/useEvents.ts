@@ -25,7 +25,10 @@ export interface Event {
   recurring_end_date?: string;
   parent_event_id?: string;
   tags: string[];
-  metadata: Record<string, unknown>;
+  metadata: Record<string, unknown> & {
+    ticket_currency?: string;
+    enable_ticketing?: boolean;
+  };
   created_at: string;
   updated_at: string;
   community?: {
