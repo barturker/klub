@@ -268,9 +268,14 @@ export const useUpdateEvent = () => {
       return response.json();
     },
     onSuccess: (data, variables) => {
-      // Invalidate specific event and events list
+      // Invalidate specific event by both ID and slug
       queryClient.invalidateQueries({ queryKey: ["event", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["event", data.slug] });
       queryClient.invalidateQueries({ queryKey: ["events"] });
+      // Also invalidate community events
+      if (data.community_id) {
+        queryClient.invalidateQueries({ queryKey: ["events", "community", data.community_id] });
+      }
       console.log("[useUpdateEvent] Event updated:", data);
     },
   });
