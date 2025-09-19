@@ -175,37 +175,48 @@ export function useRSVP({
           });
 
         if (error) {
-          // Handle specific errors
+          // Handle specific errors with proper flags to prevent duplicate toasts
+          let errorHandled = false;
+
           if (error.code === '23514' && error.message.includes('capacity')) {
             // Event is full
             toast.error('Sorry, this event is now full', {
-              description: 'You\'ve been added to the waitlist instead',
+              description: 'You can join the waitlist instead',
               action: {
-                label: 'OK',
+                label: 'Join Waitlist',
                 onClick: () => {
                   // Automatically switch to interested
                   updateRSVP('interested');
                 }
               }
             });
-            throw error;
+            errorHandled = true;
           } else if (error.code === '42820') {
-            // Rate limit exceeded
+            // Rate limit exceeded - show user-friendly message
             toast.error('Too many changes', {
               description: 'Please wait a moment before changing your RSVP again'
             });
-            throw error;
+            errorHandled = true;
           } else if (error.code === '55P03') {
-            // Lock not available, retry
+            // Lock not available, retry silently
             if (retryCount.current < maxRetries) {
               retryCount.current++;
               setTimeout(() => updateRSVP(newStatus), 100 * retryCount.current);
               return;
             }
-            throw error;
+            // If max retries reached, show error
+            toast.error('System busy', {
+              description: 'Please try again in a moment'
+            });
+            errorHandled = true;
           }
 
-          throw error;
+          // Create a clean error object for logging
+          const cleanError = {
+            ...error,
+            handled: errorHandled
+          };
+          throw cleanError;
         }
 
         // Show success message
@@ -227,12 +238,17 @@ export function useRSVP({
       setStatus(oldStatus);
       setCounts(oldCounts);
 
-      const error = err as Error;
-      console.error('Error updating RSVP:', error);
+      const error = err as any;
+
+      // Only log unexpected errors to console
+      if (!error.handled) {
+        console.error('Error updating RSVP:', error);
+      }
+
       setError(error);
 
-      // Show generic error if not already shown
-      if (!error.message.includes('capacity') && !error.message.includes('many changes')) {
+      // Show generic error only if not already handled
+      if (!error.handled) {
         toast.error('Failed to update RSVP', {
           description: 'Please try again'
         });
