@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       checkins: {
@@ -321,6 +346,65 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "discount_codes_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events_with_rsvp_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_rsvps: {
+        Row: {
+          created_at: string | null
+          event_id: string
+          id: string
+          metadata: Json | null
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_id: string
+          id?: string
+          metadata?: Json | null
+          status: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          metadata?: Json | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_rsvps_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_rsvps_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events_with_rsvp_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_rsvps_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       events: {
@@ -339,6 +423,8 @@ export type Database = {
           parent_event_id: string | null
           recurring_end_date: string | null
           recurring_rule: string | null
+          rsvp_going_count: number | null
+          rsvp_interested_count: number | null
           slug: string
           start_at: string
           status: string | null
@@ -366,6 +452,8 @@ export type Database = {
           parent_event_id?: string | null
           recurring_end_date?: string | null
           recurring_rule?: string | null
+          rsvp_going_count?: number | null
+          rsvp_interested_count?: number | null
           slug: string
           start_at: string
           status?: string | null
@@ -393,6 +481,8 @@ export type Database = {
           parent_event_id?: string | null
           recurring_end_date?: string | null
           recurring_rule?: string | null
+          rsvp_going_count?: number | null
+          rsvp_interested_count?: number | null
           slug?: string
           start_at?: string
           status?: string | null
@@ -418,6 +508,13 @@ export type Database = {
             columns: ["parent_event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_parent_event_id_fkey"
+            columns: ["parent_event_id"]
+            isOneToOne: false
+            referencedRelation: "events_with_rsvp_summary"
             referencedColumns: ["id"]
           },
         ]
@@ -744,6 +841,49 @@ export type Database = {
         }
         Relationships: []
       }
+      rsvp_rate_limits: {
+        Row: {
+          change_count: number | null
+          event_id: string
+          user_id: string
+          window_start: string | null
+        }
+        Insert: {
+          change_count?: number | null
+          event_id: string
+          user_id: string
+          window_start?: string | null
+        }
+        Update: {
+          change_count?: number | null
+          event_id?: string
+          user_id?: string
+          window_start?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rsvp_rate_limits_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rsvp_rate_limits_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events_with_rsvp_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rsvp_rate_limits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spatial_ref_sys: {
         Row: {
           auth_name: string | null
@@ -834,6 +974,13 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ticket_tiers_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events_with_rsvp_summary"
+            referencedColumns: ["id"]
+          },
         ]
       }
       tickets: {
@@ -888,6 +1035,61 @@ export type Database = {
       }
     }
     Views: {
+      events_with_rsvp_summary: {
+        Row: {
+          capacity: number | null
+          community_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          end_at: string | null
+          event_type: string | null
+          id: string | null
+          image_url: string | null
+          metadata: Json | null
+          online_url: string | null
+          parent_event_id: string | null
+          recurring_end_date: string | null
+          recurring_rule: string | null
+          rsvp_going_count: number | null
+          rsvp_interested_count: number | null
+          slug: string | null
+          start_at: string | null
+          status: string | null
+          tags: string[] | null
+          timezone: string | null
+          title: string | null
+          updated_at: string | null
+          user_rsvp_status: string | null
+          venue_address: string | null
+          venue_city: string | null
+          venue_country: string | null
+          venue_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_parent_event_id_fkey"
+            columns: ["parent_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_parent_event_id_fkey"
+            columns: ["parent_event_id"]
+            isOneToOne: false
+            referencedRelation: "events_with_rsvp_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       geography_columns: {
         Row: {
           coord_dimension: number | null
@@ -1169,6 +1371,10 @@ export type Database = {
         }[]
       }
       cleanup_old_rate_limits: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      cleanup_orphaned_rsvps: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
@@ -3015,6 +3221,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       event_status: ["draft", "published", "cancelled", "completed"],

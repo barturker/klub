@@ -39,6 +39,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { TicketTierDisplay } from "@/components/tickets/TicketTierDisplay";
+import { RSVPButton } from "@/components/events/RSVPButton";
+import { EventDetailsDebug } from "@/components/events/EventDetailsDebug";
 
 interface EventDetailsProps {
   event: Event;
@@ -227,6 +229,9 @@ export default function EventDetails({
 
         {/* Right Column - Sidebar */}
         <div className="space-y-4">
+          {/* Debug Info - Remove after testing */}
+          <EventDetailsDebug event={event} />
+
           {/* Ticket/Free Event Info */}
           {event.metadata?.is_free === true ? (
             <Card>
@@ -237,14 +242,18 @@ export default function EventDetails({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">
-                  This event is free to attend. No tickets required.
-                </p>
-                {event.metadata?.registration_only && (
+                <RSVPButton
+                  eventId={event.id}
+                  eventSlug={event.slug}
+                  communitySlug={event.community?.slug || ""}
+                  capacity={event.capacity}
+                  startAt={event.start_at}
+                />
+                {event.capacity && event.capacity > 0 && (
                   <div className="mt-3 p-3 bg-muted/50 rounded-lg">
                     <p className="text-sm text-muted-foreground flex items-start gap-2">
                       <AlertCircle className="h-4 w-4 mt-0.5" />
-                      Registration is required to attend this event.
+                      This event has limited capacity. RSVP early to secure your spot!
                     </p>
                   </div>
                 )}
