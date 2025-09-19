@@ -232,8 +232,10 @@ export default function EventDetails({
         <div className="space-y-4">
           {/* Debug Info - Remove after testing */}
 
-          {/* Ticket/Free Event Info */}
-          {(event.metadata?.is_free === true || event.metadata?.enable_ticketing === false) ? (
+          {/* Ticket/Free Event Info - Show RSVP if it's a free event */}
+          {(event.metadata?.is_free === true ||
+            event.metadata?.enable_ticketing === false ||
+            (event.metadata && Object.keys(event.metadata).includes('attendee_list_visible'))) ? (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -459,7 +461,9 @@ export default function EventDetails({
           </Card>
 
           {/* RSVP Analytics Dashboard - Only for Free Events (TEST: showing to all users) */}
-          {(event.metadata?.is_free === true || event.metadata?.enable_ticketing === false) && (
+          {(event.metadata?.is_free === true ||
+            event.metadata?.enable_ticketing === false ||
+            (event.metadata && Object.keys(event.metadata).includes('attendee_list_visible'))) && (
             <RSVPAnalyticsDashboard
               eventId={event.id}
               isOrganizer={isOrganizer}
@@ -467,7 +471,9 @@ export default function EventDetails({
           )}
 
           {/* Attendee List - Only for Free Events */}
-          {(event.metadata?.is_free === true || event.metadata?.enable_ticketing === false) && (
+          {(event.metadata?.is_free === true ||
+            event.metadata?.enable_ticketing === false ||
+            (event.metadata && Object.keys(event.metadata).includes('attendee_list_visible'))) && (
             <AttendeeList
               eventId={event.id}
               isOrganizer={isOrganizer || false}

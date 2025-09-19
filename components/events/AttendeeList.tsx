@@ -110,10 +110,22 @@ export function AttendeeList({
     setIsUpdatingVisibility(true);
 
     try {
+      // First get current metadata to preserve other fields
+      const { data: eventData, error: fetchError } = await supabase
+        .from('events')
+        .select('metadata')
+        .eq('id', eventId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const currentMetadata = eventData.metadata || {};
+
       const { error } = await supabase
         .from('events')
         .update({
           metadata: {
+            ...currentMetadata,
             attendee_list_visible: !isVisible
           }
         })
