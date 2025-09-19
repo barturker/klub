@@ -54,17 +54,19 @@ export default function TestStripePage() {
 
   const fetchTiers = async (eventId: string) => {
     try {
-      const response = await fetch(`/api/events/${eventId}/tiers`);
+      const response = await fetch(`/api/ticket-tiers?event_id=${eventId}`);
       if (response.ok) {
         const data = await response.json();
         setTiers(data.tiers || []);
         if (data.tiers && data.tiers.length > 0) {
           setSelectedTier(data.tiers[0]);
         }
+      } else {
+        // Create a default tier if none exist
+        createDefaultTier(eventId);
       }
     } catch (error) {
       console.error("Error fetching tiers:", error);
-      // Create a default tier if none exist
       createDefaultTier(eventId);
     }
   };

@@ -5,20 +5,45 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle, Download, Home, Ticket, Loader2 } from "lucide-react";
+import { CheckCircle, Download, Home, Ticket, Loader2, Mail, QrCode } from "lucide-react";
 import Link from "next/link";
+
+interface SessionData {
+  eventName: string;
+  ticketCount: number;
+  total: string;
+  customerEmail: string;
+  tickets?: any[];
+}
 
 export default function PaymentSuccessPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionData, setSessionData] = useState<SessionData | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const session = searchParams.get("session_id");
     if (session) {
       setSessionId(session);
+      verifySession(session);
     }
   }, [searchParams]);
+
+  const verifySession = async (sessionId: string) => {
+    try {
+      const response = await fetch(`/api/stripe/verify-session?session_id=${sessionId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSessionData(data);
+      }
+    } catch (error) {
+      console.error("Error verifying session:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="container max-w-2xl mx-auto py-12 px-4">
@@ -45,17 +70,33 @@ export default function PaymentSuccessPage() {
               <p className="font-mono text-sm">{sessionId ? sessionId.slice(0, 20) + "..." : "Loading..."}</p>
             </div>
 
-            <div className="border-l-4 border-blue-600 pl-4">
-              <p className="text-sm text-muted-foreground">Event</p>
-              <p className="font-semibold">Next.js & Stripe Workshop</p>
-              <p className="text-sm">December 25, 2025 • 2:00 PM</p>
-            </div>
+            {loading ? (
+              <div className="flex justify-center">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            ) : sessionData ? (
+              <>
+                <div className="border-l-4 border-blue-600 pl-4">
+                  <p className="text-sm text-muted-foreground">Event</p>
+                  <p className="font-semibold">{sessionData.eventName}</p>
+                  <p className="text-sm">{sessionData.ticketCount} Ticket(s)</p>
+                </div>
 
-            <div className="border-l-4 border-purple-600 pl-4">
-              <p className="text-sm text-muted-foreground">Ticket Type</p>
-              <p className="font-semibold">General Admission</p>
-              <p className="text-sm">1 Ticket</p>
-            </div>
+                <div className="border-l-4 border-purple-600 pl-4">
+                  <p className="text-sm text-muted-foreground">Total Paid</p>
+                  <p className="font-semibold text-lg">{sessionData.total}</p>
+                </div>
+
+                <div className="border-l-4 border-indigo-600 pl-4">
+                  <p className="text-sm text-muted-foreground">Email</p>
+                  <p className="font-semibold">{sessionData.customerEmail}</p>
+                </div>
+              </>
+            ) : (
+              <Alert>
+                <AlertDescription>Loading order details...</AlertDescription>
+              </Alert>
+            )}
           </div>
 
           {/* Test Mode Notice */}

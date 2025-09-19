@@ -1,6 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const searchParams = request.nextUrl.searchParams;
+    const eventId = searchParams.get("event_id");
+
+    if (!eventId) {
+      return NextResponse.json(
+        { error: "Event ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const { data: tiers, error } = await supabase
+      .from("ticket_tiers")
+      .select("*")
+      .eq("event_id", eventId)
+      .order("price_cents", { ascending: true });
+
+    if (error) {
+      return NextResponse.json(
+        { error: "Failed to fetch ticket tiers" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ tiers: tiers || [] });
+  } catch (error) {
+    console.error("Error fetching ticket tiers:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();

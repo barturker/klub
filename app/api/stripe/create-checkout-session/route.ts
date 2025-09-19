@@ -155,9 +155,9 @@ export async function POST(request: Request) {
       }
     }
 
-    // Create Stripe checkout session first
+    // Create Stripe checkout session with multiple payment methods
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
+      payment_method_types: ["card"], // Card payments (includes Apple Pay, Google Pay via browser)
       mode: "payment",
       customer_email: user.email,
       client_reference_id: user.id,
