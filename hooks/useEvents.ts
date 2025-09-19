@@ -28,9 +28,12 @@ export interface Event {
   metadata: Record<string, unknown> & {
     ticket_currency?: string;
     enable_ticketing?: boolean;
+    is_free?: boolean;
   };
   created_at: string;
   updated_at: string;
+  rsvp_going_count?: number;
+  rsvp_interested_count?: number;
   community?: {
     id: string;
     name: string;

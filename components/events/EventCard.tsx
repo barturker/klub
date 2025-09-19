@@ -15,6 +15,8 @@ import {
   Repeat,
   ExternalLink,
   MoreVertical,
+  CheckCircle,
+  Heart,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -203,10 +205,36 @@ export default function EventCard({
               <span>Capacity: {event.capacity}</span>
             </div>
           )}
+
+          {/* RSVP Counts for Free Events */}
+          {event.metadata?.is_free && (
+            <div className="flex items-center gap-3 text-muted-foreground">
+              {(event.rsvp_going_count ?? 0) > 0 && (
+                <div className="flex items-center gap-1">
+                  <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                  <span className="text-xs">{event.rsvp_going_count} going</span>
+                </div>
+              )}
+              {(event.rsvp_interested_count ?? 0) > 0 && (
+                <div className="flex items-center gap-1">
+                  <Heart className="h-3.5 w-3.5 text-red-500" />
+                  <span className="text-xs">{event.rsvp_interested_count} interested</span>
+                </div>
+              )}
+              {(event.rsvp_going_count ?? 0) === 0 && (event.rsvp_interested_count ?? 0) === 0 && (
+                <span className="text-xs italic">Be the first to RSVP!</span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Tags and Badges */}
         <div className="flex flex-wrap gap-2">
+          {event.metadata?.is_free && (
+            <Badge className="text-xs bg-green-100 text-green-800 hover:bg-green-200">
+              Free Event
+            </Badge>
+          )}
           {event.recurring_rule && (
             <Badge variant="secondary" className="text-xs">
               <Repeat className="h-3 w-3 mr-1" />

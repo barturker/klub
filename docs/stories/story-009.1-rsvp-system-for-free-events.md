@@ -897,19 +897,19 @@ export function RSVPButton({
 5. [x] Update EventDetails to show RSVP for free events
 6. [x] Basic testing on local development
 
-### Phase 2: Performance & Real-time (Day 3)
-1. [ ] Implement materialized counts and views
-2. [ ] Add real-time subscriptions
-3. [ ] Add multi-device sync
-4. [ ] Implement periodic refresh and focus refresh
-5. [ ] Performance testing with simulated load
+### Phase 2: Performance & Real-time (Day 3) ✅ COMPLETED
+1. [x] Implement materialized counts and views
+2. [x] Add real-time subscriptions
+3. [x] Add multi-device sync
+4. [x] Implement periodic refresh and focus refresh
+5. [x] Performance testing with simulated load
 
 ### Phase 3: Error Handling & UX Polish (Day 4)
-1. [ ] Add optimistic UI with rollback
-2. [ ] Implement auth flow preservation
-3. [ ] Add comprehensive error messages
-4. [ ] Implement capacity full → waitlist flow
-5. [ ] Add loading states and skeletons
+1. [x] Add optimistic UI with rollback (✅ Done in Phase 2)
+2. [x] Implement auth flow preservation (✅ Done in Phase 1)
+3. [x] Add comprehensive error messages (✅ Done in Phase 2)
+4. [x] Implement capacity full → waitlist flow (✅ Done in Phase 2)
+5. [ ] Add loading states and skeletons (partially done)
 
 ### Phase 4: Security & Scale (Day 5)
 1. [ ] Enable rate limiting
@@ -1076,13 +1076,15 @@ if (features.rsvpSystem) {
 ### File List
 _Files created or modified in this story_
 - [x] supabase/migrations/00041_add_rsvp_system.sql
+- [x] supabase/migrations/00042_fix_rsvp_rate_limits_access.sql (additional migration)
 - [x] lib/supabase/database.types.ts (regenerated)
-- [x] hooks/useRSVP.ts
+- [x] hooks/useRSVP.ts (enhanced with Phase 2 features)
 - [x] components/events/RSVPButton.tsx
 - [x] components/events/EventDetails.tsx (modified)
-- [ ] components/events/EventCard.tsx (modified - Phase 2)
+- [x] components/events/EventCard.tsx (modified - Phase 2) ✅
+- [x] hooks/useEvents.ts (added RSVP count fields to Event type) ✅
 - [ ] lib/features.ts (feature flags - Phase 5)
-- [ ] app/api/events/[id]/rsvp/route.ts (optional API - Phase 2)
+- [ ] app/api/events/[id]/rsvp/route.ts (optional API - future enhancement)
 - [ ] tests/rsvp.test.ts (Phase 3)
 - [ ] tests/e2e/rsvp-flow.spec.ts (Phase 3)
 
@@ -1095,7 +1097,15 @@ _Track significant changes during development_
   - Updated EventDetails to show RSVP for free events
   - Added capacity management with atomic checks
   - Implemented rate limiting at database level
-- [ ] Phase 2: Performance optimizations with materialized counts
-- [ ] Phase 3: Added real-time sync
-- [ ] Phase 4: Security hardening completed
+- [x] Phase 2: Performance optimizations with real-time features (2025-09-19) ✅
+  - Enhanced useRSVP hook with real-time subscriptions
+  - Added multi-device sync for user's RSVPs
+  - Implemented periodic refresh (30-second intervals)
+  - Added focus/visibility change refresh
+  - Added optimistic UI updates with rollback capability
+  - Updated EventCard to display RSVP counts for free events
+  - Fixed TypeScript types for proper type safety
+  - Verified materialized counts working correctly
+- [ ] Phase 3: Error handling & UX polish
+- [ ] Phase 4: Security hardening
 - [ ] Phase 5: Production deployment
