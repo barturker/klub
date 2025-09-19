@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
 
 interface ErrorMetrics {
   rateLimitHits: number;
@@ -13,7 +12,6 @@ interface ErrorMetrics {
 }
 
 export function useErrorTracking(eventId: string) {
-  const supabase = createClient();
   const [metrics, setMetrics] = useState<ErrorMetrics>({
     rateLimitHits: 0,
     capacityFullErrors: 0,
@@ -22,10 +20,11 @@ export function useErrorTracking(eventId: string) {
   });
 
   // Track an error and update metrics
-  const trackError = useCallback(async (error: any, errorType: 'rate_limit' | 'capacity_full' | 'other' = 'other') => {
+  const trackError = useCallback(async (error: unknown, errorType: 'rate_limit' | 'capacity_full' | 'other' = 'other') => {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     const errorData = {
       type: errorType,
-      message: error.message || 'Unknown error',
+      message: errorMessage,
       timestamp: new Date().toISOString()
     };
 

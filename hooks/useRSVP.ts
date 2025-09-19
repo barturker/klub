@@ -242,7 +242,7 @@ export function useRSVP({
       setStatus(oldStatus);
       setCounts(oldCounts);
 
-      const error = err as any;
+      const error = err as Error & { handled?: boolean };
 
       // Only log unexpected errors to console
       if (!error.handled) {
@@ -264,7 +264,7 @@ export function useRSVP({
     } finally {
       setIsUpdating(false);
     }
-  }, [user, eventId, eventSlug, communitySlug, status, counts, canChangeRSVP, isUpdating, supabase, router, onSuccess, onError]);
+  }, [user, eventId, eventSlug, communitySlug, status, counts, canChangeRSVP, isUpdating, supabase, router, onSuccess, onError, trackError]);
 
   // Set up real-time subscriptions, periodic refresh, and focus refresh
   useEffect(() => {

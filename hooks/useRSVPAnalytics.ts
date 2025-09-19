@@ -123,7 +123,7 @@ export function useRSVPAnalytics({
     const interval = setInterval(fetchMetrics, refreshInterval);
 
     // Real-time subscription for RSVP changes
-    let channel: any;
+    let channel: ReturnType<typeof supabase.channel> | undefined;
     if (eventId) {
       channel = supabase
         .channel(`analytics:${eventId}`)
@@ -154,7 +154,7 @@ export function useRSVPAnalytics({
       clearInterval(interval);
       channel?.unsubscribe();
     };
-  }, [eventId, refreshInterval]);
+  }, [eventId, refreshInterval, fetchMetrics, supabase]);
 
   // Helper functions for alerts
   const getAlerts = () => {
