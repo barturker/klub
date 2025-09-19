@@ -10,20 +10,12 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 export async function POST(request: NextRequest) {
   try {
     // Get request body
-    const { amount, currency = "usd", description, metadata, eventId } = await request.json();
+    const { eventId, tierId, quantity = 1 } = await request.json();
 
-    // Validate amount
-    if (!amount || amount < 50) {
+    // Validate inputs
+    if (!eventId || !tierId) {
       return NextResponse.json(
-        { error: "Amount must be at least $0.50 (50 cents)" },
-        { status: 400 }
-      );
-    }
-
-    // Validate event ID
-    if (!eventId) {
-      return NextResponse.json(
-        { error: "Event ID is required" },
+        { error: "Event ID and Tier ID are required" },
         { status: 400 }
       );
     }
@@ -38,26 +30,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
 
-    // Calculate fees
-    const platformFee = Math.ceil(amount * 0.03); // 3% platform fee
-    const stripeFee = Math.ceil(amount * 0.029) + 30; // 2.9% + 30 cents
-    const totalFee = platformFee + stripeFee;
+    // Fetch ticket tier
+    const { data: tier, error: tierError } = await supabase
+      .from("ticket_tiers")
+      .select("*")
+      .eq("id", tierId)
+      .eq("event_id", eventId)
+      .single();
+
+    if (tierError || !tier) {
+      return NextResponse.json({ error: "Ticket tier not found" }, { status: 404 });
+    }
+
+    // Calculate amounts (same as checkout session)
+    const subtotal = tier.price_cents * quantity;
+    const platformFeePercentage = 0.059; // 5.9%
+    const platformFeeFixed = 30; // 30 cents
+    const platformFees = Math.round(subtotal * platformFeePercentage + platformFeeFixed);
+    const totalAmount = subtotal + platformFees;
 
     // Create payment intent
     const paymentIntent = await stripe.paymentIntents.create({
-      amount, // Amount in cents
-      currency,
+      amount: totalAmount, // Total amount including fees
+      currency: "usd",
       automatic_payment_methods: {
         enabled: true, // Automatically enables cards, Apple Pay, Google Pay, etc.
       },
-      description: description || "Klub Event Ticket",
+      description: `Ticket for ${tier.name}`,
       metadata: {
-        ...metadata,
+        event_id: eventId,
+        tier_id: tierId,
         user_id: user.id,
         user_email: user.email || "",
-        platform_fee: platformFee.toString(),
-        stripe_fee: stripeFee.toString(),
-        total_fee: totalFee.toString(),
+        subtotal_cents: subtotal.toString(),
+        platform_fee_cents: platformFees.toString(),
+        quantity: quantity.toString(),
         test_mode: "true", // Indicate this is test mode
       },
     });
@@ -66,20 +73,20 @@ export async function POST(request: NextRequest) {
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
-        event_id: eventId, // Use the event ID from request
+        event_id: eventId,
         buyer_id: user.id,
-        amount_cents: amount,
-        currency,
+        amount_cents: totalAmount, // Total including fees
+        fee_cents: platformFees, // Platform fee amount
+        currency: "usd",
         status: "pending",
-        quantity: 1, // Required field
+        quantity: quantity,
+        buyer_email: user.email || "",
         metadata: {
-          buyer_email: user.email || "",
           stripe_payment_intent_id: paymentIntent.id,
-          platform_fee: platformFee,
-          stripe_fee: stripeFee,
-          total_fee: totalFee,
+          tier_id: tierId,
+          subtotal_cents: subtotal,
+          platform_fee_cents: platformFees,
           test_order: true, // Mark as test
-          ...metadata,
         },
       })
       .select()
@@ -96,11 +103,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
       orderId: order.id,
-      amount,
-      platformFee,
-      stripeFee,
-      totalFee,
-      netAmount: amount - totalFee,
+      subtotal,
+      platformFees,
+      totalAmount,
+      tierName: tier.name,
+      quantity,
     });
   } catch (error) {
     console.error("Error creating payment intent:", error);

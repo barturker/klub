@@ -32,17 +32,54 @@ export async function GET(request: Request) {
 
     // Update the order status in the database
     const supabase = await createClient();
-    const { error: updateError } = await supabase
-      .from("ticket_orders")
-      .update({
-        status: "completed",
-        stripe_payment_intent_id: session.payment_intent,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("stripe_session_id", sessionId);
 
-    if (updateError) {
-      console.error("Error updating order:", updateError);
+    // First, find the order with this session ID
+    const { data: order, error: findError } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("metadata->>stripe_session_id", sessionId)
+      .single();
+
+    if (order && session.payment_status === "paid") {
+      // Update existing order
+      const { error: updateError } = await supabase
+        .from("orders")
+        .update({
+          status: "completed",
+          stripe_payment_intent_id: session.payment_intent as string,
+          paid_at: new Date().toISOString(),
+        })
+        .eq("id", order.id);
+
+      if (updateError) {
+        console.error("Error updating order:", updateError);
+      }
+
+      // Generate tickets if not already created
+      const { data: existingTickets } = await supabase
+        .from("tickets")
+        .select("id")
+        .eq("order_id", order.id);
+
+      if (!existingTickets || existingTickets.length === 0) {
+        // Parse ticket selections from metadata
+        const ticketSelections = JSON.parse(session.metadata?.ticket_selections || "[]");
+
+        for (const selection of ticketSelections) {
+          for (let i = 0; i < selection.quantity; i++) {
+            const ticketCode = `TKT${Date.now()}${Math.random().toString(36).substring(2, 10)}`.toUpperCase();
+
+            await supabase.from("tickets").insert({
+              order_id: order.id,
+              event_id: session.metadata?.event_id,
+              ticket_tier_id: selection.tierId,
+              attendee_email: session.customer_email || "",
+              ticket_code: ticketCode,
+              status: "valid",
+            });
+          }
+        }
+      }
     }
 
     // Get event details from metadata

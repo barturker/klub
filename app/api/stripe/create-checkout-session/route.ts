@@ -79,6 +79,10 @@ export async function POST(request: Request) {
       const price = tier.price_cents;
       subtotal += price * quantity;
 
+      console.log("Tier price:", tier.name, price, "cents");
+      console.log("Quantity:", quantity);
+      console.log("Line item total:", price * quantity, "cents");
+
       lineItems.push({
         price_data: {
           currency: currency.toLowerCase(),
@@ -96,6 +100,29 @@ export async function POST(request: Request) {
         quantity: quantity,
       });
     }
+
+    // Calculate platform fees (5.9% + 30 cents) - same as UI
+    const platformFeePercentage = 0.059; // 5.9%
+    const platformFeeFixed = 30; // 30 cents
+    const platformFees = Math.round(subtotal * platformFeePercentage + platformFeeFixed);
+
+    // Add platform fee as a separate line item
+    lineItems.push({
+      price_data: {
+        currency: currency.toLowerCase(),
+        product_data: {
+          name: "Service Fee",
+          description: "Platform service and processing fee",
+        },
+        unit_amount: platformFees,
+      },
+      quantity: 1,
+    });
+
+    const totalAmount = subtotal + platformFees;
+    console.log("Subtotal:", subtotal, "cents =", subtotal / 100, currency);
+    console.log("Platform fees:", platformFees, "cents =", platformFees / 100, currency);
+    console.log("Total being sent to Stripe:", totalAmount, "cents =", totalAmount / 100, currency);
 
     // Handle discount code if provided
     let discountId: string | undefined;
@@ -128,7 +155,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // Create Stripe checkout session
+    // Create Stripe checkout session first
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
@@ -143,26 +170,31 @@ export async function POST(request: Request) {
         ticket_selections: JSON.stringify(selectedTickets),
       },
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/stripe-checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/events/${event.community.slug}/${event.slug}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/communities/${event.community.slug}/events/${event.slug}`,
     });
 
     // Store the pending order in the database
-    const { error: orderError } = await supabase.from("ticket_orders").insert({
-      id: session.id,
+    const { data: order, error: orderError } = await supabase.from("orders").insert({
       event_id: eventId,
-      user_id: user.id,
+      buyer_id: user.id,
       status: "pending",
-      stripe_session_id: session.id,
-      total_amount: subtotal,
-      currency: currency,
+      amount_cents: totalAmount, // Total including fees
+      fee_cents: platformFees, // Actual platform fee amount
+      currency: currency.toLowerCase(),
+      quantity: selectedTickets.reduce((acc: number, t: any) => acc + t.quantity, 0),
+      buyer_email: user.email || "",
       metadata: {
+        stripe_session_id: session.id,
         selectedTickets,
         discountCode,
+        subtotal_cents: subtotal,
+        platform_fee_cents: platformFees,
       },
-    });
+    }).select().single();
 
     if (orderError) {
       console.error("Error creating order record:", orderError);
+      // Continue anyway - order will be created via webhook
     }
 
     return NextResponse.json({
