@@ -1,41 +1,93 @@
 import { createClient } from "@/lib/supabase/server";
-import { z } from "zod";
 import { DateTime } from "luxon";
 import { RRule } from "rrule";
 
-// Validation schema for creating an event
-const createEventSchema = z.object({
-  community_id: z.string().uuid(),
-  title: z.string().min(1).max(200),
-  description: z.string().optional(),
-  status: z.enum(["draft", "published", "cancelled"]).optional().default("published"),
-  event_type: z.enum(["physical", "virtual", "hybrid"]).default("physical"),
-  start_at: z.string().datetime({ offset: true }),
-  end_at: z.string().datetime({ offset: true }),
-  timezone: z.string().default("UTC"),
-  venue_name: z.string().optional().transform(val => val === "" ? undefined : val),
-  venue_address: z.string().optional().transform(val => val === "" ? undefined : val),
-  venue_city: z.string().optional().transform(val => val === "" ? undefined : val),
-  venue_country: z.string().optional().transform(val => val === "" ? undefined : val),
-  online_url: z.union([z.string().url(), z.literal("")]).optional().transform(val => val === "" ? undefined : val),
-  capacity: z.number().min(0).default(0),
-  image_url: z.union([z.string().url(), z.literal("")]).optional().transform(val => val === "" ? undefined : val),
-  recurring_rule: z.string().optional().transform(val => val === "" ? undefined : val),
-  recurring_end_date: z.union([
-    z.string().datetime({ offset: true }),
-    z.literal(""),
-    z.null()
-  ]).optional().transform(val => val === "" ? null : val),
-  tags: z.array(z.string()).optional(),
-  metadata: z.record(z.any()).optional(),
-});
+// Manual validation for Turbopack compatibility
+interface CreateEventData {
+  community_id: string;
+  title: string;
+  description?: string;
+  status?: "draft" | "published" | "cancelled";
+  event_type?: "physical" | "virtual" | "hybrid";
+  start_at: string;
+  end_at: string;
+  timezone?: string;
+  venue_name?: string;
+  venue_address?: string;
+  venue_city?: string;
+  venue_country?: string;
+  online_url?: string;
+  capacity?: number;
+  image_url?: string;
+  recurring_rule?: string;
+  recurring_end_date?: string | null;
+  tags?: string[];
+  metadata?: Record<string, any>;
+}
+
+function validateCreateEventData(data: any): { success: boolean; data?: CreateEventData; errors?: Record<string, string[]> } {
+  const errors: Record<string, string[]> = {};
+
+  // Required fields
+  if (!data.community_id || typeof data.community_id !== 'string') {
+    errors.community_id = ['Community ID is required'];
+  }
+  if (!data.title || typeof data.title !== 'string' || data.title.length < 1 || data.title.length > 200) {
+    errors.title = ['Title is required and must be between 1 and 200 characters'];
+  }
+  if (!data.start_at || typeof data.start_at !== 'string') {
+    errors.start_at = ['Start time is required'];
+  }
+  if (!data.end_at || typeof data.end_at !== 'string') {
+    errors.end_at = ['End time is required'];
+  }
+
+  // Optional enums with validation
+  if (data.status && !["draft", "published", "cancelled"].includes(data.status)) {
+    errors.status = ['Status must be draft, published, or cancelled'];
+  }
+  if (data.event_type && !["physical", "virtual", "hybrid"].includes(data.event_type)) {
+    errors.event_type = ['Event type must be physical, virtual, or hybrid'];
+  }
+
+  // Optional number validation
+  if (data.capacity !== undefined && (typeof data.capacity !== 'number' || data.capacity < 0)) {
+    errors.capacity = ['Capacity must be a positive number'];
+  }
+
+  // Clean up empty strings
+  const cleanedData: CreateEventData = {
+    community_id: data.community_id,
+    title: data.title,
+    description: data.description || undefined,
+    status: data.status || "published",
+    event_type: data.event_type || "physical",
+    start_at: data.start_at,
+    end_at: data.end_at,
+    timezone: data.timezone || "UTC",
+    venue_name: data.venue_name || undefined,
+    venue_address: data.venue_address || undefined,
+    venue_city: data.venue_city || undefined,
+    venue_country: data.venue_country || undefined,
+    online_url: data.online_url || undefined,
+    capacity: data.capacity || 0,
+    image_url: data.image_url || undefined,
+    recurring_rule: data.recurring_rule || undefined,
+    recurring_end_date: data.recurring_end_date || null,
+    tags: data.tags || [],
+    metadata: data.metadata || {},
+  };
+
+  if (Object.keys(errors).length > 0) {
+    return { success: false, errors };
+  }
+
+  return { success: true, data: cleanedData };
+}
 
 export async function POST(request: Request) {
-  console.log("[POST /api/events] Starting...");
-
   try {
     const supabase = await createClient();
-    console.log("[POST] Supabase client created");
 
     // Check authentication
     const {
@@ -44,7 +96,6 @@ export async function POST(request: Request) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      console.log("[POST] Auth check failed:", authError);
       return Response.json(
         {
           error: "Authentication required",
@@ -53,51 +104,23 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log("[POST] User authenticated:", user.id);
-
     // Parse request body
     const body = await request.json();
-    console.log("[POST] Request body received:");
-    console.log("  - title:", body.title);
-    console.log("  - community_id:", body.community_id);
-    console.log("  - event_type:", body.event_type);
-    console.log("  - start_at:", body.start_at);
-    console.log("  - end_at:", body.end_at);
-    console.log("  - timezone:", body.timezone);
-    console.log("  - venue_name:", body.venue_name);
-    console.log("  - online_url:", body.online_url);
-    console.log("  - capacity:", body.capacity);
-    console.log("  - tags:", body.tags);
-    console.log("  - Full body:", JSON.stringify(body, null, 2));
 
-    // Validate request data
-    const validationResult = createEventSchema.safeParse(body);
+    // Validate request data using manual validation
+    const validationResult = validateCreateEventData(body);
 
     if (!validationResult.success) {
-      console.log("[POST] ❌ Validation FAILED");
-      console.log("[POST] Validation errors:");
-      validationResult.error.issues.forEach((issue, idx) => {
-        console.log(`  ${idx + 1}. Field: ${issue.path.join('.')}`);
-        console.log(`     Message: ${issue.message}`);
-        console.log(`     Code: ${issue.code}`);
-      });
-
-      const flattenedErrors = validationResult.error.flatten();
-      console.log("[POST] Flattened errors:", JSON.stringify(flattenedErrors, null, 2));
-
       return Response.json(
         {
           error: "Invalid request data",
-          details: flattenedErrors?.fieldErrors || {},
-          issues: validationResult.error.issues || [],
+          details: validationResult.errors || {},
         },
         { status: 400 }
       );
     }
 
-    console.log("[POST] ✅ Validation PASSED");
-
-    const data = validationResult.data;
+    const data = validationResult.data!;
 
     // Validate dates
     const startDate = DateTime.fromISO(data.start_at);
@@ -138,7 +161,6 @@ export async function POST(request: Request) {
     }
 
     // Check if user has permission to create events in this community
-    console.log("[POST] Checking user permissions in community:", data.community_id);
     const { data: memberData, error: memberError } = await supabase
       .from("community_members")
       .select("role")
@@ -146,10 +168,7 @@ export async function POST(request: Request) {
       .eq("user_id", user.id)
       .single();
 
-    console.log("[POST] Member check result:", { memberData, memberError });
-
     if (memberError || !memberData) {
-      console.log("[POST] ❌ Member check failed:", memberError);
       return Response.json(
         {
           error: "You are not a member of this community",
@@ -159,7 +178,6 @@ export async function POST(request: Request) {
     }
 
     if (!["admin", "moderator"].includes(memberData.role)) {
-      console.log("[POST] ❌ Permission denied. User role:", memberData.role);
       return Response.json(
         {
           error: "Only admins and moderators can create events",
@@ -168,10 +186,7 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log("[POST] ✅ User has permission. Role:", memberData.role);
-
     // Generate slug locally (since database function might not exist)
-    console.log("[POST] Generating slug for title:", data.title);
 
     // Create base slug from title
     let baseSlug = data.title
@@ -196,7 +211,6 @@ export async function POST(request: Request) {
         .eq("community_id", data.community_id);
 
       if (checkError) {
-        console.log("[POST] ❌ Error checking slug uniqueness:", checkError);
         // Continue anyway with the current slug
         break;
       }
@@ -208,8 +222,6 @@ export async function POST(request: Request) {
         slugData = `${baseSlug}-${counter}`;
       }
     }
-
-    console.log("[POST] ✅ Generated slug:", slugData);
 
     // Create the event
     const eventData = {
@@ -236,8 +248,6 @@ export async function POST(request: Request) {
       metadata: data.metadata || {},
     };
 
-    console.log("[POST] Creating event with data:", eventData);
-
     const { data: event, error: eventError } = await supabase
       .from("events")
       .insert(eventData)
@@ -245,11 +255,6 @@ export async function POST(request: Request) {
       .single();
 
     if (eventError) {
-      console.log("[POST] ❌ Event creation FAILED:");
-      console.log("  - Error code:", eventError.code);
-      console.log("  - Error message:", eventError.message);
-      console.log("  - Error details:", eventError.details);
-      console.log("  - Full error:", eventError);
       return Response.json(
         {
           error: "Failed to create event",
@@ -259,11 +264,6 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
-
-    console.log("[POST] ✅ Event created successfully!");
-    console.log("  - Event ID:", event.id);
-    console.log("  - Event slug:", event.slug);
-    console.log("  - Event status:", event.status);
 
     // Generate recurring event instances if this is a recurring event
     if (data.recurring_rule && data.recurring_rule !== "" && data.recurring_end_date && data.recurring_end_date !== null) {

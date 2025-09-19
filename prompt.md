@@ -5,3 +5,6 @@ sorunu tam görüp anlamak için debug ekleyelim tüm işlemlere-isteklere-çağ
 
 
 chatgpt ye danışmak istiyorum durumu. ama contexti, yok durumu anlatıp çözüm önerilerini ve genel durumu nasıl anlatabilirz destek için 
+
+
+süper takım böyle hatalar bulmanız hoşuma gidiyor, şimdi sizden son ken detaylı mantıksal sistematik akışsal deneyimsel açılardan kontrol etmenizi istiyorum ultrathink

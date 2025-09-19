@@ -17,9 +17,10 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Grid3X3, List, Plus, Search, X } from "lucide-react";
+import { Calendar, Grid3X3, List, Plus, Search, X, Lock } from "lucide-react";
 import { DateTime } from "luxon";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 type ViewMode = "grid" | "list" | "calendar";
 type EventFilter = "all" | "upcoming" | "past" | "draft" | "published";
@@ -36,10 +37,12 @@ export default function CommunityEventsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [communityId, setCommunityId] = useState<string>("");
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [isCheckingRole, setIsCheckingRole] = useState(true);
 
-  // Fetch community by slug to get ID
+  // Fetch community by slug to get ID and check user role
   useEffect(() => {
-    const fetchCommunity = async () => {
+    const fetchCommunityAndRole = async () => {
       console.log('🔍 [EventsPage] Fetching community with slug:', communitySlug);
       const supabase = createClient();
 
@@ -55,16 +58,37 @@ export default function CommunityEventsPage() {
 
       if (error) {
         console.error('❌ [EventsPage] Error fetching community:', error);
+        setIsCheckingRole(false);
       } else if (community) {
         console.log('✅ [EventsPage] Found community:', community);
         setCommunityId(community.id);
+
+        // Check user's role in this community
+        if (user) {
+          const { data: memberData } = await supabase
+            .from('community_members')
+            .select('role')
+            .eq('community_id', community.id)
+            .eq('user_id', user.id)
+            .single();
+
+          if (memberData) {
+            console.log('👥 [EventsPage] User role in community:', memberData.role);
+            setUserRole(memberData.role);
+          } else {
+            console.log('⚠️ [EventsPage] User is not a member of this community');
+            setUserRole(null);
+          }
+        }
+        setIsCheckingRole(false);
       } else {
         console.log('⚠️ [EventsPage] No community found for slug:', communitySlug);
+        setIsCheckingRole(false);
       }
     };
 
     if (communitySlug) {
-      fetchCommunity();
+      fetchCommunityAndRole();
     }
   }, [communitySlug]);
 
@@ -126,8 +150,19 @@ export default function CommunityEventsPage() {
   ) as string[];
 
   const handleCreateEvent = () => {
+    if (!userRole || !['admin', 'moderator'].includes(userRole)) {
+      // Show toast if user doesn't have permission
+      toast({
+        title: "Permission Required",
+        description: "Only community admins and moderators can create events. Please contact a community admin if you would like to organize an event.",
+        variant: "default",
+      });
+      return;
+    }
     router.push(`/communities/${communitySlug}/events/create`);
   };
+
+  const canCreateEvent = userRole && ['admin', 'moderator'].includes(userRole);
 
 
   const clearFilters = () => {
@@ -164,10 +199,21 @@ export default function CommunityEventsPage() {
             Discover and join community events
           </p>
         </div>
-        <Button onClick={handleCreateEvent}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Event
-        </Button>
+        {canCreateEvent ? (
+          <Button onClick={handleCreateEvent}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Event
+          </Button>
+        ) : (
+          <Button
+            onClick={handleCreateEvent}
+            variant="secondary"
+            title="Only admins and moderators can create events"
+          >
+            <Lock className="h-4 w-4 mr-2" />
+            Create Event
+          </Button>
+        )}
       </div>
 
       {/* Filters Bar */}
@@ -278,8 +324,17 @@ export default function CommunityEventsPage() {
                 <Button variant="outline" onClick={clearFilters}>
                   Clear Filters
                 </Button>
-              ) : (
+              ) : canCreateEvent ? (
                 <Button onClick={handleCreateEvent}>Create Event</Button>
+              ) : (
+                <div className="space-y-2">
+                  <Button onClick={handleCreateEvent} variant="secondary">
+                    Create Event
+                  </Button>
+                  <p className="text-sm text-muted-foreground">
+                    Only admins and moderators can create events
+                  </p>
+                </div>
               )}
             </div>
           ) : (
