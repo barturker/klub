@@ -233,7 +233,7 @@ export default function EventDetails({
           {/* Debug Info - Remove after testing */}
 
           {/* Ticket/Free Event Info */}
-          {event.metadata?.is_free === true ? (
+          {(event.metadata?.is_free === true || event.metadata?.enable_ticketing === false) ? (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -458,8 +458,8 @@ export default function EventDetails({
             </CardContent>
           </Card>
 
-          {/* RSVP Analytics Dashboard - Only for Free Events and Organizers */}
-          {(event.metadata?.is_free === true) && isOrganizer && (
+          {/* RSVP Analytics Dashboard - Only for Free Events (TEST: showing to all users) */}
+          {(event.metadata?.is_free === true || event.metadata?.enable_ticketing === false) && (
             <RSVPAnalyticsDashboard
               eventId={event.id}
               isOrganizer={isOrganizer}
@@ -467,7 +467,7 @@ export default function EventDetails({
           )}
 
           {/* Attendee List - Only for Free Events */}
-          {(event.metadata?.is_free === true) && (
+          {(event.metadata?.is_free === true || event.metadata?.enable_ticketing === false) && (
             <AttendeeList
               eventId={event.id}
               isOrganizer={isOrganizer || false}

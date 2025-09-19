@@ -160,7 +160,7 @@ export default function DashboardLayout({
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <div className="text-center">
-          <IconHome className="h-8 w-8 animate-pulse mx-auto mb-4" />
+          <div className="h-8 w-8 bg-muted rounded animate-pulse mx-auto mb-4" />
         </div>
       </div>
     );

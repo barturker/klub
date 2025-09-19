@@ -33,8 +33,8 @@ export function RSVPAnalyticsDashboard({
     refreshInterval: 15000 // 15 seconds for organizer dashboard
   });
 
-  // Don't show to non-organizers
-  if (!isOrganizer) return null;
+  // TEST: Show to all users for demo
+  // if (!isOrganizer) return null;
 
   const getStatusColor = () => {
     switch (status) {
