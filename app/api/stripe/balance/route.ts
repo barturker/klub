@@ -53,19 +53,41 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Check if test account
+    // Check if test account (mock account we created)
     if (stripeAccount.stripe_account_id.startsWith("acct_test_")) {
-      // Return mock balance for test accounts
-      return NextResponse.json({
-        available: 0,
-        pending: 0,
-        currency: "usd",
-        test_mode: true,
-        message: "Test account - balance always $0.00"
-      });
+      // For test accounts, try to get the main account balance
+      try {
+        // Get balance from main Stripe account (not connected account)
+        const stripe = new (await import("stripe")).default(process.env.STRIPE_SECRET_KEY!, {
+          apiVersion: "2024-12-18.acacia",
+        });
+
+        const balance = await stripe.balance.retrieve();
+
+        // Get the primary balance (usually USD)
+        const available = balance.available?.[0] || { amount: 0, currency: "usd" };
+        const pending = balance.pending?.[0] || { amount: 0, currency: "usd" };
+
+        return NextResponse.json({
+          available: available.amount,
+          pending: pending.amount,
+          currency: available.currency,
+          account_type: "main_account",
+          note: "Showing main Stripe account balance (not Connect account)"
+        });
+      } catch (error) {
+        console.error("Error fetching main account balance:", error);
+        return NextResponse.json({
+          available: 0,
+          pending: 0,
+          currency: "usd",
+          test_mode: true,
+          message: "Could not fetch balance"
+        });
+      }
     }
 
-    // Get balance from Stripe
+    // For real connected accounts
     try {
       const balance = await getBalance(stripeAccount.stripe_account_id);
 
@@ -77,15 +99,36 @@ export async function GET(request: NextRequest) {
         available: available.amount,
         pending: pending.amount,
         currency: available.currency,
+        account_type: "connected_account"
       });
     } catch (error) {
-      console.error("Error fetching Stripe balance:", error);
-      return NextResponse.json({
-        available: 0,
-        pending: 0,
-        currency: "usd",
-        test_mode: true
-      });
+      console.error("Error fetching connected account balance:", error);
+
+      // Fallback to main account balance
+      try {
+        const stripe = new (await import("stripe")).default(process.env.STRIPE_SECRET_KEY!, {
+          apiVersion: "2024-12-18.acacia",
+        });
+
+        const balance = await stripe.balance.retrieve();
+        const available = balance.available?.[0] || { amount: 0, currency: "usd" };
+        const pending = balance.pending?.[0] || { amount: 0, currency: "usd" };
+
+        return NextResponse.json({
+          available: available.amount,
+          pending: pending.amount,
+          currency: available.currency,
+          account_type: "main_account",
+          fallback: true
+        });
+      } catch (fallbackError) {
+        return NextResponse.json({
+          available: 0,
+          pending: 0,
+          currency: "usd",
+          error: true
+        });
+      }
     }
   } catch (error) {
     console.error("Error in balance endpoint:", error);
