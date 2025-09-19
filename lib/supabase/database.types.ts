@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       checkins: {
@@ -624,47 +599,119 @@ export type Database = {
           },
         ]
       }
+      order_items: {
+        Row: {
+          created_at: string | null
+          discount_cents: number | null
+          id: string
+          order_id: string
+          quantity: number
+          ticket_tier_id: string
+          unit_price_cents: number
+        }
+        Insert: {
+          created_at?: string | null
+          discount_cents?: number | null
+          id?: string
+          order_id: string
+          quantity: number
+          ticket_tier_id: string
+          unit_price_cents: number
+        }
+        Update: {
+          created_at?: string | null
+          discount_cents?: number | null
+          id?: string
+          order_id?: string
+          quantity?: number
+          ticket_tier_id?: string
+          unit_price_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_ticket_tier_id_fkey"
+            columns: ["ticket_tier_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           amount_cents: number
+          buyer_email: string | null
           buyer_id: string | null
+          buyer_name: string | null
+          cancelled_at: string | null
           created_at: string
           currency: string
           event_id: string
+          failed_at: string | null
           id: string
           metadata: Json
+          paid_at: string | null
+          payment_method: string | null
           provider: Database["public"]["Enums"]["payment_provider"]
           provider_ref: string | null
           quantity: number
+          refunded_at: string | null
           status: Database["public"]["Enums"]["order_status"]
+          stripe_charge_id: string | null
+          stripe_payment_intent_id: string | null
           updated_at: string
         }
         Insert: {
           amount_cents: number
+          buyer_email?: string | null
           buyer_id?: string | null
+          buyer_name?: string | null
+          cancelled_at?: string | null
           created_at?: string
           currency?: string
           event_id: string
+          failed_at?: string | null
           id?: string
           metadata?: Json
+          paid_at?: string | null
+          payment_method?: string | null
           provider?: Database["public"]["Enums"]["payment_provider"]
           provider_ref?: string | null
           quantity: number
+          refunded_at?: string | null
           status?: Database["public"]["Enums"]["order_status"]
+          stripe_charge_id?: string | null
+          stripe_payment_intent_id?: string | null
           updated_at?: string
         }
         Update: {
           amount_cents?: number
+          buyer_email?: string | null
           buyer_id?: string | null
+          buyer_name?: string | null
+          cancelled_at?: string | null
           created_at?: string
           currency?: string
           event_id?: string
+          failed_at?: string | null
           id?: string
           metadata?: Json
+          paid_at?: string | null
+          payment_method?: string | null
           provider?: Database["public"]["Enums"]["payment_provider"]
           provider_ref?: string | null
           quantity?: number
+          refunded_at?: string | null
           status?: Database["public"]["Enums"]["order_status"]
+          stripe_charge_id?: string | null
+          stripe_payment_intent_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -708,6 +755,56 @@ export type Database = {
             columns: ["ticket_id"]
             isOneToOne: true
             referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_intents: {
+        Row: {
+          amount_cents: number
+          created_at: string | null
+          currency: string | null
+          id: string
+          metadata: Json | null
+          order_id: string | null
+          payment_method_types: string[] | null
+          status: string
+          stripe_account_id: string
+          stripe_payment_intent_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+          payment_method_types?: string[] | null
+          status: string
+          stripe_account_id: string
+          stripe_payment_intent_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+          payment_method_types?: string[] | null
+          status?: string
+          stripe_account_id?: string
+          stripe_payment_intent_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_intents_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
@@ -908,6 +1005,59 @@ export type Database = {
         }
         Relationships: []
       }
+      stripe_accounts: {
+        Row: {
+          business_type: string | null
+          charges_enabled: boolean | null
+          community_id: string
+          country: string | null
+          created_at: string | null
+          default_currency: string | null
+          id: string
+          metadata: Json | null
+          onboarding_completed: boolean | null
+          payouts_enabled: boolean | null
+          stripe_account_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          business_type?: string | null
+          charges_enabled?: boolean | null
+          community_id: string
+          country?: string | null
+          created_at?: string | null
+          default_currency?: string | null
+          id?: string
+          metadata?: Json | null
+          onboarding_completed?: boolean | null
+          payouts_enabled?: boolean | null
+          stripe_account_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          business_type?: string | null
+          charges_enabled?: boolean | null
+          community_id?: string
+          country?: string | null
+          created_at?: string | null
+          default_currency?: string | null
+          id?: string
+          metadata?: Json | null
+          onboarding_completed?: boolean | null
+          payouts_enabled?: boolean | null
+          stripe_account_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_accounts_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: true
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ticket_tiers: {
         Row: {
           created_at: string | null
@@ -986,6 +1136,9 @@ export type Database = {
       tickets: {
         Row: {
           amount: number
+          attendee_email: string | null
+          attendee_name: string | null
+          checked_in_at: string | null
           currency: string
           event_id: string
           id: string
@@ -994,11 +1147,15 @@ export type Database = {
           status: Database["public"]["Enums"]["ticket_status"]
           stripe_charge_id: string | null
           stripe_payment_intent_id: string | null
+          ticket_code: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           amount: number
+          attendee_email?: string | null
+          attendee_name?: string | null
+          checked_in_at?: string | null
           currency?: string
           event_id: string
           id?: string
@@ -1007,11 +1164,15 @@ export type Database = {
           status?: Database["public"]["Enums"]["ticket_status"]
           stripe_charge_id?: string | null
           stripe_payment_intent_id?: string | null
+          ticket_code?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           amount?: number
+          attendee_email?: string | null
+          attendee_name?: string | null
+          checked_in_at?: string | null
           currency?: string
           event_id?: string
           id?: string
@@ -1020,6 +1181,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["ticket_status"]
           stripe_charge_id?: string | null
           stripe_payment_intent_id?: string | null
+          ticket_code?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1339,8 +1501,16 @@ export type Database = {
         Args: { "": unknown } | { "": unknown }
         Returns: string
       }
+      calculate_platform_fee: {
+        Args: { amount_cents: number }
+        Returns: number
+      }
       calculate_profile_completion: {
         Args: { profile_id: string }
+        Returns: number
+      }
+      calculate_stripe_fee: {
+        Args: { amount_cents: number }
         Returns: number
       }
       calculate_ticket_price: {
@@ -1355,6 +1525,15 @@ export type Database = {
           fees_cents: number
           subtotal_cents: number
           total_cents: number
+        }[]
+      }
+      calculate_total_fees: {
+        Args: { amount_cents: number }
+        Returns: {
+          net_amount: number
+          platform_fee: number
+          stripe_fee: number
+          total_fee: number
         }[]
       }
       check_rate_limit: {
@@ -1419,6 +1598,10 @@ export type Database = {
       }
       generate_pass_for_ticket: {
         Args: { p_ticket_id: string }
+        Returns: string
+      }
+      generate_ticket_code: {
+        Args: Record<PropertyKey, never>
         Returns: string
       }
       geography: {
@@ -3221,9 +3404,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       event_status: ["draft", "published", "cancelled", "completed"],

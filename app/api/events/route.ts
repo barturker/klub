@@ -34,56 +34,56 @@ function validateCreateEventData(data: unknown): { success: boolean; data?: Crea
     return { success: false, errors };
   }
 
-  const eventData = data as Record<string, unknown>;
+  const eventInput = data as Record<string, unknown>;
 
   // Required fields
-  if (!eventData.community_id || typeof eventData.community_id !== 'string') {
+  if (!eventInput.community_id || typeof eventInput.community_id !== 'string') {
     errors.community_id = ['Community ID is required'];
   }
-  if (!eventData.title || typeof eventData.title !== 'string' || (eventData.title as string).length < 1 || (eventData.title as string).length > 200) {
+  if (!eventInput.title || typeof eventInput.title !== 'string' || (eventInput.title as string).length < 1 || (eventInput.title as string).length > 200) {
     errors.title = ['Title is required and must be between 1 and 200 characters'];
   }
-  if (!eventData.start_at || typeof eventData.start_at !== 'string') {
+  if (!eventInput.start_at || typeof eventInput.start_at !== 'string') {
     errors.start_at = ['Start time is required'];
   }
-  if (!eventData.end_at || typeof eventData.end_at !== 'string') {
+  if (!eventInput.end_at || typeof eventInput.end_at !== 'string') {
     errors.end_at = ['End time is required'];
   }
 
   // Optional enums with validation
-  if (eventData.status && !["draft", "published", "cancelled"].includes(eventData.status as string)) {
+  if (eventInput.status && !["draft", "published", "cancelled"].includes(eventInput.status as string)) {
     errors.status = ['Status must be draft, published, or cancelled'];
   }
-  if (eventData.event_type && !["physical", "virtual", "hybrid"].includes(eventData.event_type)) {
+  if (eventInput.event_type && !["physical", "virtual", "hybrid"].includes(eventInput.event_type)) {
     errors.event_type = ['Event type must be physical, virtual, or hybrid'];
   }
 
   // Optional number validation
-  if (eventData.capacity !== undefined && (typeof eventData.capacity !== 'number' || eventData.capacity < 0)) {
+  if (eventInput.capacity !== undefined && (typeof eventInput.capacity !== 'number' || eventInput.capacity < 0)) {
     errors.capacity = ['Capacity must be a positive number'];
   }
 
   // Clean up empty strings
   const cleanedData: CreateEventData = {
-    community_id: eventData.community_id,
-    title: eventData.title,
-    description: eventData.description || undefined,
-    status: eventData.status || "published",
-    event_type: eventData.event_type || "physical",
-    start_at: eventData.start_at,
-    end_at: eventData.end_at,
-    timezone: eventData.timezone || "UTC",
-    venue_name: eventData.venue_name || undefined,
-    venue_address: eventData.venue_address || undefined,
-    venue_city: eventData.venue_city || undefined,
-    venue_country: eventData.venue_country || undefined,
-    online_url: eventData.online_url || undefined,
-    capacity: eventData.capacity || 0,
-    image_url: eventData.image_url || undefined,
-    recurring_rule: eventData.recurring_rule || undefined,
-    recurring_end_date: eventData.recurring_end_date || null,
-    tags: eventData.tags || [],
-    metadata: eventData.metadata || {},
+    community_id: eventInput.community_id,
+    title: eventInput.title,
+    description: eventInput.description || undefined,
+    status: eventInput.status || "published",
+    event_type: eventInput.event_type || "physical",
+    start_at: eventInput.start_at,
+    end_at: eventInput.end_at,
+    timezone: eventInput.timezone || "UTC",
+    venue_name: eventInput.venue_name || undefined,
+    venue_address: eventInput.venue_address || undefined,
+    venue_city: eventInput.venue_city || undefined,
+    venue_country: eventInput.venue_country || undefined,
+    online_url: eventInput.online_url || undefined,
+    capacity: eventInput.capacity || 0,
+    image_url: eventInput.image_url || undefined,
+    recurring_rule: eventInput.recurring_rule || undefined,
+    recurring_end_date: eventInput.recurring_end_date || null,
+    tags: eventInput.tags || [],
+    metadata: eventInput.metadata || {},
   };
 
   if (Object.keys(errors).length > 0) {
@@ -131,8 +131,8 @@ export async function POST(request: Request) {
     const data = validationResult.data!;
 
     // Validate dates
-    const startDate = DateTime.fromISO(eventData.start_at);
-    const endDate = DateTime.fromISO(eventData.end_at);
+    const startDate = DateTime.fromISO(data.start_at);
+    const endDate = DateTime.fromISO(data.end_at);
 
     if (!startDate.isValid || !endDate.isValid) {
       return Response.json(
@@ -153,9 +153,9 @@ export async function POST(request: Request) {
     }
 
     // Validate recurring rule if provided
-    if (eventData.recurring_rule) {
+    if (data.recurring_rule) {
       try {
-        const rule = RRule.fromString(eventData.recurring_rule);
+        const rule = RRule.fromString(data.recurring_rule);
         console.log("[POST] Valid RRULE:", rule.toString());
       } catch (error) {
         console.log("[POST] Invalid RRULE:", error);
@@ -172,7 +172,7 @@ export async function POST(request: Request) {
     const { data: memberData, error: memberError } = await supabase
       .from("community_members")
       .select("role")
-      .eq("community_id", eventData.community_id)
+      .eq("community_id", data.community_id)
       .eq("user_id", user.id)
       .single();
 
@@ -197,7 +197,7 @@ export async function POST(request: Request) {
     // Generate slug locally (since database function might not exist)
 
     // Create base slug from title
-    let baseSlug = eventData.title
+    let baseSlug = data.title
       .toLowerCase()
       .replace(/[^\w\s-]/g, '') // Remove non-alphanumeric
       .replace(/\s+/g, '-')      // Replace spaces with hyphens
@@ -216,7 +216,7 @@ export async function POST(request: Request) {
         .from("events")
         .select("id", { count: 'exact', head: true })
         .eq("slug", slugData)
-        .eq("community_id", eventData.community_id);
+        .eq("community_id", data.community_id);
 
       if (checkError) {
         // Continue anyway with the current slug
@@ -233,27 +233,27 @@ export async function POST(request: Request) {
 
     // Create the event
     const eventData = {
-      community_id: eventData.community_id,
+      community_id: data.community_id,
       created_by: user.id,
-      title: eventData.title,
+      title: data.title,
       slug: slugData,
-      description: eventData.description,
-      event_type: eventData.event_type,
-      status: eventData.status || "published",
-      start_at: eventData.start_at,
-      end_at: eventData.end_at,
-      timezone: eventData.timezone,
-      venue_name: eventData.venue_name,
-      venue_address: eventData.venue_address,
-      venue_city: eventData.venue_city,
-      venue_country: eventData.venue_country,
-      online_url: eventData.online_url,
-      capacity: eventData.capacity,
-      image_url: eventData.image_url,
-      recurring_rule: eventData.recurring_rule,
-      recurring_end_date: eventData.recurring_end_date,
-      tags: eventData.tags || [],
-      metadata: eventData.metadata || {},
+      description: data.description,
+      event_type: data.event_type,
+      status: data.status || "published",
+      start_at: data.start_at,
+      end_at: data.end_at,
+      timezone: data.timezone,
+      venue_name: data.venue_name,
+      venue_address: data.venue_address,
+      venue_city: data.venue_city,
+      venue_country: data.venue_country,
+      online_url: data.online_url,
+      capacity: data.capacity,
+      image_url: data.image_url,
+      recurring_rule: data.recurring_rule,
+      recurring_end_date: data.recurring_end_date,
+      tags: data.tags || [],
+      metadata: data.metadata || {},
     };
 
     const { data: event, error: eventError } = await supabase
@@ -274,10 +274,10 @@ export async function POST(request: Request) {
     }
 
     // Generate recurring event instances if this is a recurring event
-    if (eventData.recurring_rule && eventData.recurring_rule !== "" && eventData.recurring_end_date && eventData.recurring_end_date !== null) {
+    if (data.recurring_rule && data.recurring_rule !== "" && data.recurring_end_date && data.recurring_end_date !== null) {
       try {
-        const rule = RRule.fromString(eventData.recurring_rule);
-        const recurringEndDate = DateTime.fromISO(eventData.recurring_end_date);
+        const rule = RRule.fromString(data.recurring_rule);
+        const recurringEndDate = DateTime.fromISO(data.recurring_end_date);
 
         // Get occurrences
         const occurrences = rule.between(
