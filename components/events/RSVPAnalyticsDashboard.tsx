@@ -38,8 +38,8 @@ export function RSVPAnalyticsDashboard({
   const { metrics: errorMetrics, loadMetrics: loadErrorMetrics } = useErrorTracking(eventId);
   const [isRefreshing, setIsRefreshing] = React.useState(false);
 
-  // TEST: Show to all users for demo
-  // if (!isOrganizer) return null;
+  // Only show to organizers (event creator or community admin)
+  if (!isOrganizer) return null;
 
   // Load error metrics on mount and set up auto-refresh
   React.useEffect(() => {

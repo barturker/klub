@@ -460,7 +460,7 @@ export default function EventDetails({
             </CardContent>
           </Card>
 
-          {/* RSVP Analytics Dashboard - Only for Free Events (TEST: showing to all users) */}
+          {/* RSVP Analytics Dashboard - Only for Free Events and Organizers */}
           {(event.metadata?.is_free === true ||
             event.metadata?.enable_ticketing === false ||
             (event.metadata && Object.keys(event.metadata).includes('attendee_list_visible'))) && (
