@@ -5,18 +5,18 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle, Download, Home, Ticket } from "lucide-react";
+import { CheckCircle, Download, Home, Ticket, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 export default function PaymentSuccessPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   useEffect(() => {
-    const intentId = searchParams.get("payment_intent");
-    if (intentId) {
-      setPaymentIntentId(intentId);
+    const session = searchParams.get("session_id");
+    if (session) {
+      setSessionId(session);
     }
   }, [searchParams]);
 
@@ -41,8 +41,8 @@ export default function PaymentSuccessPage() {
           {/* Order Details */}
           <div className="space-y-4">
             <div className="border-l-4 border-green-600 pl-4">
-              <p className="text-sm text-muted-foreground">Payment ID</p>
-              <p className="font-mono text-sm">{paymentIntentId || "Loading..."}</p>
+              <p className="text-sm text-muted-foreground">Session ID</p>
+              <p className="font-mono text-sm">{sessionId ? sessionId.slice(0, 20) + "..." : "Loading..."}</p>
             </div>
 
             <div className="border-l-4 border-blue-600 pl-4">

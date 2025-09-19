@@ -5,7 +5,9 @@
  */
 
 import { useState, useEffect } from "react";
-import { Calculator, Tag, Receipt } from "lucide-react";
+import { Calculator, Tag, Receipt, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -35,6 +37,8 @@ export function PriceCalculator({
   const [discountCodeInput, setDiscountCodeInput] = useState("");
   const [isValidatingCode, setIsValidatingCode] = useState(false);
   const [appliedCode, setAppliedCode] = useState<string | null>(null);
+  const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
+  const router = useRouter();
 
   const { data: tiers = [] } = useTicketTiers(eventId);
   const { formatMoney } = useCurrency();
@@ -137,6 +141,54 @@ export function PriceCalculator({
   });
 
   const hasSelections = selectedTickets.size > 0;
+
+  const handleCheckout = async () => {
+    if (!hasSelections || total === 0) return;
+
+    setIsProcessingCheckout(true);
+
+    try {
+      // Prepare the selected tickets data
+      const ticketSelections = Array.from(selectedTickets.entries()).map(
+        ([tierId, selection]) => ({
+          tierId,
+          quantity: selection.quantity,
+          subtotal: selection.subtotal,
+        })
+      );
+
+      // Create Stripe checkout session
+      const response = await fetch("/api/stripe/create-checkout-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          eventId,
+          selectedTickets: ticketSelections,
+          discountCode: appliedCode,
+          currency: eventCurrency,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create checkout session");
+      }
+
+      const { url } = await response.json();
+
+      // Redirect to Stripe Checkout
+      if (url) {
+        window.location.href = url;
+      } else {
+        throw new Error("No checkout URL returned");
+      }
+    } catch (error) {
+      console.error("Checkout error:", error);
+      toast.error("Failed to proceed to checkout. Please try again.");
+      setIsProcessingCheckout(false);
+    }
+  };
 
   return (
     <Card className="w-full">
@@ -329,16 +381,21 @@ export function PriceCalculator({
                 </div>
               </div>
 
-              {onProceedToCheckout && (
-                <Button
-                  className="w-full"
-                  size="lg"
-                  onClick={() => onProceedToCheckout(total)}
-                  disabled={total === 0 && subtotal > 0} // Prevent free checkout if originally paid
-                >
-                  Proceed to Checkout
-                </Button>
-              )}
+              <Button
+                className="w-full"
+                size="lg"
+                onClick={onProceedToCheckout ? () => onProceedToCheckout(total) : handleCheckout}
+                disabled={isProcessingCheckout || (total === 0 && subtotal > 0)} // Prevent free checkout if originally paid
+              >
+                {isProcessingCheckout ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Proceed to Checkout"
+                )}
+              </Button>
             </div>
           </>
         )}

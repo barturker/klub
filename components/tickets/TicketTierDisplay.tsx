@@ -263,11 +263,6 @@ export function TicketTierDisplay({
             <PriceCalculator
               eventId={eventId}
               eventCurrency={eventCurrency}
-              onProceedToCheckout={(total) => {
-                // TODO: Implement checkout flow
-                console.log("Proceeding to checkout with total:", total);
-                setShowPurchaseModal(false);
-              }}
             />
           </div>
 
