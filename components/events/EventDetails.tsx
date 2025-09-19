@@ -41,6 +41,7 @@ import {
 import { TicketTierDisplay } from "@/components/tickets/TicketTierDisplay";
 import { RSVPButton } from "@/components/events/RSVPButton";
 import { AttendeeList } from "@/components/events/AttendeeList";
+import { RSVPAnalyticsDashboard } from "@/components/events/RSVPAnalyticsDashboard";
 
 interface EventDetailsProps {
   event: Event;
@@ -457,8 +458,16 @@ export default function EventDetails({
             </CardContent>
           </Card>
 
+          {/* RSVP Analytics Dashboard - Only for Free Events and Organizers */}
+          {(event.metadata?.is_free === true) && isOrganizer && (
+            <RSVPAnalyticsDashboard
+              eventId={event.id}
+              isOrganizer={isOrganizer}
+            />
+          )}
+
           {/* Attendee List - Only for Free Events */}
-          {(event.metadata?.is_free === true || !ticketTiers || ticketTiers.length === 0) && (
+          {(event.metadata?.is_free === true) && (
             <AttendeeList
               eventId={event.id}
               isOrganizer={isOrganizer || false}

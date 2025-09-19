@@ -27,7 +27,9 @@
     "db:checkpoint": "git rev-parse HEAD > .db-checkpoint && echo 'DB checkpoint saved!'",
     "db:restore-checkpoint": "node scripts/db-restore.js",
     "db:backup": "node scripts/db-backup.js backup",
-    "db:restore-data": "node scripts/db-backup.js restore"
+    "db:restore-data": "node scripts/db-backup.js restore",
+    "test:load": "node scripts/rsvp-load-test.js",
+    "test:load:help": "node scripts/rsvp-load-test.js --help"
   },
   "dependencies": {
     "@dinero.js/currencies": "^2.0.0-alpha.14",
@@ -79,6 +81,7 @@
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "dinero.js": "^2.0.0-alpha.14",
+    "dotenv": "^17.2.2",
     "framer-motion": "^12.23.12",
     "lucide-react": "^0.544.0",
     "luxon": "^3.7.2",

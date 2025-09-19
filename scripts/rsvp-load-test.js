@@ -65,8 +65,9 @@ class RSVPLoadTester {
 
   // Generate test user IDs (in real test, these would be actual user accounts)
   generateTestUsers() {
+    // Generate UUID-like test user IDs
     this.testUsers = Array.from({ length: this.config.users }, (_, i) => ({
-      id: `test-user-${i + 1}`,
+      id: `00000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`,
       session: null
     }));
   }
