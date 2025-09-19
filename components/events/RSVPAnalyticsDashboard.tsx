@@ -1,6 +1,8 @@
 'use client';
 
+import React from 'react';
 import { useRSVPAnalytics } from '@/hooks/useRSVPAnalytics';
+import { useErrorTracking } from '@/hooks/useErrorTracking';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -33,8 +35,15 @@ export function RSVPAnalyticsDashboard({
     refreshInterval: 15000 // 15 seconds for organizer dashboard
   });
 
+  const { metrics: errorMetrics, loadMetrics: loadErrorMetrics } = useErrorTracking(eventId);
+
   // TEST: Show to all users for demo
   // if (!isOrganizer) return null;
+
+  // Load error metrics on mount
+  React.useEffect(() => {
+    loadErrorMetrics();
+  }, [loadErrorMetrics]);
 
   const getStatusColor = () => {
     switch (status) {
@@ -216,23 +225,30 @@ export function RSVPAnalyticsDashboard({
               </div>
             </div>
 
-            {/* Error Breakdown */}
+            {/* Error Breakdown - Now with real data! */}
             <div className="space-y-2">
               <span className="text-sm font-medium">Error Tracking:</span>
               <div className="grid grid-cols-3 gap-2 text-sm">
                 <div className="text-center">
-                  <div className="font-medium text-red-600">{metrics.errors.capacityFull}</div>
+                  <div className="font-medium text-red-600">{errorMetrics.capacityFullErrors}</div>
                   <div className="text-xs text-muted-foreground">Capacity Full</div>
                 </div>
                 <div className="text-center">
-                  <div className="font-medium text-yellow-600">{metrics.errors.rateLimited}</div>
+                  <div className="font-medium text-yellow-600">{errorMetrics.rateLimitHits}</div>
                   <div className="text-xs text-muted-foreground">Rate Limited</div>
                 </div>
                 <div className="text-center">
-                  <div className="font-medium text-gray-600">{metrics.errors.other}</div>
+                  <div className="font-medium text-gray-600">{errorMetrics.otherErrors}</div>
                   <div className="text-xs text-muted-foreground">Other Errors</div>
                 </div>
               </div>
+              {errorMetrics.lastError && (
+                <div className="mt-2 p-2 bg-muted/50 rounded text-xs">
+                  <div className="font-medium">Last Error:</div>
+                  <div className="text-muted-foreground">{errorMetrics.lastError.message}</div>
+                  <div className="text-muted-foreground">{DateTime.fromISO(errorMetrics.lastError.timestamp).toRelative()}</div>
+                </div>
+              )}
             </div>
 
             {/* Last Updated */}
@@ -278,7 +294,10 @@ RSVP Analytics Summary:
             <Button
               variant="outline"
               size="sm"
-              onClick={refresh}
+              onClick={() => {
+                refresh();
+                loadErrorMetrics();
+              }}
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/use-auth';
+import { useErrorTracking } from '@/hooks/useErrorTracking';
 
 type RSVPStatus = 'going' | 'interested' | 'not_going' | null;
 
@@ -28,6 +29,7 @@ export function useRSVP({
   const supabase = createClient();
   const router = useRouter();
   const { user } = useAuth();
+  const { trackError } = useErrorTracking(eventId);
 
   const [status, setStatus] = useState<RSVPStatus>(null);
   const [counts, setCounts] = useState({ going: 0, interested: 0 });
@@ -180,6 +182,7 @@ export function useRSVP({
 
           if (error.code === '23514' && error.message.includes('capacity')) {
             // Event is full
+            await trackError(error, 'capacity_full');
             toast.error('Sorry, this event is now full', {
               description: 'You can join the waitlist instead',
               action: {
@@ -193,6 +196,7 @@ export function useRSVP({
             errorHandled = true;
           } else if (error.code === '42820') {
             // Rate limit exceeded - show user-friendly message
+            await trackError(error, 'rate_limit');
             toast.error('Too many changes', {
               description: 'Please wait a moment before changing your RSVP again'
             });
@@ -243,6 +247,8 @@ export function useRSVP({
       // Only log unexpected errors to console
       if (!error.handled) {
         console.error('Error updating RSVP:', error);
+        // Track unhandled errors
+        trackError(error, 'other');
       }
 
       setError(error);
