@@ -40,7 +40,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { TicketTierDisplay } from "@/components/tickets/TicketTierDisplay";
 import { RSVPButton } from "@/components/events/RSVPButton";
-import { EventDetailsDebug } from "@/components/events/EventDetailsDebug";
 
 interface EventDetailsProps {
   event: Event;
@@ -230,7 +229,6 @@ export default function EventDetails({
         {/* Right Column - Sidebar */}
         <div className="space-y-4">
           {/* Debug Info - Remove after testing */}
-          <EventDetailsDebug event={event} />
 
           {/* Ticket/Free Event Info */}
           {event.metadata?.is_free === true ? (
