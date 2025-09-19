@@ -36,13 +36,24 @@ export function RSVPAnalyticsDashboard({
   });
 
   const { metrics: errorMetrics, loadMetrics: loadErrorMetrics } = useErrorTracking(eventId);
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
 
   // TEST: Show to all users for demo
   // if (!isOrganizer) return null;
 
-  // Load error metrics on mount
+  // Load error metrics on mount and set up auto-refresh
   React.useEffect(() => {
     loadErrorMetrics();
+
+    // Auto-refresh error metrics every 5 seconds
+    const interval = setInterval(() => {
+      setIsRefreshing(true);
+      loadErrorMetrics();
+      console.log('📊 Auto-refreshing error metrics...');
+      setTimeout(() => setIsRefreshing(false), 500);
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, [loadErrorMetrics]);
 
   const getStatusColor = () => {
@@ -127,6 +138,11 @@ export function RSVPAnalyticsDashboard({
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
               RSVP Analytics
+              {isRefreshing && (
+                <span className="text-xs font-normal text-muted-foreground animate-pulse">
+                  (refreshing...)
+                </span>
+              )}
             </CardTitle>
             <div className="flex items-center gap-2">
               <Badge
@@ -252,8 +268,9 @@ export function RSVPAnalyticsDashboard({
             </div>
 
             {/* Last Updated */}
-            <div className="text-xs text-muted-foreground pt-2 border-t">
-              Last updated: {DateTime.fromISO(metrics.lastUpdated).toRelative()}
+            <div className="text-xs text-muted-foreground pt-2 border-t flex justify-between">
+              <span>Last updated: {DateTime.fromISO(metrics.lastUpdated).toRelative()}</span>
+              <span className="text-green-600">● Auto-refresh: 5s</span>
             </div>
           </div>
         </CardContent>
