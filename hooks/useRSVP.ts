@@ -49,6 +49,7 @@ export function useRSVP({
   const fetchRSVPData = useCallback(async () => {
     if (!eventId) return;
 
+    setIsLoading(true);
     try {
       // Fetch event with RSVP counts
       const { data: eventData, error: eventError } = await supabase
@@ -92,6 +93,8 @@ export function useRSVP({
     } catch (err) {
       console.error('Error fetching RSVP data:', err);
       setError(err as Error);
+    } finally {
+      setIsLoading(false);
     }
   }, [eventId, supabase, user]);
 

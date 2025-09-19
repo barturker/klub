@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   CheckCircle,
   Heart,
@@ -117,13 +118,18 @@ export function RSVPButton({
     canChangeRSVP
   });
 
+  // Show skeleton while loading initial data
   if (isLoading) {
     return (
-      <div className={cn("space-y-2", className)}>
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Loading RSVP status...
+      <div className={cn("space-y-3", className)}>
+        {/* Skeleton for RSVP counts */}
+        <div className="flex items-center justify-between bg-muted/30 rounded-lg p-2">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-20" />
+          {capacity && capacity > 0 && <Skeleton className="h-5 w-16 ml-auto" />}
         </div>
+        {/* Skeleton for RSVP button */}
+        <Skeleton className="h-12 w-full rounded-md" />
       </div>
     );
   }
