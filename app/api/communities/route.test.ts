@@ -21,19 +21,34 @@ describe('POST /api/communities', () => {
   };
   let mockRequest: NextRequest;
 
+  let mockQuery: any;
+
   beforeEach(() => {
     // Reset all mocks before each test
     jest.clearAllMocks();
 
     // Setup default mock implementations
+    mockQuery = {
+      select: jest.fn().mockReturnThis(),
+      insert: jest.fn().mockReturnThis(),
+      update: jest.fn().mockReturnThis(),
+      delete: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      neq: jest.fn().mockReturnThis(),
+      single: jest.fn(),
+      limit: jest.fn().mockReturnThis(),
+      order: jest.fn().mockReturnThis(),
+    };
+
     mockSupabase = {
       auth: {
         getUser: jest.fn(),
       },
-      from: jest.fn().mockReturnThis(),
-      insert: jest.fn().mockReturnThis(),
-      select: jest.fn().mockReturnThis(),
-      single: jest.fn(),
+      from: jest.fn(() => mockQuery),
+      // Add direct references for backward compatibility
+      single: mockQuery.single,
+      insert: mockQuery.insert,
+      select: mockQuery.select,
     };
 
     (createClient as jest.Mock).mockResolvedValue(mockSupabase);
@@ -125,7 +140,8 @@ describe('POST /api/communities', () => {
     });
 
     it('should include rate limit headers in successful response', async () => {
-      mockSupabase.single.mockResolvedValue({
+      const mockQuery = mockSupabase.from();
+      mockQuery.single.mockResolvedValue({
         data: {
           id: 'community-123',
           slug: 'test-community',

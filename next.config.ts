@@ -1,5 +1,6 @@
 import type { NextConfig } from 'next';
 
+// @ts-expect-error - Bundle analyzer doesn't have TypeScript types
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 });
@@ -17,4 +18,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-module.exports = withBundleAnalyzer(nextConfig);
+export default withBundleAnalyzer(nextConfig);

@@ -235,7 +235,7 @@ export default function DashboardPage() {
             Welcome back{user ? `, ${user.name || user.email?.split('@')[0]}` : ''}!
           </h1>
           <p className="text-muted-foreground mt-2">
-            Here's what's happening with your communities today.
+            Here&apos;s what&apos;s happening with your communities today.
           </p>
         </div>
         <div className="flex gap-2 mt-4 md:mt-0">

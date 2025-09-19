@@ -72,6 +72,7 @@ const config: Config = {
       },
     },
   },
+  // @ts-expect-error - Tailwind plugin doesn't have TypeScript types
   plugins: [require("tailwindcss-animate")],
 };
 

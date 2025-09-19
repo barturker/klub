@@ -22,7 +22,14 @@ jest.mock('next/server', () => ({
     url,
     method: init?.method || 'GET',
     headers: new Headers(init?.headers || {}),
-    json: jest.fn().mockResolvedValue(init?.body ? JSON.parse(init.body) : {}),
+    json: jest.fn().mockImplementation(async () => {
+      if (!init?.body) return {};
+      try {
+        return JSON.parse(init.body);
+      } catch (e) {
+        throw new Error('Invalid JSON');
+      }
+    }),
     text: jest.fn().mockResolvedValue(init?.body || ''),
   })),
   NextResponse: {

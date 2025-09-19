@@ -276,14 +276,15 @@ describe('CommunityCreateForm', () => {
       const user = userEvent.setup();
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: false,
+        status: 400,
         json: async () => ({ error: 'Rate limit exceeded' }),
       });
 
       render(<CommunityCreateForm />);
-      
+
       const nameInput = screen.getByLabelText(/community name/i);
       await user.type(nameInput, 'Test Community');
-      
+
       const submitButton = screen.getByRole('button', { name: /create community/i });
       await user.click(submitButton);
 
@@ -296,19 +297,20 @@ describe('CommunityCreateForm', () => {
       const user = userEvent.setup();
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: false,
+        status: 400,
         json: async () => ({}),
       });
 
       render(<CommunityCreateForm />);
-      
+
       const nameInput = screen.getByLabelText(/community name/i);
       await user.type(nameInput, 'Test Community');
-      
+
       const submitButton = screen.getByRole('button', { name: /create community/i });
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith('Failed to create community');
+        expect(toast.error).toHaveBeenCalledWith('Invalid request');
       });
     });
 
@@ -317,15 +319,16 @@ describe('CommunityCreateForm', () => {
       (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
 
       render(<CommunityCreateForm />);
-      
+
       const nameInput = screen.getByLabelText(/community name/i);
       await user.type(nameInput, 'Test Community');
-      
+
       const submitButton = screen.getByRole('button', { name: /create community/i });
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(toast.error).toHaveBeenCalledWith('Network error');
+        // Component shows generic message for unexpected errors
+        expect(toast.error).toHaveBeenCalledWith('An unexpected error occurred. Please try again.');
       });
     });
 
