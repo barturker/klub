@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { TicketTierDisplay } from "@/components/tickets/TicketTierDisplay";
 import { RSVPButton } from "@/components/events/RSVPButton";
+import { AttendeeList } from "@/components/events/AttendeeList";
 
 interface EventDetailsProps {
   event: Event;
@@ -455,6 +456,15 @@ export default function EventDetails({
               </div>
             </CardContent>
           </Card>
+
+          {/* Attendee List - Only for Free Events */}
+          {(event.metadata?.is_free === true || !ticketTiers || ticketTiers.length === 0) && (
+            <AttendeeList
+              eventId={event.id}
+              isOrganizer={isOrganizer || false}
+              defaultVisibility="public"
+            />
+          )}
 
           {/* Status Alerts */}
           {event.status === "cancelled" && (
