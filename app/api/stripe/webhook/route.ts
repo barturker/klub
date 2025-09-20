@@ -23,7 +23,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.text();
-    const signature = headers().get("stripe-signature");
+    const headersList = await headers();
+    const signature = headersList.get("stripe-signature");
 
     if (!signature) {
       return NextResponse.json(
@@ -221,10 +222,145 @@ export async function POST(request: NextRequest) {
 
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        console.log("Checkout session completed:", session.id);
+        console.log("[WEBHOOK DEBUG] ===== CHECKOUT SESSION COMPLETED =====");
+        console.log("[WEBHOOK DEBUG] Session ID:", session.id);
+        console.log("[WEBHOOK DEBUG] Payment Status:", session.payment_status);
+        console.log("[WEBHOOK DEBUG] Payment Intent:", session.payment_intent);
+        console.log("[WEBHOOK DEBUG] Customer Email:", session.customer_email);
+        console.log("[WEBHOOK DEBUG] Metadata:", session.metadata);
+        console.log("[WEBHOOK DEBUG] Amount Total:", session.amount_total);
 
-        // Handle checkout session completion if using Checkout
-        // This is an alternative to payment_intent.succeeded
+        // Find the order using session ID from metadata
+        console.log("[WEBHOOK DEBUG] Looking for order with session ID in metadata...");
+
+        // First try to find by exact session ID
+        let { data: order, error: findError } = await supabase
+          .from("orders")
+          .select("*")
+          .eq("metadata->>stripe_session_id", session.id)
+          .single();
+
+        // If not found, try alternative field
+        if (!order) {
+          console.log("[WEBHOOK DEBUG] Trying stripe_session_id column...");
+          const result = await supabase
+            .from("orders")
+            .select("*")
+            .eq("stripe_session_id", session.id)
+            .single();
+          order = result.data;
+          findError = result.error;
+        }
+
+        // If still not found, try by order_number if provided in metadata
+        if (!order && session.metadata?.order_number) {
+          console.log("[WEBHOOK DEBUG] Trying by order_number:", session.metadata.order_number);
+          const result = await supabase
+            .from("orders")
+            .select("*")
+            .eq("order_number", session.metadata.order_number)
+            .single();
+          order = result.data;
+          findError = result.error;
+        }
+
+        console.log("[WEBHOOK DEBUG] Order lookup result:", {
+          found: !!order,
+          orderId: order?.id,
+          error: findError?.message
+        });
+
+        if (findError || !order) {
+          console.error("[WEBHOOK ERROR] Order not found for session:", session.id, findError);
+          // Try alternative search
+          const { data: alternativeOrder } = await supabase
+            .from("orders")
+            .select("*")
+            .eq("buyer_email", session.customer_email)
+            .eq("status", "pending")
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+
+          if (alternativeOrder) {
+            console.log("[WEBHOOK DEBUG] Found order by email fallback:", alternativeOrder.id);
+          }
+
+          return NextResponse.json(
+            { error: "Order not found for session" },
+            { status: 404 }
+          );
+        }
+
+        // Update order to paid status
+        if (session.payment_status === "paid") {
+          console.log("[WEBHOOK DEBUG] Updating order to PAID status:", order.id);
+
+          const { data: updatedOrder, error: updateError } = await supabase
+            .from("orders")
+            .update({
+              status: "paid",
+              paid_at: new Date().toISOString(),
+              stripe_session_id: session.id,
+              stripe_payment_intent_id: session.payment_intent as string,
+              payment_method: session.payment_method_types?.[0] || "card",
+              metadata: {
+                ...order.metadata,
+                stripe_session_completed: true,
+                payment_completed: true,
+                webhook_processed_at: new Date().toISOString()
+              },
+            })
+            .eq("id", order.id)
+            .select()
+            .single();
+
+          if (updateError) {
+            console.error("[WEBHOOK ERROR] Failed to update order:", updateError);
+            return NextResponse.json(
+              { error: "Failed to update order" },
+              { status: 500 }
+            );
+          }
+
+          console.log("[WEBHOOK DEBUG] Order updated successfully:", {
+            orderId: updatedOrder?.id,
+            status: updatedOrder?.status
+          });
+
+          // Generate tickets for the order
+          if (updatedOrder) {
+            const ticketCode = await generateTicketCode();
+            console.log("[WEBHOOK DEBUG] Generating ticket:", ticketCode);
+
+            const { error: ticketError } = await supabase
+              .from("tickets")
+              .insert({
+                order_id: updatedOrder.id,
+                event_id: updatedOrder.event_id,
+                user_id: updatedOrder.buyer_id,
+                ticket_number: ticketCode,
+                status: "active",
+                purchase_date: new Date().toISOString(),
+                qr_code: ticketCode, // You can generate a proper QR code here
+                metadata: {
+                  payment_intent_id: session.payment_intent,
+                  session_id: session.id,
+                  created_from_webhook: true,
+                },
+              });
+
+            if (ticketError) {
+              console.error("[WEBHOOK ERROR] Failed to create ticket:", ticketError);
+            } else {
+              console.log("[WEBHOOK DEBUG] Ticket created successfully");
+            }
+
+            // TODO: Send confirmation email with ticket
+          }
+        } else {
+          console.warn("[WEBHOOK DEBUG] Session payment status not 'paid':", session.payment_status);
+        }
         break;
       }
 

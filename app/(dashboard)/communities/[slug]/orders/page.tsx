@@ -62,42 +62,32 @@ async function getOrders(
     page?: number;
   }
 ) {
-  console.log("🔍 [DEBUG] getOrders called with:", {
+  console.log("[ORDERS_DEBUG] ========== getOrders STARTED ==========");
+  console.log("[ORDERS_DEBUG] Input:", {
     communityId,
     filters,
     timestamp: new Date().toISOString()
   });
 
   const supabase = await createClient();
-  console.log("✅ [DEBUG] Supabase client created");
 
   const pageSize = 20;
   const page = filters.page || 1;
   const offset = (page - 1) * pageSize;
 
-  console.log("📊 [DEBUG] Pagination:", { page, pageSize, offset });
-
-  // First, let's check if the tables exist and have data
-  const { data: eventsCheck, error: eventsError } = await supabase
-    .from("events")
-    .select("id, title, community_id")
-    .eq("community_id", communityId)
-    .limit(1);
-
-  console.log("🎯 [DEBUG] Events check:", {
-    eventsFound: eventsCheck?.length || 0,
-    eventsError,
-    communityId
-  });
+  console.log("[ORDERS_DEBUG] Pagination:", { page, pageSize, offset });
 
   // Build the query step by step with better error handling
   // Note: orders table has event_id foreign key referencing events table
+  // Use inner join since Supabase has issues with the foreign key relationship
+  console.log("[ORDERS_DEBUG] Building query for community:", communityId);
+
   let query = supabase
     .from("orders")
     .select(
       `
       *,
-      events!event_id (
+      events!inner (
         id,
         title,
         start_at,
@@ -105,20 +95,20 @@ async function getOrders(
       )
     `,
       { count: "exact" }
-    );
+    )
+    .eq("events.community_id", communityId);
 
-  // Filter by community through events join
-  query = query.eq("events.community_id", communityId);
+  console.log("[ORDERS_DEBUG] Base query built with events join");
 
   // Add status filter if provided
   if (filters.status) {
-    console.log("🏷️ [DEBUG] Adding status filter:", filters.status);
+    console.log("[ORDERS_DEBUG] Adding status filter:", filters.status);
     query = query.eq("status", filters.status);
   }
 
   // Add search filter if provided
   if (filters.search) {
-    console.log("🔎 [DEBUG] Adding search filter:", filters.search);
+    console.log("[ORDERS_DEBUG] Adding search filter:", filters.search);
     // Search in ID (as order number) or buyer email
     query = query.or(
       `id.ilike.%${filters.search}%,buyer_email.ilike.%${filters.search}%,buyer_name.ilike.%${filters.search}%`
@@ -130,87 +120,99 @@ async function getOrders(
     .order("created_at", { ascending: false })
     .range(offset, offset + pageSize - 1);
 
-  console.log("📤 [DEBUG] Executing query...");
+  console.log("[ORDERS_DEBUG] Executing query...");
   const { data, count, error } = await query;
 
-  console.log("📥 [DEBUG] Query result:", {
-    dataCount: data?.length || 0,
+  console.log("[ORDERS_DEBUG] Query result:", {
+    success: !error,
+    recordCount: data?.length || 0,
     totalCount: count,
-    hasError: !!error,
-    errorDetails: error ? {
-      message: error.message,
-      details: error.details,
-      hint: error.hint,
-      code: error.code
-    } : null
+    error: error?.message || null
   });
 
   if (error) {
-    console.error("❌ [ERROR] Failed to fetch orders:", {
+    console.error("[ORDERS_DEBUG] ERROR fetching orders:", {
       error,
-      communityId,
-      filters,
-      timestamp: new Date().toISOString()
+      message: error.message,
+      details: error.details,
+      hint: error.hint
     });
-
     // Return empty but valid structure
     return { orders: [], totalCount: 0 };
   }
 
-  // Transform data to ensure proper mapping
-  const transformedOrders = (data || []).map(order => ({
-    ...order,
-    order_number: order.id.slice(0, 8).toUpperCase(), // Generate order number from ID
-    event: order.events,
-    buyer: {
-      id: order.buyer_id,
-      email: order.buyer_email,
-      name: order.buyer_name,
-      avatar_url: null
-    }
-  }));
+  console.log("[ORDERS_DEBUG] Raw orders data:", data);
 
-  console.log("✅ [DEBUG] Orders fetched successfully:", {
-    ordersCount: transformedOrders.length,
-    totalCount: count || 0
+  // Transform data to ensure proper mapping
+  console.log("[ORDERS_DEBUG] Transforming orders data...");
+
+  const transformedOrders = (data || []).map((order, index) => {
+    console.log(`[ORDERS_DEBUG] Order ${index + 1}:`, {
+      id: order.id,
+      status: order.status,
+      amount: order.amount_cents,
+      fee: order.fee_cents,
+      buyer_email: order.buyer_email,
+      buyer_name: order.buyer_name,
+      event_title: order.events?.title,
+      event_id: order.event_id,
+      created_at: order.created_at
+    });
+
+    return {
+      ...order,
+      order_number: order.id.slice(0, 8).toUpperCase(), // Generate order number from ID
+      event: order.events || null,
+      buyer: {
+        id: order.buyer_id,
+        email: order.buyer_email,
+        name: order.buyer_name,
+        avatar_url: null
+      }
+    };
   });
 
-  return {
+  const result = {
     orders: transformedOrders,
     totalCount: count || 0,
   };
+
+  console.log("[ORDERS_DEBUG] ========== getOrders COMPLETED ==========");
+  console.log("[ORDERS_DEBUG] Final result:", {
+    ordersCount: result.orders.length,
+    totalCount: result.totalCount
+  });
+
+  return result;
 }
 
 async function getOrderStats(communityId: string) {
-  console.log("📈 [DEBUG] getOrderStats called with communityId:", communityId);
+  console.log("[STATS_DEBUG] ========== getOrderStats STARTED ==========");
+  console.log("[STATS_DEBUG] Community ID:", communityId);
 
   const supabase = await createClient();
-  console.log("✅ [DEBUG] Supabase client created for stats");
 
   // Get order statistics for the community
-  console.log("🎲 [DEBUG] Calling RPC function get_community_order_stats...");
+  console.log("[STATS_DEBUG] Calling RPC function get_community_order_stats...");
 
   const { data: stats, error } = await supabase.rpc("get_community_order_stats", {
     p_community_id: communityId,
   });
 
-  console.log("📊 [DEBUG] Stats result:", {
+  console.log("[STATS_DEBUG] RPC Response:", {
     hasData: !!stats,
-    hasError: !!error,
-    stats,
-    error: error ? {
-      message: error.message,
-      details: error.details,
-      hint: error.hint,
-      code: error.code
-    } : null
+    isArray: Array.isArray(stats),
+    dataLength: Array.isArray(stats) ? stats.length : null,
+    rawData: stats,
+    error: error?.message || null
   });
 
   if (error) {
-    console.error("❌ [ERROR] Failed to fetch order stats:", {
+    console.error("[STATS_DEBUG] ERROR fetching stats:", {
       error,
-      communityId,
-      timestamp: new Date().toISOString()
+      message: error.message,
+      details: error.details,
+      hint: error.hint
     });
   }
 
@@ -223,7 +225,13 @@ async function getOrderStats(communityId: string) {
     completed_orders: 0,
   };
 
-  return stats || defaultStats;
+  // RPC function returns an array with one element, extract it
+  const statsData = Array.isArray(stats) && stats.length > 0 ? stats[0] : stats;
+
+  console.log("[STATS_DEBUG] Processed stats:", statsData);
+  console.log("[STATS_DEBUG] ========== getOrderStats COMPLETED ==========");
+
+  return statsData || defaultStats;
 }
 
 function OrdersLoading() {
@@ -239,17 +247,22 @@ export default async function OrdersPage({
   params,
   searchParams,
 }: OrdersPageProps) {
+  console.log("[PAGE_DEBUG] ========================================");
+  console.log("[PAGE_DEBUG] OrdersPage RENDERING START");
+  console.log("[PAGE_DEBUG] ========================================");
+
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
 
-  console.log("🚀 [DEBUG] OrdersPage started:", {
+  console.log("[PAGE_DEBUG] Params:", {
     slug: resolvedParams.slug,
     searchParams: resolvedSearchParams,
     timestamp: new Date().toISOString()
   });
 
   const community = await getCommunity(resolvedParams.slug);
-  console.log("🏛️ [DEBUG] Community fetched:", {
+
+  console.log("[PAGE_DEBUG] Community:", {
     found: !!community,
     id: community?.id,
     name: community?.name,
@@ -257,22 +270,20 @@ export default async function OrdersPage({
   });
 
   if (!community) {
-    console.warn("⚠️ [DEBUG] Community not found, returning 404");
     notFound();
   }
 
   const hasAccess = await checkAccess(community.id);
-  console.log("🔐 [DEBUG] Access check result:", hasAccess);
+
+  console.log("[PAGE_DEBUG] Access check:", hasAccess);
 
   if (!hasAccess) {
-    console.warn("🚫 [DEBUG] User does not have access, returning 404");
     notFound();
   }
 
   const page = resolvedSearchParams.page ? parseInt(resolvedSearchParams.page, 10) : 1;
-  console.log("📄 [DEBUG] Page number:", page);
 
-  console.log("🔄 [DEBUG] Fetching orders and stats in parallel...");
+  console.log("[PAGE_DEBUG] Starting parallel data fetch...");
 
   try {
     const [ordersResult, statsResult] = await Promise.all([
@@ -281,11 +292,11 @@ export default async function OrdersPage({
         search: resolvedSearchParams.search,
         page,
       }).catch(error => {
-        console.error("❌ [ERROR] getOrders failed:", error);
+        console.error("[PAGE_DEBUG] getOrders promise failed:", error);
         return { orders: [], totalCount: 0 };
       }),
       getOrderStats(community.id).catch(error => {
-        console.error("❌ [ERROR] getOrderStats failed:", error);
+        console.error("[PAGE_DEBUG] getOrderStats promise failed:", error);
         return {
           total_orders: 0,
           total_revenue: 0,
@@ -300,12 +311,20 @@ export default async function OrdersPage({
     const { orders, totalCount } = ordersResult;
     const stats = statsResult;
 
-    console.log("🎉 [DEBUG] Data fetched successfully:", {
+    console.log("[PAGE_DEBUG] Data fetch completed:", {
       ordersCount: orders.length,
       totalCount,
-      hasStats: !!stats,
-      timestamp: new Date().toISOString()
+      stats: {
+        total_orders: stats?.total_orders,
+        total_revenue: stats?.total_revenue,
+        pending_orders: stats?.pending_orders,
+        completed_orders: stats?.completed_orders
+      }
     });
+
+    console.log("[PAGE_DEBUG] ========================================");
+    console.log("[PAGE_DEBUG] OrdersPage RENDERING COMPLETE");
+    console.log("[PAGE_DEBUG] ========================================");
 
     return (
     <div className="container mx-auto py-6 space-y-6">
@@ -320,12 +339,12 @@ export default async function OrdersPage({
       {/* Stats Cards */}
       <Suspense fallback={<Skeleton className="h-32 w-full" />}>
         <OrderStats
-          totalOrders={stats.total_orders}
-          totalRevenue={stats.total_revenue}
-          totalFees={stats.total_fees}
-          totalRefunded={stats.total_refunded}
-          pendingOrders={stats.pending_orders}
-          completedOrders={stats.completed_orders}
+          totalOrders={stats?.total_orders ?? 0}
+          totalRevenue={stats?.total_revenue ?? 0}
+          totalFees={stats?.total_fees ?? 0}
+          totalRefunded={stats?.total_refunded ?? 0}
+          pendingOrders={stats?.pending_orders ?? 0}
+          completedOrders={stats?.completed_orders ?? 0}
         />
       </Suspense>
 

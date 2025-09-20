@@ -32,42 +32,50 @@ interface OrderStatsProps {
 }
 
 export function OrderStats({
-  totalOrders,
-  totalRevenue,
-  totalFees,
-  totalRefunded,
-  pendingOrders,
-  completedOrders,
+  totalOrders = 0,
+  totalRevenue = 0,
+  totalFees = 0,
+  totalRefunded = 0,
+  pendingOrders = 0,
+  completedOrders = 0,
   previousPeriod,
 }: OrderStatsProps) {
-  const netRevenue = totalRevenue - totalFees - totalRefunded;
-  const completionRate = totalOrders > 0
-    ? Math.round((completedOrders / totalOrders) * 100)
+  // Ensure all values are numbers and not null/undefined
+  const safeOrders = Number(totalOrders) || 0;
+  const safeRevenue = Number(totalRevenue) || 0;
+  const safeFees = Number(totalFees) || 0;
+  const safeRefunded = Number(totalRefunded) || 0;
+  const safePending = Number(pendingOrders) || 0;
+  const safeCompleted = Number(completedOrders) || 0;
+
+  const netRevenue = safeRevenue - safeFees - safeRefunded;
+  const completionRate = safeOrders > 0
+    ? Math.round((safeCompleted / safeOrders) * 100)
     : 0;
 
-  const revenueChange = previousPeriod
-    ? ((totalRevenue - previousPeriod.totalRevenue) / previousPeriod.totalRevenue) * 100
+  const revenueChange = previousPeriod && previousPeriod.totalRevenue > 0
+    ? ((safeRevenue - previousPeriod.totalRevenue) / previousPeriod.totalRevenue) * 100
     : 0;
 
-  const orderChange = previousPeriod
-    ? ((totalOrders - previousPeriod.totalOrders) / previousPeriod.totalOrders) * 100
+  const orderChange = previousPeriod && previousPeriod.totalOrders > 0
+    ? ((safeOrders - previousPeriod.totalOrders) / previousPeriod.totalOrders) * 100
     : 0;
 
   const stats = [
     {
       title: "Total Orders",
-      value: totalOrders.toLocaleString(),
+      value: safeOrders.toLocaleString(),
       icon: ShoppingCart,
-      description: `${pendingOrders} pending`,
+      description: `${safePending} pending`,
       change: orderChange,
       color: "text-blue-600",
       bgColor: "bg-blue-100",
     },
     {
       title: "Gross Revenue",
-      value: formatCurrency(totalRevenue),
+      value: formatCurrency(safeRevenue),
       icon: DollarSign,
-      description: `${formatCurrency(totalFees)} in fees`,
+      description: `${formatCurrency(safeFees)} in fees`,
       change: revenueChange,
       color: "text-green-600",
       bgColor: "bg-green-100",
@@ -82,9 +90,9 @@ export function OrderStats({
     },
     {
       title: "Refunded",
-      value: formatCurrency(totalRefunded),
+      value: formatCurrency(safeRefunded),
       icon: RefreshCcw,
-      description: `${Math.round((totalRefunded / totalRevenue) * 100) || 0}% of revenue`,
+      description: `${safeRevenue > 0 ? Math.round((safeRefunded / safeRevenue) * 100) : 0}% of revenue`,
       color: "text-orange-600",
       bgColor: "bg-orange-100",
     },
@@ -92,13 +100,13 @@ export function OrderStats({
       title: "Completion Rate",
       value: `${completionRate}%`,
       icon: CheckCircle,
-      description: `${completedOrders} completed`,
+      description: `${safeCompleted} completed`,
       color: "text-emerald-600",
       bgColor: "bg-emerald-100",
     },
     {
       title: "Pending Orders",
-      value: pendingOrders.toLocaleString(),
+      value: safePending.toLocaleString(),
       icon: Clock,
       description: "Awaiting payment",
       color: "text-yellow-600",

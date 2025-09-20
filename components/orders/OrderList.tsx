@@ -90,6 +90,31 @@ export function OrderList({
   onOrderClick,
   pageSize = 20,
 }: OrderListProps) {
+  console.log("[ORDERLIST_DEBUG] ======== OrderList Component ========");
+  console.log("[ORDERLIST_DEBUG] Props received:", {
+    ordersCount: orders?.length || 0,
+    totalCount,
+    isLoading,
+    hasOnRefresh: !!onRefresh,
+    hasOnExport: !!onExport,
+    hasOnOrderClick: !!onOrderClick,
+    pageSize
+  });
+
+  console.log("[ORDERLIST_DEBUG] Orders detail:");
+  orders?.forEach((order, index) => {
+    console.log(`[ORDERLIST_DEBUG] Order ${index + 1}:`, {
+      id: order.id,
+      order_number: order.order_number,
+      status: order.status,
+      amount: order.amount_cents,
+      fee: order.fee_cents,
+      buyer_email: order.buyer?.email,
+      buyer_name: order.buyer?.name,
+      event_title: order.event?.title,
+      created_at: order.created_at
+    });
+  });
   const [sorting, setSorting] = useState<SortingState>([
     { id: "created_at", desc: true },
   ]);
@@ -101,14 +126,20 @@ export function OrderList({
       {
         accessorKey: "order_number",
         header: "Order #",
-        cell: ({ row }) => (
-          <button
-            onClick={() => onOrderClick?.(row.original)}
-            className="font-medium text-blue-600 hover:underline"
-          >
-            {row.original.order_number}
-          </button>
-        ),
+        cell: ({ row }) => {
+          console.log(`[ORDERLIST_DEBUG] Rendering order #${row.original.order_number}`);
+          return (
+            <button
+              onClick={() => {
+                console.log(`[ORDERLIST_DEBUG] Order clicked:`, row.original.id);
+                onOrderClick?.(row.original);
+              }}
+              className="font-medium text-blue-600 hover:underline"
+            >
+              {row.original.order_number}
+            </button>
+          );
+        },
       },
       {
         accessorKey: "buyer.email",
