@@ -1,8 +1,7 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { OrderList } from "@/components/orders/OrderList";
-import { OrderExportDialog } from "@/components/orders/OrderExportDialog";
+import { OrderListWrapper } from "@/components/orders/OrderListWrapper";
 import { OrderStats } from "@/components/orders/OrderStats";
 import {
   Card,
@@ -15,14 +14,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface OrdersPageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
-  searchParams: {
+  }>;
+  searchParams: Promise<{
     status?: string;
     search?: string;
     page?: string;
-  };
+  }>;
 }
 
 async function getCommunity(slug: string) {
@@ -63,67 +62,159 @@ async function getOrders(
     page?: number;
   }
 ) {
+  console.log("🔍 [DEBUG] getOrders called with:", {
+    communityId,
+    filters,
+    timestamp: new Date().toISOString()
+  });
+
   const supabase = await createClient();
+  console.log("✅ [DEBUG] Supabase client created");
+
   const pageSize = 20;
   const page = filters.page || 1;
   const offset = (page - 1) * pageSize;
 
+  console.log("📊 [DEBUG] Pagination:", { page, pageSize, offset });
+
+  // First, let's check if the tables exist and have data
+  const { data: eventsCheck, error: eventsError } = await supabase
+    .from("events")
+    .select("id, title, community_id")
+    .eq("community_id", communityId)
+    .limit(1);
+
+  console.log("🎯 [DEBUG] Events check:", {
+    eventsFound: eventsCheck?.length || 0,
+    eventsError,
+    communityId
+  });
+
+  // Build the query step by step with better error handling
+  // Note: orders table has event_id foreign key referencing events table
   let query = supabase
     .from("orders")
     .select(
       `
       *,
-      event:events!inner (
+      events!event_id (
         id,
         title,
         start_at,
         community_id
-      ),
-      buyer:profiles!orders_user_id_fkey (
-        id,
-        email,
-        name,
-        avatar_url
       )
     `,
       { count: "exact" }
-    )
-    .eq("event.community_id", communityId)
-    .order("created_at", { ascending: false })
-    .range(offset, offset + pageSize - 1);
+    );
 
+  // Filter by community through events join
+  query = query.eq("events.community_id", communityId);
+
+  // Add status filter if provided
   if (filters.status) {
+    console.log("🏷️ [DEBUG] Adding status filter:", filters.status);
     query = query.eq("status", filters.status);
   }
 
+  // Add search filter if provided
   if (filters.search) {
+    console.log("🔎 [DEBUG] Adding search filter:", filters.search);
+    // Search in ID (as order number) or buyer email
     query = query.or(
-      `order_number.ilike.%${filters.search}%,buyer.email.ilike.%${filters.search}%`
+      `id.ilike.%${filters.search}%,buyer_email.ilike.%${filters.search}%,buyer_name.ilike.%${filters.search}%`
     );
   }
 
+  // Add ordering and pagination
+  query = query
+    .order("created_at", { ascending: false })
+    .range(offset, offset + pageSize - 1);
+
+  console.log("📤 [DEBUG] Executing query...");
   const { data, count, error } = await query;
 
+  console.log("📥 [DEBUG] Query result:", {
+    dataCount: data?.length || 0,
+    totalCount: count,
+    hasError: !!error,
+    errorDetails: error ? {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    } : null
+  });
+
   if (error) {
-    console.error("Error fetching orders:", error);
+    console.error("❌ [ERROR] Failed to fetch orders:", {
+      error,
+      communityId,
+      filters,
+      timestamp: new Date().toISOString()
+    });
+
+    // Return empty but valid structure
     return { orders: [], totalCount: 0 };
   }
 
+  // Transform data to ensure proper mapping
+  const transformedOrders = (data || []).map(order => ({
+    ...order,
+    order_number: order.id.slice(0, 8).toUpperCase(), // Generate order number from ID
+    event: order.events,
+    buyer: {
+      id: order.buyer_id,
+      email: order.buyer_email,
+      name: order.buyer_name,
+      avatar_url: null
+    }
+  }));
+
+  console.log("✅ [DEBUG] Orders fetched successfully:", {
+    ordersCount: transformedOrders.length,
+    totalCount: count || 0
+  });
+
   return {
-    orders: data || [],
+    orders: transformedOrders,
     totalCount: count || 0,
   };
 }
 
 async function getOrderStats(communityId: string) {
+  console.log("📈 [DEBUG] getOrderStats called with communityId:", communityId);
+
   const supabase = await createClient();
+  console.log("✅ [DEBUG] Supabase client created for stats");
 
   // Get order statistics for the community
-  const { data: stats } = await supabase.rpc("get_community_order_stats", {
+  console.log("🎲 [DEBUG] Calling RPC function get_community_order_stats...");
+
+  const { data: stats, error } = await supabase.rpc("get_community_order_stats", {
     p_community_id: communityId,
   });
 
-  return stats || {
+  console.log("📊 [DEBUG] Stats result:", {
+    hasData: !!stats,
+    hasError: !!error,
+    stats,
+    error: error ? {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    } : null
+  });
+
+  if (error) {
+    console.error("❌ [ERROR] Failed to fetch order stats:", {
+      error,
+      communityId,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  const defaultStats = {
     total_orders: 0,
     total_revenue: 0,
     total_fees: 0,
@@ -131,6 +222,8 @@ async function getOrderStats(communityId: string) {
     pending_orders: 0,
     completed_orders: 0,
   };
+
+  return stats || defaultStats;
 }
 
 function OrdersLoading() {
@@ -146,30 +239,75 @@ export default async function OrdersPage({
   params,
   searchParams,
 }: OrdersPageProps) {
-  const community = await getCommunity(params.slug);
+  const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
+
+  console.log("🚀 [DEBUG] OrdersPage started:", {
+    slug: resolvedParams.slug,
+    searchParams: resolvedSearchParams,
+    timestamp: new Date().toISOString()
+  });
+
+  const community = await getCommunity(resolvedParams.slug);
+  console.log("🏛️ [DEBUG] Community fetched:", {
+    found: !!community,
+    id: community?.id,
+    name: community?.name,
+    slug: community?.slug
+  });
 
   if (!community) {
+    console.warn("⚠️ [DEBUG] Community not found, returning 404");
     notFound();
   }
 
   const hasAccess = await checkAccess(community.id);
+  console.log("🔐 [DEBUG] Access check result:", hasAccess);
 
   if (!hasAccess) {
+    console.warn("🚫 [DEBUG] User does not have access, returning 404");
     notFound();
   }
 
-  const page = searchParams.page ? parseInt(searchParams.page, 10) : 1;
+  const page = resolvedSearchParams.page ? parseInt(resolvedSearchParams.page, 10) : 1;
+  console.log("📄 [DEBUG] Page number:", page);
 
-  const [{ orders, totalCount }, stats] = await Promise.all([
-    getOrders(community.id, {
-      status: searchParams.status,
-      search: searchParams.search,
-      page,
-    }),
-    getOrderStats(community.id),
-  ]);
+  console.log("🔄 [DEBUG] Fetching orders and stats in parallel...");
 
-  return (
+  try {
+    const [ordersResult, statsResult] = await Promise.all([
+      getOrders(community.id, {
+        status: resolvedSearchParams.status,
+        search: resolvedSearchParams.search,
+        page,
+      }).catch(error => {
+        console.error("❌ [ERROR] getOrders failed:", error);
+        return { orders: [], totalCount: 0 };
+      }),
+      getOrderStats(community.id).catch(error => {
+        console.error("❌ [ERROR] getOrderStats failed:", error);
+        return {
+          total_orders: 0,
+          total_revenue: 0,
+          total_fees: 0,
+          total_refunded: 0,
+          pending_orders: 0,
+          completed_orders: 0,
+        };
+      }),
+    ]);
+
+    const { orders, totalCount } = ordersResult;
+    const stats = statsResult;
+
+    console.log("🎉 [DEBUG] Data fetched successfully:", {
+      ordersCount: orders.length,
+      totalCount,
+      hasStats: !!stats,
+      timestamp: new Date().toISOString()
+    });
+
+    return (
     <div className="container mx-auto py-6 space-y-6">
       {/* Header */}
       <div>
@@ -211,18 +349,10 @@ export default async function OrdersPage({
             </CardHeader>
             <CardContent>
               <Suspense fallback={<OrdersLoading />}>
-                <OrderList
-                  orders={orders}
+                <OrderListWrapper
+                  initialOrders={orders}
                   totalCount={totalCount}
-                  onOrderClick={(order) => {
-                    window.location.href = `/orders/${order.id}`;
-                  }}
-                  onExport={() => {
-                    // Handle export
-                  }}
-                  onRefresh={() => {
-                    window.location.reload();
-                  }}
+                  communityId={community.id}
                 />
               </Suspense>
             </CardContent>
@@ -236,12 +366,10 @@ export default async function OrdersPage({
               <CardDescription>Successfully completed transactions</CardDescription>
             </CardHeader>
             <CardContent>
-              <OrderList
-                orders={orders.filter((o) => o.status === "paid")}
+              <OrderListWrapper
+                initialOrders={orders.filter((o) => o.status === "paid")}
                 totalCount={orders.filter((o) => o.status === "paid").length}
-                onOrderClick={(order) => {
-                  window.location.href = `/orders/${order.id}`;
-                }}
+                communityId={community.id}
               />
             </CardContent>
           </Card>
@@ -254,12 +382,10 @@ export default async function OrdersPage({
               <CardDescription>Orders awaiting payment</CardDescription>
             </CardHeader>
             <CardContent>
-              <OrderList
-                orders={orders.filter((o) => o.status === "pending")}
+              <OrderListWrapper
+                initialOrders={orders.filter((o) => o.status === "pending")}
                 totalCount={orders.filter((o) => o.status === "pending").length}
-                onOrderClick={(order) => {
-                  window.location.href = `/orders/${order.id}`;
-                }}
+                communityId={community.id}
               />
             </CardContent>
           </Card>
@@ -274,8 +400,8 @@ export default async function OrdersPage({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <OrderList
-                orders={orders.filter(
+              <OrderListWrapper
+                initialOrders={orders.filter(
                   (o) => o.status === "refunded" || o.status === "partially_refunded"
                 )}
                 totalCount={
@@ -283,9 +409,7 @@ export default async function OrdersPage({
                     (o) => o.status === "refunded" || o.status === "partially_refunded"
                   ).length
                 }
-                onOrderClick={(order) => {
-                  window.location.href = `/orders/${order.id}`;
-                }}
+                communityId={community.id}
               />
             </CardContent>
           </Card>
@@ -298,12 +422,10 @@ export default async function OrdersPage({
               <CardDescription>Orders that failed to process</CardDescription>
             </CardHeader>
             <CardContent>
-              <OrderList
-                orders={orders.filter((o) => o.status === "failed")}
+              <OrderListWrapper
+                initialOrders={orders.filter((o) => o.status === "failed")}
                 totalCount={orders.filter((o) => o.status === "failed").length}
-                onOrderClick={(order) => {
-                  window.location.href = `/orders/${order.id}`;
-                }}
+                communityId={community.id}
               />
             </CardContent>
           </Card>
@@ -311,4 +433,8 @@ export default async function OrdersPage({
       </Tabs>
     </div>
   );
+  } catch (error) {
+    console.error("💥 [FATAL ERROR] OrdersPage rendering failed:", error);
+    throw error;
+  }
 }

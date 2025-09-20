@@ -1042,6 +1042,20 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "orders_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events_with_rsvp_summary"
+            referencedColumns: ["id"]
+          },
         ]
       }
       passes: {
@@ -2446,6 +2460,17 @@ export type Database = {
       geomfromewkt: {
         Args: { "": string }
         Returns: unknown
+      }
+      get_community_order_stats: {
+        Args: { p_community_id: string }
+        Returns: {
+          completed_orders: number
+          pending_orders: number
+          total_fees: number
+          total_orders: number
+          total_refunded: number
+          total_revenue: number
+        }[]
       }
       get_event_stats: {
         Args: { p_event_id: string }
