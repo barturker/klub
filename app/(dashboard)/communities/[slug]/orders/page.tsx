@@ -92,6 +92,13 @@ async function getOrders(
         title,
         start_at,
         community_id
+      ),
+      profiles:buyer_id (
+        id,
+        full_name,
+        display_name,
+        avatar_url,
+        email
       )
     `,
       { count: "exact" }
@@ -147,13 +154,22 @@ async function getOrders(
   console.log("[ORDERS_DEBUG] Transforming orders data...");
 
   const transformedOrders = (data || []).map((order, index) => {
+    // Get buyer name from profile, fallback to buyer_name field, then email
+    const buyerName = order.profiles?.full_name ||
+                     order.profiles?.display_name ||
+                     order.buyer_name ||
+                     order.buyer_email?.split('@')[0] ||
+                     'Unknown';
+
     console.log(`[ORDERS_DEBUG] Order ${index + 1}:`, {
       id: order.id,
       status: order.status,
       amount: order.amount_cents,
       fee: order.fee_cents,
       buyer_email: order.buyer_email,
-      buyer_name: order.buyer_name,
+      buyer_name: buyerName,
+      profile_name: order.profiles?.full_name,
+      profile_display: order.profiles?.display_name,
       event_title: order.events?.title,
       event_id: order.event_id,
       created_at: order.created_at
@@ -165,9 +181,9 @@ async function getOrders(
       event: order.events || null,
       buyer: {
         id: order.buyer_id,
-        email: order.buyer_email,
-        name: order.buyer_name,
-        avatar_url: null
+        email: order.buyer_email || order.profiles?.email,
+        name: buyerName,
+        avatar_url: order.profiles?.avatar_url || null
       }
     };
   });
