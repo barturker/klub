@@ -325,29 +325,65 @@ export async function POST(request: NextRequest) {
 }
 
 function generateCSV(orders: any[], selectedColumns: string[]): string {
-  // Define all available columns
+  // Define all available columns - daha detaylı veriler ekleyelim
   const allColumns = [
     { key: "order_number", label: "Order Number" },
     { key: "id", label: "Order ID" },
-    { key: "buyer_name", label: "Buyer Name" },
-    { key: "buyer_email", label: "Buyer Email" },
-    { key: "event_title", label: "Event" },
-    { key: "status", label: "Status" },
-    { key: "amount_cents", label: "Amount (cents)" },
-    { key: "amount_formatted", label: "Amount" },
-    { key: "fee_cents", label: "Fee (cents)" },
-    { key: "fee_formatted", label: "Fee" },
-    { key: "total_tickets", label: "Tickets" },
+    { key: "buyer_name", label: "Customer Name" },
+    { key: "buyer_email", label: "Customer Email" },
+    { key: "event_title", label: "Event Name" },
+    { key: "status", label: "Order Status" },
+    { key: "payment_status", label: "Payment Status" },
+    { key: "amount_formatted", label: "Total Amount" },
+    { key: "fee_formatted", label: "Platform Fee" },
+    { key: "net_amount", label: "Net Amount" },
+    { key: "currency", label: "Currency" },
+    { key: "payment_method", label: "Payment Method" },
+    { key: "quantity", label: "Quantity" },
+    { key: "total_tickets", label: "Total Tickets" },
+    { key: "ticket_codes", label: "Ticket Codes" },
     { key: "ticket_status", label: "Ticket Status" },
     { key: "refund_amount", label: "Refund Amount" },
+    { key: "refund_status", label: "Refund Status" },
     { key: "created_at", label: "Order Date" },
-    { key: "event_start_at", label: "Event Date" }
+    { key: "paid_at", label: "Payment Date" },
+    { key: "event_start_at", label: "Event Date" },
+    { key: "stripe_session_id", label: "Stripe Session ID" },
+    { key: "stripe_payment_intent", label: "Payment Intent ID" }
   ];
 
-  // Use selected columns or default to all
-  const columns = selectedColumns.length > 0
-    ? allColumns.filter(col => selectedColumns.includes(col.key))
-    : allColumns;
+  // Debug için gelen kolonları logla
+  console.log("[EXPORT_DEBUG] Selected columns from client:", selectedColumns);
+
+  // Use selected columns or default to important ones if none selected
+  const columns = selectedColumns && selectedColumns.length > 0
+    ? allColumns.filter(col => {
+        // Dialog'dan gelen column key'leri ile bizim key'lerimizi eşleştirelim
+        const clientToServerMapping: Record<string, string> = {
+          'customer_name': 'buyer_name',
+          'customer_email': 'buyer_email',
+          'event_name': 'event_title',
+          'amount': 'amount_formatted',
+          'order_date': 'created_at'
+        };
+
+        // İki yönde kontrol et - hem direkt key hem de mapped key
+        return selectedColumns.some(selectedKey => {
+          const mappedSelected = clientToServerMapping[selectedKey] || selectedKey;
+          return col.key === mappedSelected || col.key === selectedKey;
+        });
+      })
+    : [
+        // Varsayılan önemli kolonlar
+        allColumns.find(c => c.key === "order_number"),
+        allColumns.find(c => c.key === "buyer_name"),
+        allColumns.find(c => c.key === "buyer_email"),
+        allColumns.find(c => c.key === "event_title"),
+        allColumns.find(c => c.key === "amount_formatted"),
+        allColumns.find(c => c.key === "status"),
+        allColumns.find(c => c.key === "created_at"),
+        allColumns.find(c => c.key === "paid_at")
+      ].filter(Boolean) as typeof allColumns;
 
   // Generate CSV header
   const header = columns.map(col => `"${col.label}"`).join(",");
@@ -357,28 +393,58 @@ function generateCSV(orders: any[], selectedColumns: string[]): string {
     const orderNumber = order.id.slice(0, 8).toUpperCase();
     const amountFormatted = `$${(order.amount_cents / 100).toFixed(2)}`;
     const feeFormatted = `$${((order.fee_cents || 0) / 100).toFixed(2)}`;
+    const netAmount = `$${((order.amount_cents - (order.fee_cents || 0)) / 100).toFixed(2)}`;
     const totalTickets = order.tickets?.length || 0;
+    const ticketCodes = order.tickets?.map((t: any) => t.ticket_code || '').filter(Boolean).join(', ') || "";
     const ticketStatus = order.tickets?.[0]?.status || "";
-    const refundAmount = order.refunds?.reduce((sum: number, refund: any) =>
-      sum + (refund.status === "succeeded" ? refund.amount_cents : 0), 0) || 0;
+
+    // Refund bilgileri
+    const refunds = order.refunds?.filter((r: any) => r.status === "succeeded") || [];
+    const refundAmount = refunds.reduce((sum: number, refund: any) => sum + refund.amount_cents, 0) || 0;
     const refundFormatted = refundAmount > 0 ? `$${(refundAmount / 100).toFixed(2)}` : "";
+    const refundStatus = refunds.length > 0 ? "Refunded" : "";
+
+    // Payment durumu
+    const paymentStatus = order.paid_at ? "Completed" : order.failed_at ? "Failed" : "Pending";
+
+    // Tarih formatlama
+    const formatDate = (dateStr: string | null) => {
+      if (!dateStr) return "";
+      const date = new Date(dateStr);
+      return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+    };
+
+    const formatDateOnly = (dateStr: string | null) => {
+      if (!dateStr) return "";
+      return new Date(dateStr).toLocaleDateString();
+    };
 
     const rowData: Record<string, string> = {
       order_number: orderNumber,
       id: order.id,
-      buyer_name: order.buyer_name || "",
-      buyer_email: order.buyer_email || "",
+      buyer_name: order.buyer_name || "N/A",
+      buyer_email: order.buyer_email || "N/A",
       event_title: order.events?.title || "",
       status: order.status,
+      payment_status: paymentStatus,
       amount_cents: order.amount_cents.toString(),
       amount_formatted: amountFormatted,
       fee_cents: (order.fee_cents || 0).toString(),
       fee_formatted: feeFormatted,
+      net_amount: netAmount,
+      currency: (order.currency || "usd").toUpperCase(),
+      payment_method: order.payment_method || "card",
+      quantity: (order.quantity || 1).toString(),
       total_tickets: totalTickets.toString(),
+      ticket_codes: ticketCodes,
       ticket_status: ticketStatus,
       refund_amount: refundFormatted,
-      created_at: new Date(order.created_at).toISOString().split('T')[0],
-      event_start_at: order.events?.start_at ? new Date(order.events.start_at).toISOString().split('T')[0] : ""
+      refund_status: refundStatus,
+      created_at: formatDate(order.created_at),
+      paid_at: formatDate(order.paid_at),
+      event_start_at: order.events?.start_at ? formatDate(order.events.start_at) : "",
+      stripe_session_id: order.stripe_session_id || order.metadata?.stripe_session_id || "",
+      stripe_payment_intent: order.stripe_payment_intent_id || ""
     };
 
     return columns.map(col => `"${rowData[col.key] || ""}"`).join(",");
