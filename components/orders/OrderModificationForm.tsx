@@ -34,8 +34,16 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { ArrowUp, ArrowDown, UserPlus, Info } from "lucide-react";
+import { ArrowUp, ArrowDown, UserPlus, Info, Calculator } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import {
+  calculateUpgradeModification,
+  calculateDowngradeModification,
+  formatModificationPricing,
+  validateOrderModification,
+  type TicketTier,
+  type ModificationPricing,
+} from "@/lib/refund-calculator";
 
 const modificationTypes = [
   { value: "upgrade", label: "Upgrade Ticket", icon: ArrowUp },
@@ -94,6 +102,13 @@ export function OrderModificationForm({
   const currentTicketTier = order.tickets?.[0]?.tier;
   const currentPrice = currentTicketTier?.price_cents || 0;
 
+  // Convert to TicketTier format for calculations
+  const currentTierData: TicketTier = {
+    id: currentTicketTier?.id || "",
+    name: currentTicketTier?.name || "",
+    price_cents: currentPrice,
+  };
+
   const getFilteredTiers = () => {
     if (modificationType === "upgrade") {
       return availableTiers.filter((tier) => tier.price_cents > currentPrice);
@@ -107,9 +122,29 @@ export function OrderModificationForm({
   const selectedTier = availableTiers.find(
     (tier) => tier.id === form.watch("new_ticket_tier_id")
   );
-  const priceDifference = selectedTier
-    ? selectedTier.price_cents - currentPrice
-    : 0;
+
+  // Calculate precise pricing using Dinero.js
+  let modificationPricing: ModificationPricing | null = null;
+  let pricingFormatted: ReturnType<typeof formatModificationPricing> | null = null;
+
+  if (selectedTier) {
+    const selectedTierData: TicketTier = {
+      id: selectedTier.id,
+      name: selectedTier.name,
+      price_cents: selectedTier.price_cents,
+      max_quantity: selectedTier.available_quantity,
+    };
+
+    if (modificationType === "upgrade") {
+      modificationPricing = calculateUpgradeModification(currentTierData, selectedTierData);
+    } else if (modificationType === "downgrade") {
+      modificationPricing = calculateDowngradeModification(currentTierData, selectedTierData);
+    }
+
+    if (modificationPricing) {
+      pricingFormatted = formatModificationPricing(modificationPricing);
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -199,20 +234,64 @@ export function OrderModificationForm({
                   )}
                 />
 
-                {selectedTier && (
+                {selectedTier && modificationPricing && pricingFormatted && (
                   <Alert>
-                    <Info className="h-4 w-4" />
+                    <Calculator className="h-4 w-4" />
                     <AlertDescription>
-                      <div className="space-y-1">
-                        <div className="font-medium">Price Difference:</div>
-                        <div className="flex justify-between">
-                          <span>Current: {formatCurrency(currentPrice)}</span>
-                          <span>New: {formatCurrency(selectedTier.price_cents)}</span>
+                      <div className="space-y-2">
+                        <div className="font-medium">Price Breakdown:</div>
+
+                        {/* Current vs New Ticket Prices */}
+                        <div className="space-y-1 text-sm">
+                          <div className="flex justify-between">
+                            <span>Current ticket price:</span>
+                            <span>{formatCurrency(modificationPricing.oldTicketPrice)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Current platform fee:</span>
+                            <span>{formatCurrency(modificationPricing.oldPlatformFee)}</span>
+                          </div>
+                          <div className="flex justify-between font-medium border-t pt-1">
+                            <span>Current total:</span>
+                            <span>{pricingFormatted.oldTotalFormatted}</span>
+                          </div>
                         </div>
-                        <div className="border-t pt-1 font-semibold">
-                          {priceDifference > 0 ? "Additional charge: " : "Refund amount: "}
-                          {formatCurrency(Math.abs(priceDifference))}
+
+                        {/* Arrow Indicator */}
+                        <div className="text-center text-gray-400">
+                          {pricingFormatted.isUpgrade ? "↓ Upgrading to" : "↓ Downgrading to"}
                         </div>
+
+                        {/* New Pricing */}
+                        <div className="space-y-1 text-sm">
+                          <div className="flex justify-between">
+                            <span>New ticket price:</span>
+                            <span>{formatCurrency(modificationPricing.newTicketPrice)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>New platform fee:</span>
+                            <span>{formatCurrency(modificationPricing.newPlatformFee)}</span>
+                          </div>
+                          <div className="flex justify-between font-medium border-t pt-1">
+                            <span>New total:</span>
+                            <span>{pricingFormatted.newTotalFormatted}</span>
+                          </div>
+                        </div>
+
+                        {/* Price Difference */}
+                        <div className={`border-t pt-2 font-semibold ${
+                          pricingFormatted.isUpgrade ? "text-red-600" : "text-green-600"
+                        }`}>
+                          {pricingFormatted.isUpgrade ? "Additional charge: " : "Refund amount: "}
+                          {pricingFormatted.priceDifferenceFormatted}
+                        </div>
+
+                        {/* Additional Stripe Fee Notice */}
+                        {modificationPricing.additionalStripeFee > 0 && (
+                          <div className="text-xs text-gray-500 border-t pt-1">
+                            Processing fee: {formatCurrency(modificationPricing.additionalStripeFee)}
+                          </div>
+                        )}
                       </div>
                     </AlertDescription>
                   </Alert>

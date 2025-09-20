@@ -222,8 +222,89 @@ export function useProcessRefund() {
 
       return response.json();
     },
-    onSuccess: (_, variables) => {
-      // Invalidate and refetch orders
+    onMutate: async (variables) => {
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: ["order", variables.order_id] });
+      await queryClient.cancelQueries({ queryKey: ["orders"] });
+
+      // Snapshot the previous value
+      const previousOrder = queryClient.getQueryData(["order", variables.order_id]);
+
+      // Optimistically update the order
+      queryClient.setQueryData(["order", variables.order_id], (old: any) => {
+        if (!old) return old;
+
+        // Determine if this is a full refund
+        const isFullRefund = variables.amount_cents >= old.amount_cents;
+
+        // Update order status
+        const newStatus = isFullRefund ? "refunded" : "partially_refunded";
+
+        // Update tickets to refunded status if full refund
+        const updatedTickets = old.tickets?.map((ticket: any) => ({
+          ...ticket,
+          status: isFullRefund ? "refunded" : ticket.status,
+        })) || [];
+
+        // Add optimistic refund record
+        const optimisticRefund = {
+          id: `temp-${Date.now()}`, // Temporary ID
+          amount_cents: variables.amount_cents,
+          reason: variables.reason,
+          reason_details: variables.reason_details,
+          status: "processing",
+          created_at: new Date().toISOString(),
+          processed_at: null,
+        };
+
+        return {
+          ...old,
+          status: newStatus,
+          refunded_at: isFullRefund ? new Date().toISOString() : old.refunded_at,
+          tickets: updatedTickets,
+          refunds: [...(old.refunds || []), optimisticRefund],
+        };
+      });
+
+      // Also update the orders list if it's cached
+      queryClient.setQueriesData({ queryKey: ["orders"] }, (old: any) => {
+        if (!old?.orders) return old;
+
+        const updatedOrders = old.orders.map((order: any) => {
+          if (order.id === variables.order_id) {
+            const isFullRefund = variables.amount_cents >= order.amount_cents;
+            const newStatus = isFullRefund ? "refunded" : "partially_refunded";
+
+            return {
+              ...order,
+              status: newStatus,
+              refunded_at: isFullRefund ? new Date().toISOString() : order.refunded_at,
+              tickets: order.tickets?.map((ticket: any) => ({
+                ...ticket,
+                status: isFullRefund ? "refunded" : ticket.status,
+              })) || [],
+            };
+          }
+          return order;
+        });
+
+        return {
+          ...old,
+          orders: updatedOrders,
+        };
+      });
+
+      // Return a context object with the snapshotted value
+      return { previousOrder };
+    },
+    onError: (err, variables, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousOrder) {
+        queryClient.setQueryData(["order", variables.order_id], context.previousOrder);
+      }
+    },
+    onSettled: (_, __, variables) => {
+      // Always refetch after error or success to ensure we have the correct data
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["order", variables.order_id] });
     },

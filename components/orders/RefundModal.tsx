@@ -33,8 +33,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertTriangle, DollarSign, Info } from "lucide-react";
+import { AlertTriangle, DollarSign, Info, Calculator } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import {
+  calculateOrderBreakdown,
+  calculateRefundBreakdown,
+  validateRefundAmount,
+  formatRefundAmount,
+  type OrderBreakdown,
+  type RefundBreakdown,
+} from "@/lib/refund-calculator";
 
 const refundReasons = [
   { value: "requested_by_customer", label: "Customer Request" },
@@ -64,6 +72,9 @@ interface RefundModalProps {
   onClose: () => void;
   orderId: string;
   maxAmount: number;
+  ticketPrice: number; // base ticket price in cents
+  platformFee: number; // platform fee in cents
+  alreadyRefunded?: number; // amount already refunded in cents
   onRefund: (amount: number, reason: string, reasonDetails?: string, notify?: boolean) => void;
   isProcessing?: boolean;
 }
@@ -73,11 +84,28 @@ export function RefundModal({
   onClose,
   orderId,
   maxAmount,
+  ticketPrice,
+  platformFee,
+  alreadyRefunded = 0,
   onRefund,
   isProcessing = false,
 }: RefundModalProps) {
   const [refundType, setRefundType] = useState<"full" | "partial">("full");
   const [customAmount, setCustomAmount] = useState("");
+
+  // Calculate order breakdown
+  const orderBreakdown = calculateOrderBreakdown(ticketPrice);
+
+  // Calculate current refund breakdown
+  const currentRefundAmount = refundType === "full"
+    ? maxAmount
+    : parseInt(customAmount || "0") * 100;
+
+  const refundBreakdown = calculateRefundBreakdown(
+    orderBreakdown,
+    currentRefundAmount,
+    refundType === "full"
+  );
 
   const form = useForm<RefundFormValues>({
     resolver: zodResolver(refundSchema),
@@ -90,7 +118,8 @@ export function RefundModal({
   });
 
   const handleSubmit = (values: RefundFormValues) => {
-    const amount = refundType === "full" ? maxAmount : parseInt(customAmount) * 100;
+    // Use the calculated total refund amount from the breakdown
+    const amount = refundBreakdown.totalRefund;
     onRefund(amount, values.reason, values.reason_details, values.notify_customer);
   };
 
@@ -165,14 +194,54 @@ export function RefundModal({
                     className="pl-9"
                   />
                 </div>
-                {customAmount && parseFloat(customAmount) * 100 > maxAmount && (
-                  <Alert variant="destructive">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
-                      Amount exceeds maximum refundable: {formatCurrency(maxAmount)}
-                    </AlertDescription>
-                  </Alert>
-                )}
+                {customAmount && (() => {
+                  const validation = validateRefundAmount(
+                    orderBreakdown,
+                    parseFloat(customAmount) * 100,
+                    alreadyRefunded
+                  );
+                  return !validation.isValid && (
+                    <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        {validation.error}
+                      </AlertDescription>
+                    </Alert>
+                  );
+                })()}
+              </div>
+            )}
+
+            {/* Refund Breakdown */}
+            {(refundType === "full" || (refundType === "partial" && customAmount && parseFloat(customAmount) > 0)) && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Calculator className="h-4 w-4 text-gray-500" />
+                  <label className="text-sm font-medium">Refund Breakdown</label>
+                </div>
+                <div className="rounded-lg bg-gray-50 p-3 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Ticket Refund:</span>
+                    <span className="font-medium">
+                      {formatRefundAmount(refundBreakdown.ticketRefund)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Platform Fee Refund:</span>
+                    <span className="font-medium">
+                      {formatRefundAmount(refundBreakdown.platformFeeRefund)}
+                    </span>
+                  </div>
+                  <div className="border-t pt-2 flex justify-between text-sm font-semibold">
+                    <span>Total Refund:</span>
+                    <span className="text-green-600">
+                      {formatRefundAmount(refundBreakdown.totalRefund)}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Organizer will be charged: {formatRefundAmount(refundBreakdown.organzerImpact)}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -268,8 +337,15 @@ export function RefundModal({
                 type="submit"
                 disabled={
                   isProcessing ||
-                  (refundType === "partial" &&
-                    (!customAmount || parseFloat(customAmount) * 100 > maxAmount))
+                  (refundType === "partial" && (() => {
+                    if (!customAmount) return true;
+                    const validation = validateRefundAmount(
+                      orderBreakdown,
+                      parseFloat(customAmount) * 100,
+                      alreadyRefunded
+                    );
+                    return !validation.isValid;
+                  })())
                 }
               >
                 {isProcessing ? "Processing..." : "Process Refund"}

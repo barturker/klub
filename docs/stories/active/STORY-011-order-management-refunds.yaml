@@ -469,16 +469,16 @@ implementation_plan:
       tasks:
         - [x] Create refund modal with React Hook Form
         - [x] Integrate with Stripe refunds API
-        - [ ] Handle partial refunds with Dinero.js
-        - [ ] Update ticket status with optimistic updates
-        - [ ] Calculate refund amounts considering platform fees
-        - [ ] Handle fee refunds to buyers
+        - [x] Handle partial refunds with Dinero.js
+        - [x] Update ticket status with optimistic updates
+        - [x] Calculate refund amounts considering platform fees
+        - [x] Handle fee refunds to buyers
     - phase: "Order Modifications"
       tasks:
         - [x] Build modification form with Zod validation
         - [x] Handle upgrades/downgrades with price recalculation
         - [x] Implement ticket transfers with email validation
-        - [ ] Calculate price differences using Dinero.js
+        - [x] Calculate price differences using Dinero.js
     - phase: "Bulk Operations"
       tasks:
         - [ ] Event cancellation flow
@@ -689,19 +689,26 @@ dev_agent_record:
     - "Phase 2: Created OrderExportDialog for CSV/Excel/PDF exports"
     - "Phase 2: Integrated Stripe refund API in backend endpoint"
     - "Phase 2: Replaced @react-pdf/renderer with jsPDF for React 19 compatibility"
+    - "Phase 3: Enhanced refund processing with Dinero.js for precise monetary calculations"
+    - "Phase 3: Implemented platform fee refunds to buyers in transparent fee model"
+    - "Phase 3: Added optimistic updates for ticket status changes during refunds"
+    - "Phase 3: Created comprehensive refund breakdown display showing ticket and fee refunds"
+    - "Phase 3: Enhanced order modification form with detailed price difference calculations"
+    - "Phase 3: Integrated fee-aware pricing calculations for upgrades/downgrades"
   file_list:
     - "supabase/migrations/00048_add_refund_management_tables.sql"
     - "supabase/migrations/00049_add_platform_settings_table.sql"
     - "supabase/migrations/00050_fix_fee_tiers_currency.sql"
     - "supabase/migrations/00051_drop_duplicate_ticket_orders_table.sql"
     - "lib/supabase/database.types.ts (regenerated)"
+    - "lib/refund-calculator.ts (new - Dinero.js utilities for precise monetary calculations)"
     - "components/orders/OrderList.tsx"
     - "components/orders/OrderDetails.tsx"
-    - "components/orders/RefundModal.tsx"
-    - "components/orders/OrderModificationForm.tsx"
+    - "components/orders/RefundModal.tsx (enhanced with fee breakdown and Dinero.js)"
+    - "components/orders/OrderModificationForm.tsx (enhanced with precise price calculations)"
     - "components/orders/OrderStats.tsx"
     - "components/orders/OrderExportDialog.tsx"
-    - "hooks/useOrders.ts"
+    - "hooks/useOrders.ts (enhanced with optimistic updates)"
     - "app/(dashboard)/communities/[slug]/orders/page.tsx"
     - "app/api/orders/[id]/refund/route.ts"
     - "package.json (updated dependencies)"
