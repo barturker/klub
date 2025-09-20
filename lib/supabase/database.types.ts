@@ -2190,6 +2190,27 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      debug_order_access: {
+        Args: { p_session_id: string }
+        Returns: {
+          db_role: string
+          db_user: string
+          order_id: string
+          order_status: string
+          session_in_column: string
+          session_in_metadata: string
+        }[]
+      }
+      debug_user_permissions: {
+        Args: { p_community_id: string }
+        Returns: {
+          community_role: string
+          current_user_name: string
+          is_organizer: boolean
+          user_email: string
+          user_id: string
+        }[]
+      }
       disablelongtransactions: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -3902,6 +3923,21 @@ export type Database = {
       unlockrows: {
         Args: { "": string }
         Returns: number
+      }
+      update_order_from_webhook: {
+        Args: {
+          p_paid_at?: string
+          p_payment_intent_id?: string
+          p_payment_method?: string
+          p_session_id: string
+          p_status: string
+        }
+        Returns: {
+          debug_info: Json
+          id: string
+          status: string
+          updated: boolean
+        }[]
       }
       updategeometrysrid: {
         Args: {

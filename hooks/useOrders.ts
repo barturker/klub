@@ -356,6 +356,12 @@ export function useExportOrders() {
       format: "csv" | "excel" | "pdf";
       columns?: string[];
     }) => {
+      console.log("[CLIENT_EXPORT_DEBUG] ========== Starting export request ==========");
+      console.log("[CLIENT_EXPORT_DEBUG] Export parameters:", params);
+      console.log("[CLIENT_EXPORT_DEBUG] Timestamp:", new Date().toISOString());
+
+      console.log("[CLIENT_EXPORT_DEBUG] Making POST request to /api/orders/export...");
+
       const response = await fetch("/api/orders/export", {
         method: "POST",
         headers: {
@@ -364,12 +370,36 @@ export function useExportOrders() {
         body: JSON.stringify(params),
       });
 
+      console.log("[CLIENT_EXPORT_DEBUG] Response received:", {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to export orders");
+        console.log("[CLIENT_EXPORT_DEBUG] Response not OK, parsing error...");
+        let errorData;
+        try {
+          errorData = await response.json();
+          console.log("[CLIENT_EXPORT_DEBUG] Error response data:", errorData);
+        } catch (jsonError) {
+          console.error("[CLIENT_EXPORT_DEBUG] Failed to parse error response as JSON:", jsonError);
+          console.log("[CLIENT_EXPORT_DEBUG] Raw error response:", await response.text());
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const errorMessage = errorData.message || errorData.error || "Failed to export orders";
+        console.error("[CLIENT_EXPORT_DEBUG] Throwing error:", errorMessage);
+        throw new Error(errorMessage);
       }
 
-      return response.json();
+      console.log("[CLIENT_EXPORT_DEBUG] Parsing successful response...");
+      const result = await response.json();
+      console.log("[CLIENT_EXPORT_DEBUG] Success response data:", result);
+      console.log("[CLIENT_EXPORT_DEBUG] ========== Export request completed ==========");
+
+      return result;
     },
   });
 }
