@@ -12,8 +12,72 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          changed_at: string | null
+          changed_by: string | null
+          id: string
+          ip_address: unknown | null
+          new_data: Json | null
+          old_data: Json | null
+          record_id: string | null
+          table_name: string
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: string
+          ip_address?: unknown | null
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: string
+          ip_address?: unknown | null
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       checkins: {
         Row: {
           id: string
@@ -330,6 +394,53 @@ export type Database = {
           },
         ]
       }
+      email_queue: {
+        Row: {
+          attempts: number | null
+          created_at: string | null
+          id: string
+          priority: string | null
+          sent_at: string | null
+          status: string | null
+          template_data: Json | null
+          template_type: string
+          to_email: string | null
+          to_user_id: string | null
+        }
+        Insert: {
+          attempts?: number | null
+          created_at?: string | null
+          id?: string
+          priority?: string | null
+          sent_at?: string | null
+          status?: string | null
+          template_data?: Json | null
+          template_type: string
+          to_email?: string | null
+          to_user_id?: string | null
+        }
+        Update: {
+          attempts?: number | null
+          created_at?: string | null
+          id?: string
+          priority?: string | null
+          sent_at?: string | null
+          status?: string | null
+          template_data?: Json | null
+          template_type?: string
+          to_email?: string | null
+          to_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_queue_to_user_id_fkey"
+            columns: ["to_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_rsvps: {
         Row: {
           created_at: string | null
@@ -494,6 +605,60 @@ export type Database = {
           },
         ]
       }
+      fee_tiers: {
+        Row: {
+          created_at: string | null
+          currency: string | null
+          id: string
+          instant_payout_fee: number | null
+          is_active: boolean | null
+          max_amount: number | null
+          min_amount: number
+          name: string
+          platform_fee_fixed: number
+          platform_fee_percentage: number
+          priority: number | null
+          processing_fee_fixed: number | null
+          processing_fee_percentage: number | null
+          tier_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          instant_payout_fee?: number | null
+          is_active?: boolean | null
+          max_amount?: number | null
+          min_amount: number
+          name: string
+          platform_fee_fixed?: number
+          platform_fee_percentage: number
+          priority?: number | null
+          processing_fee_fixed?: number | null
+          processing_fee_percentage?: number | null
+          tier_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          instant_payout_fee?: number | null
+          is_active?: boolean | null
+          max_amount?: number | null
+          min_amount?: number
+          name?: string
+          platform_fee_fixed?: number
+          platform_fee_percentage?: number
+          priority?: number | null
+          processing_fee_fixed?: number | null
+          processing_fee_percentage?: number | null
+          tier_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       group_pricing_rules: {
         Row: {
           created_at: string | null
@@ -599,6 +764,95 @@ export type Database = {
           },
         ]
       }
+      order_exports: {
+        Row: {
+          columns: string[] | null
+          community_id: string
+          completed_at: string | null
+          created_at: string | null
+          date_range_end: string | null
+          date_range_start: string | null
+          error_message: string | null
+          event_id: string | null
+          expires_at: string | null
+          export_type: Database["public"]["Enums"]["export_type"] | null
+          file_size_bytes: number | null
+          file_url: string | null
+          filters: Json | null
+          id: string
+          requested_by: string
+          row_count: number | null
+          status: Database["public"]["Enums"]["export_status"] | null
+        }
+        Insert: {
+          columns?: string[] | null
+          community_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          date_range_end?: string | null
+          date_range_start?: string | null
+          error_message?: string | null
+          event_id?: string | null
+          expires_at?: string | null
+          export_type?: Database["public"]["Enums"]["export_type"] | null
+          file_size_bytes?: number | null
+          file_url?: string | null
+          filters?: Json | null
+          id?: string
+          requested_by: string
+          row_count?: number | null
+          status?: Database["public"]["Enums"]["export_status"] | null
+        }
+        Update: {
+          columns?: string[] | null
+          community_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          date_range_end?: string | null
+          date_range_start?: string | null
+          error_message?: string | null
+          event_id?: string | null
+          expires_at?: string | null
+          export_type?: Database["public"]["Enums"]["export_type"] | null
+          file_size_bytes?: number | null
+          file_url?: string | null
+          filters?: Json | null
+          id?: string
+          requested_by?: string
+          row_count?: number | null
+          status?: Database["public"]["Enums"]["export_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_exports_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_exports_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_exports_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events_with_rsvp_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_exports_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string | null
@@ -644,6 +898,66 @@ export type Database = {
           },
         ]
       }
+      order_modifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          ip_address: unknown | null
+          modified_by: string
+          new_values: Json
+          old_values: Json
+          order_id: string
+          price_difference_cents: number | null
+          reason: string | null
+          stripe_payment_intent_id: string | null
+          type: Database["public"]["Enums"]["modification_type"]
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          modified_by: string
+          new_values: Json
+          old_values: Json
+          order_id: string
+          price_difference_cents?: number | null
+          reason?: string | null
+          stripe_payment_intent_id?: string | null
+          type: Database["public"]["Enums"]["modification_type"]
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          modified_by?: string
+          new_values?: Json
+          old_values?: Json
+          order_id?: string
+          price_difference_cents?: number | null
+          reason?: string | null
+          stripe_payment_intent_id?: string | null
+          type?: Database["public"]["Enums"]["modification_type"]
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_modifications_modified_by_fkey"
+            columns: ["modified_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_modifications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           amount_cents: number
@@ -655,6 +969,7 @@ export type Database = {
           currency: string
           event_id: string
           failed_at: string | null
+          fee_cents: number | null
           id: string
           metadata: Json
           paid_at: string | null
@@ -666,6 +981,7 @@ export type Database = {
           status: Database["public"]["Enums"]["order_status"]
           stripe_charge_id: string | null
           stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
           updated_at: string
         }
         Insert: {
@@ -678,6 +994,7 @@ export type Database = {
           currency?: string
           event_id: string
           failed_at?: string | null
+          fee_cents?: number | null
           id?: string
           metadata?: Json
           paid_at?: string | null
@@ -689,6 +1006,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["order_status"]
           stripe_charge_id?: string | null
           stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -701,6 +1019,7 @@ export type Database = {
           currency?: string
           event_id?: string
           failed_at?: string | null
+          fee_cents?: number | null
           id?: string
           metadata?: Json
           paid_at?: string | null
@@ -712,6 +1031,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["order_status"]
           stripe_charge_id?: string | null
           stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -805,6 +1125,135 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payout_schedules: {
+        Row: {
+          created_at: string | null
+          days_delay: number | null
+          extra_fee_amount: number | null
+          fee_discount_percentage: number | null
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          name: string
+          schedule_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          days_delay?: number | null
+          extra_fee_amount?: number | null
+          fee_discount_percentage?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          name: string
+          schedule_type: string
+        }
+        Update: {
+          created_at?: string | null
+          days_delay?: number | null
+          extra_fee_amount?: number | null
+          fee_discount_percentage?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          name?: string
+          schedule_type?: string
+        }
+        Relationships: []
+      }
+      platform_admins: {
+        Row: {
+          added_by: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          permissions: Json | null
+          role: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          permissions?: Json | null
+          role?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          permissions?: Json | null
+          role?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          setting_key: string
+          setting_type: string
+          setting_value: Json
+          updated_at: string | null
+          updated_by: string | null
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          setting_key: string
+          setting_type: string
+          setting_value: Json
+          updated_at?: string | null
+          updated_by?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          setting_key?: string
+          setting_type?: string
+          setting_value?: Json
+          updated_at?: string | null
+          updated_by?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_settings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -938,6 +1387,142 @@ export type Database = {
         }
         Relationships: []
       }
+      refund_policies: {
+        Row: {
+          allow_transfers: boolean | null
+          cancellation_policy: string | null
+          created_at: string | null
+          created_by: string | null
+          deadline_hours: number | null
+          event_id: string
+          id: string
+          no_refund_after: string | null
+          policy_version: number | null
+          refund_percentage: number | null
+          transfer_deadline_hours: number | null
+          transfer_fee_cents: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          allow_transfers?: boolean | null
+          cancellation_policy?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deadline_hours?: number | null
+          event_id: string
+          id?: string
+          no_refund_after?: string | null
+          policy_version?: number | null
+          refund_percentage?: number | null
+          transfer_deadline_hours?: number | null
+          transfer_fee_cents?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          allow_transfers?: boolean | null
+          cancellation_policy?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deadline_hours?: number | null
+          event_id?: string
+          id?: string
+          no_refund_after?: string | null
+          policy_version?: number | null
+          refund_percentage?: number | null
+          transfer_deadline_hours?: number | null
+          transfer_fee_cents?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refund_policies_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refund_policies_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refund_policies_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "events_with_rsvp_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      refunds: {
+        Row: {
+          amount_cents: number
+          created_at: string | null
+          fee_refund_cents: number | null
+          id: string
+          metadata: Json | null
+          order_id: string
+          processed_at: string | null
+          processed_by: string | null
+          reason: Database["public"]["Enums"]["refund_reason"]
+          reason_details: string | null
+          status: Database["public"]["Enums"]["refund_status"] | null
+          stripe_refund_id: string | null
+          stripe_webhook_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string | null
+          fee_refund_cents?: number | null
+          id?: string
+          metadata?: Json | null
+          order_id: string
+          processed_at?: string | null
+          processed_by?: string | null
+          reason: Database["public"]["Enums"]["refund_reason"]
+          reason_details?: string | null
+          status?: Database["public"]["Enums"]["refund_status"] | null
+          stripe_refund_id?: string | null
+          stripe_webhook_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string | null
+          fee_refund_cents?: number | null
+          id?: string
+          metadata?: Json | null
+          order_id?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          reason?: Database["public"]["Enums"]["refund_reason"]
+          reason_details?: string | null
+          status?: Database["public"]["Enums"]["refund_status"] | null
+          stripe_refund_id?: string | null
+          stripe_webhook_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refunds_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refunds_processed_by_fkey"
+            columns: ["processed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rsvp_rate_limits: {
         Row: {
           change_count: number | null
@@ -1057,6 +1642,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_logs: {
+        Row: {
+          context: Json | null
+          created_at: string | null
+          error_details: string | null
+          id: string
+          level: string
+          message: string
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string | null
+          error_details?: string | null
+          id?: string
+          level: string
+          message: string
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string | null
+          error_details?: string | null
+          id?: string
+          level?: string
+          message?: string
+        }
+        Relationships: []
       }
       ticket_tiers: {
         Row: {
@@ -1502,7 +2114,14 @@ export type Database = {
         Returns: string
       }
       calculate_platform_fee: {
-        Args: { amount_cents: number }
+        Args:
+          | { amount_cents: number }
+          | {
+              p_currency?: string
+              p_payout_schedule_id?: string
+              p_ticket_price_cents: number
+            }
+          | { p_payout_schedule_id?: string; p_ticket_price_cents: number }
         Returns: number
       }
       calculate_profile_completion: {
@@ -1914,6 +2533,10 @@ export type Database = {
           valid: boolean
         }[]
       }
+      is_platform_admin: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
       json: {
         Args: { "": unknown }
         Returns: Json
@@ -2120,6 +2743,16 @@ export type Database = {
         Args: { p_scanned_by: string; p_secure_code: string }
         Returns: Json
       }
+      process_refund: {
+        Args: {
+          p_amount_cents: number
+          p_order_id: string
+          p_reason: Database["public"]["Enums"]["refund_reason"]
+          p_reason_details?: string
+          p_stripe_refund_id?: string
+        }
+        Returns: string
+      }
       purchase_ticket: {
         Args:
           | {
@@ -2135,6 +2768,14 @@ export type Database = {
               p_user_id: string
             }
         Returns: string
+      }
+      refund_cancelled_event: {
+        Args: { p_event_id: string; p_notify_customers?: boolean }
+        Returns: {
+          failed_orders: string[]
+          refund_count: number
+          total_amount_cents: number
+        }[]
       }
       set_limit: {
         Args: { "": number }
@@ -3221,6 +3862,10 @@ export type Database = {
         Args: { "": unknown }
         Returns: string
       }
+      transfer_ticket: {
+        Args: { p_new_email: string; p_reason?: string; p_ticket_id: string }
+        Returns: string
+      }
       unaccent: {
         Args: { "": string }
         Returns: string
@@ -3255,21 +3900,49 @@ export type Database = {
     }
     Enums: {
       event_status: "draft" | "published" | "cancelled" | "completed"
+      export_status:
+        | "pending"
+        | "processing"
+        | "completed"
+        | "failed"
+        | "expired"
+      export_type: "csv" | "excel" | "pdf" | "json"
       member_role: "member" | "moderator" | "admin"
+      modification_type:
+        | "upgrade"
+        | "downgrade"
+        | "transfer"
+        | "cancel"
+        | "modify"
+        | "partial_refund"
       order_status:
         | "pending"
         | "processing"
         | "paid"
         | "failed"
         | "refunded"
+        | "partially_refunded"
         | "cancelled"
       pass_status: "valid" | "used" | "revoked" | "expired"
       payment_provider: "stripe" | "iyzico" | "paypal" | "manual"
+      refund_reason:
+        | "requested_by_customer"
+        | "duplicate"
+        | "fraudulent"
+        | "event_cancelled"
+        | "other"
+      refund_status:
+        | "pending"
+        | "processing"
+        | "succeeded"
+        | "failed"
+        | "cancelled"
       ticket_status:
         | "pending"
         | "confirmed"
         | "cancelled"
         | "refunded"
+        | "transferred"
         | "checked_in"
     }
     CompositeTypes: {
@@ -3404,25 +4077,60 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       event_status: ["draft", "published", "cancelled", "completed"],
+      export_status: [
+        "pending",
+        "processing",
+        "completed",
+        "failed",
+        "expired",
+      ],
+      export_type: ["csv", "excel", "pdf", "json"],
       member_role: ["member", "moderator", "admin"],
+      modification_type: [
+        "upgrade",
+        "downgrade",
+        "transfer",
+        "cancel",
+        "modify",
+        "partial_refund",
+      ],
       order_status: [
         "pending",
         "processing",
         "paid",
         "failed",
         "refunded",
+        "partially_refunded",
         "cancelled",
       ],
       pass_status: ["valid", "used", "revoked", "expired"],
       payment_provider: ["stripe", "iyzico", "paypal", "manual"],
+      refund_reason: [
+        "requested_by_customer",
+        "duplicate",
+        "fraudulent",
+        "event_cancelled",
+        "other",
+      ],
+      refund_status: [
+        "pending",
+        "processing",
+        "succeeded",
+        "failed",
+        "cancelled",
+      ],
       ticket_status: [
         "pending",
         "confirmed",
         "cancelled",
         "refunded",
+        "transferred",
         "checked_in",
       ],
     },

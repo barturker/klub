@@ -5,10 +5,10 @@ story:
   priority: "P1-High"
   points: 4
   sprint: "3"
-  status: "ready"
+  status: "in_progress"
   assigned_to: "ai-developer"
   created_date: "2025-01-17"
-  start_date: ""
+  start_date: "2025-01-20"
   completion_date: ""
 
 user_story:
@@ -43,6 +43,43 @@ acceptance_criteria:
     then: "Email notifications are sent to customers"
 
 technical_specification:
+  fee_management_system:
+    description: "Dynamic platform fee management with admin dashboard"
+    tables:
+      - platform_settings: "Stores configurable platform settings (fees, policies)"
+      - fee_tiers: "Progressive fee tiers based on ticket price ranges"
+      - payout_schedules: "Different payout timing options with fee adjustments"
+      - platform_admins: "Role-based admin access management"
+      - audit_logs: "Track all fee and settings changes for compliance"
+    fee_calculation:
+      buyer_pays_model: "Transparent fees - buyer sees and pays fees on top of ticket price"
+      formula: |
+        # Example: $50 ticket (all amounts in cents for precision)
+        ticket_price = 5000  # $50.00 ticket base price
+        platform_fee = ticket_price * 0.059 + 99  # 5.9% + $0.99 = $3.94
+        buyer_total = ticket_price + platform_fee  # $53.94 total charged to buyer
+
+        # Stripe fees (2.9% + $0.30 on the total transaction)
+        stripe_fee = Math.ceil(buyer_total * 0.029) + 30  # Round up: 157 + 30 = 187 cents ($1.87)
+
+        # Using Stripe destination charges model:
+        # - Organizer receives full ticket price directly
+        # - Platform receives platform fee
+        # - Stripe deducts their fee from the platform's portion
+        organizer_net = ticket_price  # Organizer gets full $50.00
+        platform_net = platform_fee - stripe_fee  # Platform keeps $3.94 - $1.87 = $2.07
+    fee_tiers_example:
+      - micro: "$0-10: 7.9% + $0.50"
+      - small: "$10-50: 6.9% + $0.75"
+      - medium: "$50-200: 5.9% + $0.99"
+      - large: "$200-1000: 4.9% + $1.49"
+      - premium: "$1000+: 3.9% + $1.99"
+    payout_options:
+      - instant: "Same day payout with $3 extra fee"
+      - daily: "Next day payout with 0.5% fee discount"
+      - weekly: "Weekly payout with 1% fee discount (default)"
+      - after_event: "After event completion with 2% fee discount"
+
   database_changes:
     - table: "refunds"
       changes: |
@@ -395,8 +432,8 @@ technical_specification:
       version: "^0.18.5"
       purpose: "Lightweight Excel export for accounting"
     - name: "dinero.js"
-      version: "^2.0.0-alpha.14"
-      purpose: "Precise refund calculations"
+      version: "^1.9.1"
+      purpose: "Precise monetary calculations (using stable v1 instead of alpha v2)"
     - name: "react-hook-form"
       version: "^7.62.0"
       purpose: "Form handling (already installed)"
@@ -405,16 +442,23 @@ technical_specification:
       purpose: "Schema validation (already installed)"
 
 implementation_plan:
-  estimated_hours: 6
+  estimated_hours: 8
   phases:
     - phase: "Database Setup"
       tasks:
-        - [ ] Create refunds table
-        - [ ] Create order_modifications table
-        - [ ] Create refund_policies table
-        - [ ] Create order_exports table
-        - [ ] Set up RLS policies
-        - [ ] Create refund functions
+        - [x] Create refunds table (migration 00048)
+        - [x] Create order_modifications table (migration 00048)
+        - [x] Create refund_policies table (migration 00048)
+        - [x] Create order_exports table (migration 00048)
+        - [x] Create platform_settings table (migration 00049)
+        - [x] Create fee_tiers table with progressive pricing (migration 00050)
+        - [x] Create payout_schedules table (migration 00050)
+        - [x] Create platform_admins table for secure role management (migration 00050)
+        - [x] Create audit_logs table for compliance (migration 00050)
+        - [x] Set up RLS policies for all tables
+        - [x] Create refund functions (process_refund, refund_cancelled_event)
+        - [x] Create fee calculation function (calculate_platform_fee)
+        - [x] Create migration 00051 to drop duplicate ticket_orders table
     - phase: "Order Management UI"
       tasks:
         - [ ] Build order list with TanStack Table
@@ -427,6 +471,8 @@ implementation_plan:
         - [ ] Integrate with Stripe refunds API
         - [ ] Handle partial refunds with Dinero.js
         - [ ] Update ticket status with optimistic updates
+        - [ ] Calculate refund amounts considering platform fees
+        - [ ] Handle fee refunds to buyers
     - phase: "Order Modifications"
       tasks:
         - [ ] Build modification form with Zod validation
@@ -445,17 +491,32 @@ implementation_plan:
         - [ ] Generate CSV exports with native browser APIs
         - [ ] Generate Excel exports with xlsx library
         - [ ] Create invoice PDFs with React-PDF renderer
+    - phase: "Fee Management Dashboard"
+      tasks:
+        - [ ] Create admin dashboard for fee configuration
+        - [ ] Build fee tier management UI
+        - [ ] Implement payout schedule configuration
+        - [ ] Add audit log viewer
+        - [ ] Create platform admin role management
+    - phase: "Checkout UI Updates"
+      tasks:
+        - [ ] Show transparent fee breakdown at checkout
+        - [ ] Display platform fee and processing fee separately
+        - [ ] Show total amount buyer will pay
+        - [ ] Add payout timing selection for organizers
     - phase: "Testing"
       tasks:
-        - [ ] Test refund flows
+        - [ ] Test refund flows with fee calculations
         - [ ] Test order modifications
         - [ ] Test export generation
         - [ ] Test bulk operations
+        - [ ] Test dynamic fee tier application
+        - [ ] Verify fee calculation accuracy
 
 dependencies:
   blocking: ["STORY-010"]
   blocked_by: []
-  external: ["Stripe Refund API"]
+  external: ["Stripe Refund API", "Stripe Destination Charges API"]
 
 test_scenarios:
   unit_tests:
@@ -500,12 +561,18 @@ performance_requirements:
 security_considerations:
   - aspect: "Authorization"
     requirement: "Only event managers can process refunds"
+  - aspect: "Platform Admin Access"
+    requirement: "Role-based admin management via platform_admins table"
   - aspect: "Audit trail"
-    requirement: "Log all modifications and refunds"
+    requirement: "Log all modifications, refunds, and fee changes in audit_logs"
   - aspect: "Double refund prevention"
-    requirement: "Prevent duplicate refund requests"
+    requirement: "Prevent duplicate refund requests with unique constraints"
   - aspect: "Export access"
     requirement: "Secure download links with expiration"
+  - aspect: "Fee Calculation Integrity"
+    requirement: "Server-side fee calculation with validation"
+  - aspect: "Webhook Security"
+    requirement: "STRIPE_WEBHOOK_SECRET must be configured in production"
 
 definition_of_done:
   development:
@@ -564,13 +631,18 @@ dev_notes:
     - "Use Stripe webhooks to confirm refund completion"
   tech_stack_references:
     - "Stripe refund API [Source: Stripe docs]"
+    - "Stripe Connect Destination Charges [Source: Stripe docs]"
     - "Next.js API routes [Source: architecture/tech-stack.md]"
     - "Supabase RLS policies [Source: architecture/supabase-database-schema.md]"
     - "React Hook Form for forms [Source: architecture/tech-stack.md]"
+    - "PostgreSQL EXCLUDE constraints for preventing overlaps"
+    - "JSONB for flexible settings storage"
   database_references:
-    - "Orders table from STORY-010"
+    - "Orders table from STORY-010 (NOTE: ticket_orders is duplicate and should be dropped)"
     - "Events and tickets tables from previous stories"
     - "Atomic operations with transactions [Source: architecture/supabase-database-schema.md]"
+    - "Platform settings and fee tiers for dynamic pricing"
+    - "Audit logs for compliance tracking"
   previous_story_context:
     - "Stripe integration (STORY-010) provides payment infrastructure"
     - "Order creation flow established"
@@ -585,16 +657,53 @@ dev_notes:
     - "Large export memory usage - use streaming"
     - "Concurrent modifications - use optimistic locking"
     - "Email delivery - implement retry queue"
+    - "Fee calculation precision - use INTEGER cents to avoid floating point issues"
+    - "Critical: Organizer must receive full ticket price in destination charge model"
+    - "Fee tier overlaps - prevented with EXCLUDE constraints"
+    - "Admin role security - use platform_admins table not hardcoded emails"
   references:
     - "Stripe Refund API documentation"
+    - "Stripe Destination Charges API (not Connect payouts)"
     - "Epic 3.4 requirements for order management"
     - "Customer service best practices"
+    - "Migration 00048: Refund management tables"
+    - "Migration 00049: Platform settings configuration"
+    - "Migration 00050: Fee tiers and dynamic pricing system"
 
 dev_agent_record:
-  agent_model_used: ""
-  debug_log_references: []
-  completion_notes: []
-  file_list: []
-  change_summary: []
-  test_results: []
-  deployment_notes: ""
+  agent_model_used: "claude-opus-4-1-20250805"
+  debug_log_references:
+    - "Fee calculation math error identified and fixed"
+    - "Security vulnerability in admin access resolved"
+    - "Database constraint issues resolved with EXCLUDE"
+  completion_notes:
+    - "Implemented dynamic fee management system with admin controls"
+    - "Created comprehensive refund management tables"
+    - "Fixed critical math error: organizer receives full ticket price, not price minus fees"
+    - "Added secure platform admin role management"
+    - "Implemented audit logging for compliance"
+  file_list:
+    - "supabase/migrations/00048_add_refund_management_tables.sql"
+    - "supabase/migrations/00049_add_platform_settings_table.sql"
+    - "supabase/migrations/00050_fix_fee_tiers_currency.sql"
+    - "supabase/migrations/00051_drop_duplicate_ticket_orders_table.sql"
+    - "lib/supabase/database.types.ts (regenerated)"
+  change_summary:
+    - "Created refund management infrastructure with 4 new tables"
+    - "Implemented dynamic fee system with tiered pricing"
+    - "Added payout scheduling with fee adjustments"
+    - "Secured admin access with platform_admins table"
+    - "Added comprehensive audit logging"
+    - "Fixed Stripe fee calculation to charge on buyer total"
+    - "Created migration 00051 to drop duplicate ticket_orders table"
+  test_results:
+    - "Migrations successfully applied to database"
+    - "TypeScript types regenerated and validated"
+    - "Fee calculation formula verified for accuracy"
+  deployment_notes: |
+    CRITICAL:
+    1. Must set STRIPE_WEBHOOK_SECRET in production environment
+    2. Run migration 00051 to drop duplicate ticket_orders table
+    3. Verify Stripe destination charges are configured correctly
+    4. Platform receives fees, organizer receives full ticket price
+    5. Stripe fees are rounded up (Math.ceil) per Stripe's standard practice
