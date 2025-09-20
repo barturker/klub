@@ -233,39 +233,44 @@ export async function POST(request: NextRequest) {
         console.log("[WEBHOOK DEBUG] Amount Total:", session.amount_total);
         console.log("[WEBHOOK DEBUG] Client Reference ID:", session.client_reference_id);
 
-        // Update order to paid status using secure RPC function
+        // Update order to paid status and generate tickets in one call
         if (session.payment_status === "paid") {
-          console.log("[WEBHOOK DEBUG] Payment is paid - calling RPC function to update order");
+          console.log("[WEBHOOK DEBUG] Payment is paid - processing payment and generating tickets");
 
-          // Use the secure RPC function to update the order
-          const { data: updateResult, error: updateError } = await supabase
-            .rpc('update_order_from_webhook', {
+          // Use the combined function to update order and generate tickets
+          const { data: processResult, error: processError } = await supabase
+            .rpc('process_successful_payment', {
               p_session_id: session.id,
-              p_status: 'paid',
-              p_payment_intent_id: session.payment_intent as string,
-              p_payment_method: session.payment_method_types?.[0] || "card",
-              p_paid_at: new Date().toISOString()
+              p_payment_intent_id: session.payment_intent as string
             });
 
-          if (updateError) {
-            console.error("[WEBHOOK ERROR] Failed to update order via RPC:", updateError);
+          if (processError) {
+            console.error("[WEBHOOK ERROR] Failed to process payment:", processError);
             return NextResponse.json(
-              { error: "Failed to update order", details: updateError.message },
+              { error: "Failed to process payment", details: processError.message },
               { status: 500 }
             );
           }
 
-          if (updateResult && updateResult[0]?.updated) {
-            console.log("[WEBHOOK DEBUG] Order updated successfully:", {
-              orderId: updateResult[0].id,
-              status: updateResult[0].status,
-              updated: updateResult[0].updated
+          console.log("[WEBHOOK DEBUG] Payment processing result:", JSON.stringify(processResult, null, 2));
+
+          if (processResult?.success) {
+            console.log("[WEBHOOK DEBUG] Payment processed successfully:", {
+              orderId: processResult.order_id,
+              orderStatus: processResult.order_status,
+              ticketsResult: processResult.tickets_result
             });
 
-            // TODO: Generate tickets for the order
-            console.log("[WEBHOOK DEBUG] Order successfully updated to paid status");
+            if (processResult.tickets_result?.success) {
+              console.log("[WEBHOOK DEBUG] Tickets generated successfully:", {
+                ticketsCreated: processResult.tickets_result.tickets_created,
+                eventName: processResult.tickets_result.event_name
+              });
+            } else {
+              console.log("[WEBHOOK WARNING] Tickets may already exist or failed to generate:", processResult.tickets_result);
+            }
           } else {
-            console.log("[WEBHOOK DEBUG] No order found or order not updated");
+            console.log("[WEBHOOK WARNING] Payment processing returned unsuccessful:", processResult);
           }
         } else {
           console.warn("[WEBHOOK DEBUG] Session payment status not 'paid':", session.payment_status);

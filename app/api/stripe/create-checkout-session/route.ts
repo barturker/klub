@@ -173,6 +173,15 @@ export async function POST(request: Request) {
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/communities/${event.community.slug}/events/${event.slug}`,
     });
 
+    // Get user profile for name
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name, display_name")
+      .eq("id", user.id)
+      .single();
+
+    const buyerName = profile?.full_name || profile?.display_name || user.email?.split("@")[0] || "Guest";
+
     // Store the pending order in the database
     const { data: order, error: orderError } = await supabase.from("orders").insert({
       event_id: eventId,
@@ -183,12 +192,16 @@ export async function POST(request: Request) {
       currency: currency.toLowerCase(),
       quantity: selectedTickets.reduce((acc: number, t: any) => acc + t.quantity, 0),
       buyer_email: user.email || "",
+      buyer_name: buyerName,
       metadata: {
         stripe_session_id: session.id,
         selectedTickets,
         discountCode,
         subtotal_cents: subtotal,
         platform_fee_cents: platformFees,
+        ticket_count: selectedTickets.reduce((acc: number, t: any) => acc + t.quantity, 0),
+        buyer_name: buyerName,
+        buyer_email: user.email,
       },
     }).select().single();
 

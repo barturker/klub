@@ -39,8 +39,10 @@ import { formatCurrency } from "@/lib/utils";
 import { RefundModal } from "./RefundModal";
 import { OrderModificationForm } from "./OrderModificationForm";
 import { Database } from "@/lib/supabase/database.types";
+import { TicketCard } from "@/components/tickets/TicketCard";
 
 type Order = Database["public"]["Tables"]["orders"]["Row"] & {
+  order_number: string;
   event?: {
     id: string;
     title: string;
@@ -309,27 +311,28 @@ export function OrderDetails({
         <Card>
           <CardHeader>
             <CardTitle>Tickets ({order.tickets?.length || 0})</CardTitle>
+            <CardDescription>
+              {order.tickets?.length ? "Click on a ticket to view details" : "No tickets found for this order"}
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {order.tickets?.map((ticket) => (
-                <div
-                  key={ticket.id}
-                  className="flex items-center justify-between rounded-lg border p-3"
-                >
-                  <div>
-                    <p className="font-medium">#{ticket.ticket_number}</p>
-                    <p className="text-sm text-gray-500">{ticket.tier?.name}</p>
-                  </div>
-                  <div className="text-right">
-                    <Badge variant="outline">{ticket.status}</Badge>
-                    <p className="mt-1 text-sm font-medium">
-                      {formatCurrency(ticket.tier?.price_cents || 0)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {order.tickets?.length ? (
+              <div className="grid gap-4 md:grid-cols-2">
+                {order.tickets.map((ticket) => (
+                  <TicketCard
+                    key={ticket.id}
+                    ticket={ticket}
+                    event={order.event}
+                    buyer={order.buyer}
+                    orderNumber={order.order_number}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No tickets available</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 

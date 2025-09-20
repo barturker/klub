@@ -30,96 +30,104 @@ export async function GET(request: Request) {
       );
     }
 
-    // Update the order status in the database
+    // Get the order from our database
     const supabase = await createClient();
 
-    // First, find the order with this session ID
-    const { data: order, error: findError } = await supabase
+    // Find order by Stripe session ID
+    const { data: order, error: orderError } = await supabase
       .from("orders")
-      .select("*")
+      .select(`
+        *,
+        event:events(
+          id,
+          title,
+          start_at,
+          location,
+          slug,
+          community:communities(
+            name,
+            slug
+          )
+        )
+      `)
       .eq("metadata->>stripe_session_id", sessionId)
       .single();
 
-    if (order && session.payment_status === "paid") {
-      // Update existing order
-      const { error: updateError } = await supabase
-        .from("orders")
-        .update({
-          status: "completed",
-          stripe_payment_intent_id: session.payment_intent as string,
-          paid_at: new Date().toISOString(),
-        })
-        .eq("id", order.id);
+    let tickets = [];
 
-      if (updateError) {
-        console.error("Error updating order:", updateError);
-      }
+    if (order) {
+      // First check if we need to update order status and generate tickets
+      if (session.payment_status === "paid" && order.status !== "paid") {
+        console.log("Payment confirmed but order not updated yet. Processing now...");
 
-      // Generate tickets if not already created
-      const { data: existingTickets } = await supabase
-        .from("tickets")
-        .select("id")
-        .eq("order_id", order.id);
+        // Process the payment and generate tickets immediately
+        const { data: processResult, error: processError } = await supabase
+          .rpc('process_successful_payment', {
+            p_session_id: sessionId,
+            p_payment_intent_id: session.payment_intent as string
+          });
 
-      if (!existingTickets || existingTickets.length === 0) {
-        // Parse ticket selections from metadata
-        const ticketSelections = JSON.parse(session.metadata?.ticket_selections || "[]");
-
-        for (const selection of ticketSelections) {
-          for (let i = 0; i < selection.quantity; i++) {
-            const ticketCode = `TKT${Date.now()}${Math.random().toString(36).substring(2, 10)}`.toUpperCase();
-
-            await supabase.from("tickets").insert({
-              order_id: order.id,
-              event_id: session.metadata?.event_id,
-              ticket_tier_id: selection.tierId,
-              attendee_email: session.customer_email || "",
-              ticket_code: ticketCode,
-              status: "valid",
-            });
-          }
+        if (processError) {
+          console.error("Error processing payment:", processError);
+        } else if (processResult?.success) {
+          console.log("Payment processed and tickets generated:", processResult);
         }
       }
-    }
 
-    // Get event details from metadata
-    const eventId = session.metadata?.event_id;
-    let eventName = "Event";
-    let ticketCount = 0;
+      // Now get the tickets for this order
+      const { data: ticketsData, error: ticketsError } = await supabase
+        .from("tickets")
+        .select("*")
+        .eq("order_id", order.id);
 
-    if (eventId) {
-      const { data: event } = await supabase
-        .from("events")
-        .select("title")
-        .eq("id", eventId)
-        .single();
-
-      if (event) {
-        eventName = event.title;
+      if (ticketsData && ticketsData.length > 0) {
+        tickets = ticketsData;
+        console.log(`Found ${tickets.length} tickets for order ${order.id}`);
+      } else {
+        console.log("No tickets found yet for order:", order.id);
       }
     }
 
-    // Calculate total ticket count
-    if (session.line_items?.data) {
-      ticketCount = session.line_items.data.reduce(
-        (sum, item) => sum + (item.quantity || 0),
-        0
-      );
+    // Format the response
+    if (order && order.event) {
+      return NextResponse.json({
+        success: true,
+        sessionId,
+        orderId: order.id,
+        eventName: order.event.title,
+        eventDate: order.event.start_at,
+        eventLocation: order.event.location,
+        eventSlug: order.event.slug,
+        communityName: order.event.community?.name,
+        communitySlug: order.event.community?.slug,
+        ticketCount: order.quantity,
+        total: `${(order.amount_cents || 0) / 100} ${order.currency?.toUpperCase()}`,
+        customerEmail: order.buyer_email,
+        customerName: order.buyer_name,
+        paymentStatus: session.payment_status,
+        orderStatus: order.status,
+        tickets: tickets.map(ticket => ({
+          id: ticket.id,
+          ticketNumber: ticket.ticket_number,
+          qrCode: ticket.qr_code,
+          attendeeName: ticket.attendee_name,
+          attendeeEmail: ticket.attendee_email,
+          status: ticket.status,
+          ticketType: ticket.ticket_type
+        }))
+      });
     }
 
-    // Format the total amount
-    const total = session.amount_total
-      ? `${(session.amount_total / 100).toFixed(2)} ${session.currency?.toUpperCase()}`
-      : "0.00";
-
+    // Fallback to basic session info if order not found
     return NextResponse.json({
       success: true,
-      eventName,
-      ticketCount,
-      total,
       sessionId,
+      eventName: session.metadata?.event_name || "Event",
+      ticketCount: parseInt(session.metadata?.ticket_count || "1"),
+      total: `${(session.amount_total || 0) / 100} ${session.currency?.toUpperCase()}`,
+      customerEmail: session.customer_email || session.customer_details?.email || "",
       paymentStatus: session.payment_status,
-      customerEmail: session.customer_email,
+      tickets: []
     });
   } catch (error) {
     console.error("Error verifying session:", error);

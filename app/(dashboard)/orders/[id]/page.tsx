@@ -93,13 +93,7 @@ async function getOrderDetails(orderId: string) {
   // Get tickets for this order
   const { data: tickets } = await supabase
     .from("tickets")
-    .select(`
-      *,
-      ticket_tiers (
-        name,
-        price_cents
-      )
-    `)
+    .select("*")
     .eq("order_id", orderId);
 
   console.log("[ORDER_DETAILS_DEBUG] Tickets found:", tickets?.length || 0);
@@ -163,11 +157,11 @@ async function getOrderDetails(orderId: string) {
     },
     tickets: tickets?.map(ticket => ({
       id: ticket.id,
-      ticket_number: ticket.ticket_number,
+      ticket_number: ticket.qr_code || ticket.id.slice(0, 8).toUpperCase(),
       status: ticket.status,
       tier: {
-        name: ticket.ticket_tiers?.name || "General",
-        price_cents: ticket.ticket_tiers?.price_cents || 0,
+        name: ticket.qr_code?.includes("VIP") ? "VIP Ticket" : "General Admission",
+        price_cents: ticket.amount ? Math.round(ticket.amount * 100) : 0,
       },
     })) || [],
     refunds: refunds?.map(refund => ({

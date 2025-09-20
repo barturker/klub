@@ -121,13 +121,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "checkins_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
         ]
       }
       communities: {
@@ -1083,15 +1076,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["pass_status"]
           ticket_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "passes_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: true
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       payment_intents: {
         Row: {
@@ -1761,57 +1746,77 @@ export type Database = {
       }
       tickets: {
         Row: {
-          amount: number
-          attendee_email: string | null
-          attendee_name: string | null
+          attendee_email: string
+          attendee_name: string
           checked_in_at: string | null
+          checked_in_by: string | null
+          created_at: string | null
           currency: string
           event_id: string
           id: string
-          order_id: string | null
-          purchased_at: string
+          metadata: Json | null
+          order_id: string
+          price_paid: number
+          qr_code: string
           status: Database["public"]["Enums"]["ticket_status"]
-          stripe_charge_id: string | null
-          stripe_payment_intent_id: string | null
-          ticket_code: string | null
-          updated_at: string
+          ticket_number: string
+          ticket_type: string | null
+          updated_at: string | null
           user_id: string
         }
         Insert: {
-          amount: number
-          attendee_email?: string | null
-          attendee_name?: string | null
+          attendee_email: string
+          attendee_name: string
           checked_in_at?: string | null
+          checked_in_by?: string | null
+          created_at?: string | null
           currency?: string
           event_id: string
           id?: string
-          order_id?: string | null
-          purchased_at?: string
+          metadata?: Json | null
+          order_id: string
+          price_paid: number
+          qr_code: string
           status?: Database["public"]["Enums"]["ticket_status"]
-          stripe_charge_id?: string | null
-          stripe_payment_intent_id?: string | null
-          ticket_code?: string | null
-          updated_at?: string
+          ticket_number: string
+          ticket_type?: string | null
+          updated_at?: string | null
           user_id: string
         }
         Update: {
-          amount?: number
-          attendee_email?: string | null
-          attendee_name?: string | null
+          attendee_email?: string
+          attendee_name?: string
           checked_in_at?: string | null
+          checked_in_by?: string | null
+          created_at?: string | null
           currency?: string
           event_id?: string
           id?: string
-          order_id?: string | null
-          purchased_at?: string
+          metadata?: Json | null
+          order_id?: string
+          price_paid?: number
+          qr_code?: string
           status?: Database["public"]["Enums"]["ticket_status"]
-          stripe_charge_id?: string | null
-          stripe_payment_intent_id?: string | null
-          ticket_code?: string | null
-          updated_at?: string
+          ticket_number?: string
+          ticket_type?: string | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "tickets_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events_with_rsvp_summary"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tickets_order_id_fkey"
             columns: ["order_id"]
@@ -2169,6 +2174,10 @@ export type Database = {
           total_fee: number
         }[]
       }
+      check_in_ticket: {
+        Args: { p_qr_code: string }
+        Returns: Json
+      }
       check_rate_limit: {
         Args: {
           p_action: string
@@ -2254,9 +2263,21 @@ export type Database = {
         Args: { p_ticket_id: string }
         Returns: string
       }
+      generate_qr_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       generate_ticket_code: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      generate_ticket_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_tickets_for_order: {
+        Args: { p_order_id: string }
+        Returns: undefined
       }
       geography: {
         Args: { "": string } | { "": unknown }
@@ -3999,12 +4020,13 @@ export type Database = {
         | "failed"
         | "cancelled"
       ticket_status:
-        | "pending"
-        | "confirmed"
+        | "valid"
+        | "used"
         | "cancelled"
         | "refunded"
-        | "transferred"
-        | "checked_in"
+        | "expired"
+        | "pending"
+        | "active"
     }
     CompositeTypes: {
       geometry_dump: {
@@ -4187,12 +4209,13 @@ export const Constants = {
         "cancelled",
       ],
       ticket_status: [
-        "pending",
-        "confirmed",
+        "valid",
+        "used",
         "cancelled",
         "refunded",
-        "transferred",
-        "checked_in",
+        "expired",
+        "pending",
+        "active",
       ],
     },
   },
