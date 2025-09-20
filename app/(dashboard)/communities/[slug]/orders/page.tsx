@@ -26,7 +26,7 @@ interface OrdersPageProps {
 }
 
 async function getCommunity(slug: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: community } = await supabase
     .from("communities")
@@ -38,7 +38,7 @@ async function getCommunity(slug: string) {
 }
 
 async function checkAccess(communityId: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -63,7 +63,7 @@ async function getOrders(
     page?: number;
   }
 ) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const pageSize = 20;
   const page = filters.page || 1;
   const offset = (page - 1) * pageSize;
@@ -116,7 +116,7 @@ async function getOrders(
 }
 
 async function getOrderStats(communityId: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Get order statistics for the community
   const { data: stats } = await supabase.rpc("get_community_order_stats", {
