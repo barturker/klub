@@ -45,7 +45,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Use regular client - we'll use RPC function for secure updates
     const supabase = await createClient();
+    console.log("[WEBHOOK DEBUG] Using regular client with RPC for database operations");
 
     // Handle different event types
     switch (event.type) {
@@ -229,134 +231,41 @@ export async function POST(request: NextRequest) {
         console.log("[WEBHOOK DEBUG] Customer Email:", session.customer_email);
         console.log("[WEBHOOK DEBUG] Metadata:", session.metadata);
         console.log("[WEBHOOK DEBUG] Amount Total:", session.amount_total);
+        console.log("[WEBHOOK DEBUG] Client Reference ID:", session.client_reference_id);
 
-        // Find the order using session ID from metadata
-        console.log("[WEBHOOK DEBUG] Looking for order with session ID in metadata...");
-
-        // First try to find by exact session ID
-        let { data: order, error: findError } = await supabase
-          .from("orders")
-          .select("*")
-          .eq("metadata->>stripe_session_id", session.id)
-          .single();
-
-        // If not found, try alternative field
-        if (!order) {
-          console.log("[WEBHOOK DEBUG] Trying stripe_session_id column...");
-          const result = await supabase
-            .from("orders")
-            .select("*")
-            .eq("stripe_session_id", session.id)
-            .single();
-          order = result.data;
-          findError = result.error;
-        }
-
-        // If still not found, try by order_number if provided in metadata
-        if (!order && session.metadata?.order_number) {
-          console.log("[WEBHOOK DEBUG] Trying by order_number:", session.metadata.order_number);
-          const result = await supabase
-            .from("orders")
-            .select("*")
-            .eq("order_number", session.metadata.order_number)
-            .single();
-          order = result.data;
-          findError = result.error;
-        }
-
-        console.log("[WEBHOOK DEBUG] Order lookup result:", {
-          found: !!order,
-          orderId: order?.id,
-          error: findError?.message
-        });
-
-        if (findError || !order) {
-          console.error("[WEBHOOK ERROR] Order not found for session:", session.id, findError);
-          // Try alternative search
-          const { data: alternativeOrder } = await supabase
-            .from("orders")
-            .select("*")
-            .eq("buyer_email", session.customer_email)
-            .eq("status", "pending")
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .single();
-
-          if (alternativeOrder) {
-            console.log("[WEBHOOK DEBUG] Found order by email fallback:", alternativeOrder.id);
-          }
-
-          return NextResponse.json(
-            { error: "Order not found for session" },
-            { status: 404 }
-          );
-        }
-
-        // Update order to paid status
+        // Update order to paid status using secure RPC function
         if (session.payment_status === "paid") {
-          console.log("[WEBHOOK DEBUG] Updating order to PAID status:", order.id);
+          console.log("[WEBHOOK DEBUG] Payment is paid - calling RPC function to update order");
 
-          const { data: updatedOrder, error: updateError } = await supabase
-            .from("orders")
-            .update({
-              status: "paid",
-              paid_at: new Date().toISOString(),
-              stripe_session_id: session.id,
-              stripe_payment_intent_id: session.payment_intent as string,
-              payment_method: session.payment_method_types?.[0] || "card",
-              metadata: {
-                ...order.metadata,
-                stripe_session_completed: true,
-                payment_completed: true,
-                webhook_processed_at: new Date().toISOString()
-              },
-            })
-            .eq("id", order.id)
-            .select()
-            .single();
+          // Use the secure RPC function to update the order
+          const { data: updateResult, error: updateError } = await supabase
+            .rpc('update_order_from_webhook', {
+              p_session_id: session.id,
+              p_status: 'paid',
+              p_payment_intent_id: session.payment_intent as string,
+              p_payment_method: session.payment_method_types?.[0] || "card",
+              p_paid_at: new Date().toISOString()
+            });
 
           if (updateError) {
-            console.error("[WEBHOOK ERROR] Failed to update order:", updateError);
+            console.error("[WEBHOOK ERROR] Failed to update order via RPC:", updateError);
             return NextResponse.json(
-              { error: "Failed to update order" },
+              { error: "Failed to update order", details: updateError.message },
               { status: 500 }
             );
           }
 
-          console.log("[WEBHOOK DEBUG] Order updated successfully:", {
-            orderId: updatedOrder?.id,
-            status: updatedOrder?.status
-          });
+          if (updateResult && updateResult[0]?.updated) {
+            console.log("[WEBHOOK DEBUG] Order updated successfully:", {
+              orderId: updateResult[0].id,
+              status: updateResult[0].status,
+              updated: updateResult[0].updated
+            });
 
-          // Generate tickets for the order
-          if (updatedOrder) {
-            const ticketCode = await generateTicketCode();
-            console.log("[WEBHOOK DEBUG] Generating ticket:", ticketCode);
-
-            const { error: ticketError } = await supabase
-              .from("tickets")
-              .insert({
-                order_id: updatedOrder.id,
-                event_id: updatedOrder.event_id,
-                user_id: updatedOrder.buyer_id,
-                ticket_number: ticketCode,
-                status: "active",
-                purchase_date: new Date().toISOString(),
-                qr_code: ticketCode, // You can generate a proper QR code here
-                metadata: {
-                  payment_intent_id: session.payment_intent,
-                  session_id: session.id,
-                  created_from_webhook: true,
-                },
-              });
-
-            if (ticketError) {
-              console.error("[WEBHOOK ERROR] Failed to create ticket:", ticketError);
-            } else {
-              console.log("[WEBHOOK DEBUG] Ticket created successfully");
-            }
-
-            // TODO: Send confirmation email with ticket
+            // TODO: Generate tickets for the order
+            console.log("[WEBHOOK DEBUG] Order successfully updated to paid status");
+          } else {
+            console.log("[WEBHOOK DEBUG] No order found or order not updated");
           }
         } else {
           console.warn("[WEBHOOK DEBUG] Session payment status not 'paid':", session.payment_status);
